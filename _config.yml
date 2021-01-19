@@ -1,7 +1,7 @@
 # --- General options --- #
 
 # Name of website
-title: Tien Ng Huu
+title: Huu Tien Nguyen
 
 # Short description of your site
 description: My personal blog
@@ -11,7 +11,7 @@ description: My personal blog
 # *** If you're not sure what this mean, then leave this section as it is. Only modify the url and baseurl if you know what you're doing!***
 
 # url is the the website domain URL without a trailing slash
-url: "https://hxutixnnn.github.io"
+url: "https://nguyenhuutien.com"
 
 # baseurl should be an empty string
 #baseurl: ""
@@ -93,7 +93,7 @@ share-links-active:
 
 # How to display the link to the website in the footer
 # Remove this if you don't want a link in the footer
-url-pretty: "hxutixnnn.github.io"  # eg. "deanattali.com/beautiful-jekyll"
+url-pretty: "nguyenhuutien.com"  # eg. "deanattali.com/beautiful-jekyll"
 
 # --- Web Statistics Section --- #
 
