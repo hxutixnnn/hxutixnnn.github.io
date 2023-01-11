@@ -29,6 +29,10 @@ module.exports = {
             title: `About`,
             slug: `/about`,
           },
+          {
+            title: `Uses`,
+            slug: `/uses`,
+          },
         ],
         externalLinks: [
           {
@@ -38,6 +42,14 @@ module.exports = {
           {
             name: `Facebook`,
             url: `https://facebook.com/hxutixnnn`,
+          },
+          {
+            name: `Linkedin`,
+            url: `https://www.linkedin.com/in/tiennguyenhuu/`,
+          },
+          {
+            name: `Resume`,
+            url: `https://tiennguyenhuu.notion.site/`,
           },
         ],
       },
@@ -64,9 +76,9 @@ module.exports = {
     {
       resolve: `gatsby-plugin-manifest`,
       options: {
-        name: `Huu-Tien Nguyen - My Personal Blog`,
-        short_name: `Huu-Tien Nguyen`,
-        description: `My Personal Blog`,
+        name: `Tien Nguyen - My Personal Website`,
+        short_name: `Nguyễn Hữu Tiền`,
+        description: `Hi, my name is Tien. Here, I will write about things I am learning, learned, and will learn in the future.`,
         start_url: `/`,
         background_color: `#fff`,
         theme_color: `#6B46C1`,
@@ -132,7 +144,7 @@ module.exports = {
               }
             `,
             output: `rss.xml`,
-            title: `Huu-Tien Nguyen - My Personal Blog`,
+            title: `Tien Nguyen - My Personal Website`,
           },
         ],
       },
