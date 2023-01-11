@@ -4,3 +4,5 @@
 
 - Clean up template files.
 - Add `/uses` page.
+- Add analytics ID.
+- Update sitemap configurations.
