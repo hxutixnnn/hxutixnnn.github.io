@@ -1,5 +1,5 @@
 {
     "componentChunkName": "component---node-modules-lekoarts-gatsby-theme-minimal-blog-core-src-templates-homepage-query-tsx",
     "path": "/",
-    "result": {"data":{"allPost":{"nodes":[{"slug":"/hello-world","title":"Hello World","date":"12.01.2023","excerpt":"Hi there! First of all, thank you for visiting this website :) I'm Tiền. Here, I will write about things I am learning, learned, and will…","timeToRead":1,"description":null,"tags":null}]}},"pageContext":{"formatString":"DD.MM.YYYY"}},
+    "result": {"data":{"allPost":{"nodes":[{"slug":"/hello-world","title":"Hello World","date":"11.01.2023","excerpt":"Hi there! First of all, thank you for visiting this website :) I'm Tiền. Here, I will write about things I am learning, learned, and will…","timeToRead":1,"description":null,"tags":null}]}},"pageContext":{"formatString":"DD.MM.YYYY"}},
     "staticQueryHashes": ["2744905544","3090400250","318001574"]}
