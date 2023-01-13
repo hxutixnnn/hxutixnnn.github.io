@@ -81,7 +81,7 @@ module.exports = {
         description: `Hi, my name is Tien. Here, I will write about things I am learning, learned, and will learn in the future.`,
         start_url: `/`,
         background_color: `#fff`,
-        theme_color: `#6B46C1`,
+        theme_color: `#2b6cb0`,
         display: `standalone`,
         icons: [
           {
