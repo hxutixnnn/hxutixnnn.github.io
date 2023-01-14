@@ -22,36 +22,27 @@ module.exports = {
       options: {
         navigation: [
           {
-            title: `Blog`,
-            slug: `/blog`,
-          },
-          {
-            title: `About`,
+            title: `about`,
             slug: `/about`,
           },
           {
-            title: `Uses`,
+            title: `blog`,
+            slug: `/blog`,
+          },
+          {
+            title: `T.I.L`,
+            slug: `/til`,
+          },
+          {
+            title: `uses`,
             slug: `/uses`,
           },
-        ],
-        externalLinks: [
           {
-            name: `Twitter`,
-            url: `https://twitter.com/hxutixnnn`,
-          },
-          {
-            name: `Facebook`,
-            url: `https://facebook.com/hxutixnnn`,
-          },
-          {
-            name: `Linkedin`,
-            url: `https://www.linkedin.com/in/tiennguyenhuu/`,
-          },
-          {
-            name: `Resume`,
-            url: `https://tiennguyenhuu.notion.site/`,
+            title: `resources`,
+            slug: `/resources`,
           },
         ],
+        externalLinks: [],
       },
     },
     {

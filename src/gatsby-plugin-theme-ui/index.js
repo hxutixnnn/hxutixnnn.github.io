@@ -9,6 +9,11 @@ const theme = merge(originalTheme, {
   },
   colors: {
     primary: tailwind.colors.blue[7],
+    modes: {
+      dark: {
+        primary: tailwind.colors.blue[5],
+      },
+    },
   },
 });
 
