@@ -1,0 +1,63 @@
+---
+title: Use pnpm with Gatsby
+date: 2023-03-22
+tags:
+  - pnpm
+  - gatsby
+---
+
+> I recently migrated my Gatsby personal blog from `yarn` to `pnpm`. So in this post I will go over quickly what needs to be done to get it working.
+
+# Replace yarn/npm by pnpm
+
+1. Remove `node_modules`
+
+I usually use this command for quickly (and safely) delete `node_modules` folders:
+
+```bash noLineNumbers
+npx npkill
+```
+
+2. Add a `.npmrc` file (or update if you already have one):
+
+```:title=.npmrc
+auto-install-peers=true
+strict-peer-dependencies=false
+```
+
+2. Generate `pnpm-lock.yaml` file
+
+- If you currently have `yarn.lock` or `package-lock.json` file, run:
+
+```bash noLineNumbers
+pnpm import
+```
+
+- If you don't, just run:
+
+```bash noLineNumbers
+pnpm install
+```
+
+# Install gatsby-plugin-pnpm
+
+Since webpack does not understand how to resolve packages under `node_modules` with `pnpm`'s architecture yet, you need to install [`gatsby-plugin-pnpm`](https://www.gatsbyjs.com/plugins/gatsby-plugin-pnpm/) then configure it:
+
+```bash noLineNumbers
+pnpm add -D gatsby-plugin-pnpm
+```
+
+Include the plugin in your `gatsby-config.js`:
+
+```js:title=gatsby-config.js {3}
+module.exports = {
+  plugins: [
+    `gatsby-plugin-pnpm`,
+    ...
+  ]
+}
+```
+
+# Thank you for reading
+
+You can checkout [my commit](https://github.com/hxutixnnn/hxutixnnn.github.io/commit/44178cab88ba707a295ad65007871e35e0e8d5e9) for detail changes.
