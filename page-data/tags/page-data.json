@@ -1,5 +1,5 @@
 {
-    "componentChunkName": "component---node-modules-lekoarts-gatsby-theme-minimal-blog-core-src-templates-tags-query-tsx",
+    "componentChunkName": "component---node-modules-pnpm-lekoarts-gatsby-theme-minimal-blog-core-3-1-3-ikb-2-ysladfllgenrpfosdsac-6-u-node-modules-lekoarts-gatsby-theme-minimal-blog-core-src-templates-tags-query-tsx",
     "path": "/tags",
-    "result": {"data":{"allPost":{"group":[]}},"pageContext":{}},
+    "result": {"data":{"allPost":{"group":[{"fieldValue":"gatsby","totalCount":1},{"fieldValue":"pnpm","totalCount":1}]}},"pageContext":{}},
     "staticQueryHashes": ["2744905544","3090400250","318001574"]}
