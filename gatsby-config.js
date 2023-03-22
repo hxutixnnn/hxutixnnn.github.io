@@ -16,6 +16,7 @@ module.exports = {
     author: `@hxutixnnn`,
   },
   plugins: [
+    "gatsby-plugin-pnpm",
     {
       resolve: `@lekoarts/gatsby-theme-minimal-blog`,
       // See the theme's README for all available options
