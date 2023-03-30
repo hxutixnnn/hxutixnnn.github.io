@@ -31,16 +31,12 @@ module.exports = {
             slug: `/blog`,
           },
           {
-            title: `T.I.L`,
-            slug: `/til`,
-          },
-          {
             title: `uses`,
             slug: `/uses`,
           },
           {
-            title: `resources`,
-            slug: `/resources`,
+            title: `resume`,
+            slug: `/resume.pdf`,
           },
         ],
         externalLinks: [],
