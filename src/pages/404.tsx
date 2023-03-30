@@ -1,10 +1,11 @@
 import * as React from "react"
+import type { PageProps } from "gatsby"
 import Layout from "@lekoarts/gatsby-theme-minimal-blog/src/components/layout"
 
-const NotFound = () => (
+const NotFound = (_props: PageProps) => (
   <Layout>
     <h1>404 - Page Not Found</h1>
-    <p>Unfortunately I couldn't find what you were looking for :(</p>
+    <p>Unfortunately we couldn't find what you were looking for :(</p>
   </Layout>
 )
 
