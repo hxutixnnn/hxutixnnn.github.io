@@ -1,0 +1,107 @@
+---
+title: How to fix Expo EAS build fastlane bitcode error
+date: 2023-04-20
+tags:
+  - EAS Build
+  - Expo
+  - React Native
+  - iOS
+---
+
+## Error messages
+
+Here are some of the error messages that I got:
+
+```noLineNumbers
+'PDFNet' does not contain bitcode. You must rebuild it with bitcode enabled (Xcode setting ENABLE_BITCODE), obtain an updated library from the vendor, or disable bitcode for this target
+```
+
+## Context
+
+I'm currently working on a project using Expo, EAS build, React Native PDF and then the error appear from nowhere.
+
+I have gone through all the pages I found relative on Google, asked Bing Chat with no idea what issue I'm facing.
+
+## Solution
+
+### 1. Update build image of EAS to newer version
+
+> The `latest` iOS server image at the time I wrote this was `macos-monterey-12.6-xcode-14.2`.
+
+Update `build.production.ios.image` from `eas.json` file with the following changes:
+
+```diff:title=eas.json
+{
+  ...
+  "build": {
+    ...
+    "production": {
+	  ...
+      "ios": {
+-       "image": "macos-monterey-12.4-xcode-13.4",
++       "image": "latest",
+		...
+      }
+    }
+  },
+  ...
+}
+```
+
+Then, you may facing another issue
+
+```noLineNumbers
+Build failed: Starting from Xcode 14, resource bundles are signed by default, which requires setting the development team for each resource bundle target
+```
+
+### 2. Turning off code signed by default
+
+Update `ios/Podfile` with the following changes:
+
+```diff:title=ios/Podfile
+
+  post_install do |installer|
+    react_native_post_install(installer)
++   # __apply_Xcode_12_5_M1_post_install_workaround(installer)
+
++   # This is necessary for Xcode 14, because it signs resource bundles by default
++   # when building for devices.
++   installer.target_installation_results.pod_target_installation_results
++     .each do |pod_name, target_installation_result|
++     target_installation_result.resource_bundle_targets.each do |resource_bundle_target|
++       resource_bundle_target.build_configurations.each do |config|
++         config.build_settings['CODE_SIGNING_ALLOWED'] = 'NO'
++       end
++     end
++   end
+
+    # Workaround `Cycle inside FBReactNativeSpec` error for react-native 0.64
+    # Reference: https://github.com/software-mansion/react-native-screens/issues/842#issuecomment-812543933
+    installer.pods_project.targets.each do |target|
+      if (target.name&.eql?('FBReactNativeSpec'))
+        target.build_phases.each do |build_phase|
+          if (build_phase.respond_to?(:name) && build_phase.name.eql?('[CP-User] Generate Specs'))
+            target.build_phases.move(build_phase, 0)
+          end
+        end
+      end
+    end
+  end
+...
+```
+
+### 3. Install Podfile
+
+Run the following command in the root folder:
+
+```shell
+npx pod-install
+```
+
+### 4. Try build the project again
+
+Finally, I try to run the build command and it's working now:
+
+```shell
+npx eas build -p ios
+```
