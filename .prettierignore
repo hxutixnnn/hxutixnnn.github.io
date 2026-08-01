@@ -1,0 +1,12 @@
+.astro
+coverage
+dist
+node_modules
+playwright-report
+test-results
+pnpm-lock.yaml
+public/*.png
+public/*.ico
+public/*.pdf
+content/**/*.png
+content/**/*.jpeg

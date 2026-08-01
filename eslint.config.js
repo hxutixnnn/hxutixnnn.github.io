@@ -1,0 +1,53 @@
+import eslint from "@eslint/js";
+import jsxA11y from "eslint-plugin-jsx-a11y";
+import reactHooks from "eslint-plugin-react-hooks";
+import tseslint from "typescript-eslint";
+
+const typescriptFiles = ["**/*.{ts,tsx}"];
+
+export default tseslint.config(
+  {
+    ignores: [
+      ".astro/**",
+      ".research-tmp/**",
+      "**/*.astro",
+      "content/**",
+      "coverage/**",
+      "dist/**",
+      "node_modules/**",
+      "playwright-report/**",
+      "test-results/**",
+    ],
+  },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked.map((config) => ({ ...config, files: typescriptFiles })),
+  {
+    files: typescriptFiles,
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    plugins: {
+      "jsx-a11y": jsxA11y,
+      "react-hooks": reactHooks,
+    },
+    rules: {
+      ...jsxA11y.flatConfigs.recommended.rules,
+      ...reactHooks.configs.flat.recommended.rules,
+      "@typescript-eslint/consistent-type-imports": "error",
+      "@typescript-eslint/no-misused-promises": ["error", { checksVoidReturn: { attributes: false } }],
+    },
+  },
+  {
+    files: ["**/*.{js,mjs}"],
+    languageOptions: {
+      globals: {
+        console: "readonly",
+        process: "readonly",
+        URL: "readonly",
+      },
+    },
+  },
+);

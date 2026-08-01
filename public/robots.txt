@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hxutixnnn.github.io/sitemap/sitemap-index.xml

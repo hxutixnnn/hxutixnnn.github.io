@@ -1,3 +1,0 @@
-User-agent: *
-
-sitemap: https://nguyenhuutien.com/sitemap/sitemap-index.xml

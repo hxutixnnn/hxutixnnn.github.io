@@ -1,0 +1,75 @@
+---
+import BaseLayout from "./BaseLayout.astro";
+
+interface Props {
+  title: string;
+  description?: string | undefined;
+  date?: Date | undefined;
+  tags?: readonly string[] | undefined;
+  osRoute?: string | undefined;
+}
+
+const { title, description, date, tags = [], osRoute } = Astro.props;
+const fullTitle = `${title} — Nguyễn Hữu Tiền`;
+---
+
+<BaseLayout title={fullTitle} description={description} pageClass="document-page">
+  <a class="skip-link" href="#content">Skip to content</a>
+  <header class="site-header glass-surface">
+    <a class="site-brand" href="/" aria-label="Tien OS home"
+      ><span aria-hidden="true">T</span><strong>Tien OS</strong></a
+    >
+    <nav aria-label="Primary navigation">
+      <a href="/about/">About</a>
+      <a href="/works/">Works</a>
+      <a href="/blog/">Blog</a>
+      <a href="/uses/">Uses</a>
+      <a href="/resume.pdf">Resume</a>
+    </nav>
+  </header>
+  <main id="content" class="document-wrap">
+    <article class="prose">
+      <header class="document-heading">
+        <a href="/" class="eyebrow">← Tien OS</a>
+        <h1>{title}</h1>
+        {
+          date && (
+            <time datetime={date.toISOString()}>
+              {date.toLocaleDateString("en", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+                timeZone: "UTC",
+              })}
+            </time>
+          )
+        }
+        {
+          tags.length > 0 && (
+            <ul class="tag-row" aria-label="Tags">
+              {tags.map((tag) => (
+                <li>
+                  <a href={`/tags/${tag.toLowerCase().replace(/[^a-z0-9]+/g, "-")}/`}>{tag}</a>
+                </li>
+              ))}
+            </ul>
+          )
+        }
+        {
+          osRoute && (
+            <a class="open-in-os" href={osRoute}>
+              Open this section in Tien OS <span aria-hidden="true">↗</span>
+            </a>
+          )
+        }
+      </header>
+      <slot />
+    </article>
+  </main>
+  <footer class="site-footer">
+    <p>Built by Nguyễn Hữu Tiền. Tien OS is independent and is not affiliated with Apple Inc.</p>
+    <nav aria-label="Secondary navigation">
+      <a href="/resources/">Resources</a><a href="/til/">TIL</a><a href="/rss.xml">RSS</a>
+    </nav>
+  </footer>
+</BaseLayout>

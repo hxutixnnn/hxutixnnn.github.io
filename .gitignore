@@ -62,7 +62,12 @@ typings/
 
 .cache
 **/.cache
-public
+.astro
+dist
+.lighthouseci
+playwright-report
+test-results
+.research-tmp
 
 .idea
 .vscode

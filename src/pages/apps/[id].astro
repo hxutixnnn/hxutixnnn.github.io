@@ -1,0 +1,26 @@
+---
+import { appCatalogue } from "@/apps/catalog";
+import type { AppDescriptor, CoreAppId } from "@/apps/contract";
+import StaticAppDetail from "@/components/StaticAppDetail.astro";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PortfolioShell from "@/os/shell/PortfolioShell";
+
+export function getStaticPaths() {
+  return appCatalogue.map((app) => ({ params: { id: app.id }, props: { app } }));
+}
+
+interface Props {
+  app: AppDescriptor;
+}
+const { app } = Astro.props;
+const core = app.target?.kind === "core";
+---
+
+<BaseLayout
+  title={`${app.name} — Tien OS`}
+  description={app.summary}
+  pageClass={core ? "shell-page" : "app-detail-page"}
+>
+  <StaticAppDetail app={app} hideWhenHydrated={core} />
+  {core && <PortfolioShell initialAppId={app.id as CoreAppId} client:only="react" />}
+</BaseLayout>
