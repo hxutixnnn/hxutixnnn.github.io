@@ -1,0 +1,65 @@
+---
+import type { AppDescriptor } from "@/apps/contract";
+
+interface Props {
+  app: AppDescriptor;
+  hideWhenHydrated?: boolean;
+}
+const { app, hideWhenHydrated = false } = Astro.props;
+const external = app.target?.kind === "external" ? app.target : null;
+---
+
+<div class:list={["app-detail-document", hideWhenHydrated && "static-fallback"]}>
+  <a class="skip-link" href="#app-detail">Skip to app details</a>
+  <header class="fallback-header glass-surface">
+    <a class="site-brand" href="/"><span aria-hidden="true">T</span><strong>Tien OS</strong></a>
+    <nav aria-label="Portfolio navigation">
+      <a href="/about/">About</a><a href="/works/">Works</a><a href="/blog/">Blog</a>
+    </nav>
+  </header>
+  <main id="app-detail" class="app-detail-main">
+    <p class="eyebrow">APP / {app.status.toUpperCase()}</p>
+    <h1>{app.name}</h1>
+    <p class="app-detail-summary">{app.summary}</p>
+    <ul class="tag-row" aria-label="Technologies and topics">{app.tags.map((tag) => <li>{tag}</li>)}</ul>
+    <div class="app-detail-actions">
+      {
+        app.documentRoute && (
+          <a class="primary-link" href={app.documentRoute}>
+            Read the document view
+          </a>
+        )
+      }
+      {
+        external && (
+          <a class="primary-link" href={external.url} target="_blank" rel="noopener noreferrer">
+            Launch {app.name}
+            <span class="sr-only"> in a new tab</span>
+          </a>
+        )
+      }
+      {
+        app.source && (
+          <a href={app.source} target="_blank" rel="noopener noreferrer">
+            View source<span class="sr-only"> in a new tab</span>
+          </a>
+        )
+      }
+      <a href="/">Return to Tien OS</a>
+    </div>
+    {
+      external && (
+        <aside class="notice-card">
+          <>
+            <strong>External application</strong>
+            <p>
+              This project has its own deployment, privacy behavior, and availability. Tien OS never loads it
+              until you choose to leave this site.
+            </p>
+          </>
+        </aside>
+      )
+    }
+  </main>
+  <footer class="site-footer"><p>Tien OS is independent and is not affiliated with Apple Inc.</p></footer>
+</div>

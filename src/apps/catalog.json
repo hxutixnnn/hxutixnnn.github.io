@@ -1,0 +1,133 @@
+[
+  {
+    "schemaVersion": 1,
+    "id": "about",
+    "status": "active",
+    "name": "About",
+    "summary": "Meet Tien, find contact links, and read how this independent personal system was made.",
+    "route": "/apps/about/",
+    "documentRoute": "/about/",
+    "icon": "person",
+    "owner": "Nguyễn Hữu Tiền",
+    "tags": ["profile", "contact"],
+    "target": { "kind": "core", "loaderKey": "about" }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "projects",
+    "status": "active",
+    "name": "Projects",
+    "summary": "A curated index of image, karaoke, and local-business software projects.",
+    "route": "/apps/projects/",
+    "documentRoute": "/works/",
+    "icon": "projects",
+    "owner": "Nguyễn Hữu Tiền",
+    "tags": ["portfolio", "work"],
+    "target": { "kind": "core", "loaderKey": "projects" }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "blog",
+    "status": "active",
+    "name": "Blog",
+    "summary": "Engineering notes about React Native, build systems, tooling, and lessons learned.",
+    "route": "/apps/blog/",
+    "documentRoute": "/blog/",
+    "icon": "blog",
+    "owner": "Nguyễn Hữu Tiền",
+    "tags": ["writing", "engineering"],
+    "target": { "kind": "core", "loaderKey": "blog" }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "uses",
+    "status": "active",
+    "name": "Uses",
+    "summary": "The hardware and software in Tien's working environment.",
+    "route": "/apps/uses/",
+    "documentRoute": "/uses/",
+    "icon": "tools",
+    "owner": "Nguyễn Hữu Tiền",
+    "tags": ["hardware", "software"],
+    "target": { "kind": "core", "loaderKey": "uses" }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "resources",
+    "status": "active",
+    "name": "Resources",
+    "summary": "A small, maintained set of learning resources for web development.",
+    "route": "/apps/resources/",
+    "documentRoute": "/resources/",
+    "icon": "resources",
+    "owner": "Nguyễn Hữu Tiền",
+    "tags": ["learning", "reference"],
+    "target": { "kind": "core", "loaderKey": "resources" }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "til",
+    "status": "active",
+    "name": "Today I Learned",
+    "summary": "Short observations worth keeping, from debugging radio interference to new words.",
+    "route": "/apps/til/",
+    "documentRoute": "/til/",
+    "icon": "idea",
+    "owner": "Nguyễn Hữu Tiền",
+    "tags": ["notes", "learning"],
+    "target": { "kind": "core", "loaderKey": "til" }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "image-restoration",
+    "status": "active",
+    "name": "Image Restoration",
+    "summary": "A free online image-restoration service built with Next.js, Tailwind, and Hugging Face APIs.",
+    "route": "/apps/image-restoration/",
+    "icon": "image",
+    "owner": "Nguyễn Hữu Tiền",
+    "tags": ["nextjs", "machine-learning"],
+    "source": "https://github.com/hxutixnnn/khoiphucanh.com",
+    "target": {
+      "kind": "external",
+      "url": "https://khoiphucanh.com/?src=hxutixnnn.github.io",
+      "presentation": "new-tab",
+      "allowedOrigin": "https://khoiphucanh.com"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "karaoke-player",
+    "status": "active",
+    "name": "Karaoke Player",
+    "summary": "A web karaoke experiment using YouTube video sources and a focused playback interface.",
+    "route": "/apps/karaoke-player/",
+    "icon": "music",
+    "owner": "Nguyễn Hữu Tiền",
+    "tags": ["nextjs", "media"],
+    "source": "https://github.com/hxutixnnn/karatube",
+    "target": {
+      "kind": "external",
+      "url": "https://karatube.online/?src=hxutixnnn.github.io",
+      "presentation": "new-tab",
+      "allowedOrigin": "https://karatube.online"
+    }
+  },
+  {
+    "schemaVersion": 1,
+    "id": "car-rental",
+    "status": "active",
+    "name": "Car Rental Site",
+    "summary": "A local car-rental service site built with Next.js, Chakra UI, and a Notion-backed workflow.",
+    "route": "/apps/car-rental/",
+    "icon": "car",
+    "owner": "Nguyễn Hữu Tiền",
+    "tags": ["nextjs", "local-business"],
+    "target": {
+      "kind": "external",
+      "url": "https://daiphubinhan.com/?src=hxutixnnn.github.io",
+      "presentation": "new-tab",
+      "allowedOrigin": "https://daiphubinhan.com"
+    }
+  }
+]

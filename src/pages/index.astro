@@ -1,0 +1,10 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import StaticPortfolio from "@/components/StaticPortfolio.astro";
+import PortfolioShell from "@/os/shell/PortfolioShell";
+---
+
+<BaseLayout pageClass="shell-page">
+  <StaticPortfolio />
+  <PortfolioShell client:only="react" />
+</BaseLayout>

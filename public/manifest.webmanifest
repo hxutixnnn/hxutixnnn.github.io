@@ -1,0 +1,14 @@
+{
+  "name": "Tien OS — Nguyễn Hữu Tiền",
+  "short_name": "Tien OS",
+  "description": "A personal operating-system portfolio by Tien Nguyen.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#111738",
+  "theme_color": "#13193f",
+  "icons": [
+    { "src": "/android-chrome-192x192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/android-chrome-512x512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

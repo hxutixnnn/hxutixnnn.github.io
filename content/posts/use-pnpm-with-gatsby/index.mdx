@@ -20,7 +20,7 @@ npx npkill
 
 2. Add a `.npmrc` file (or update if you already have one):
 
-```:title=.npmrc
+```ini title=".npmrc"
 auto-install-peers=true
 strict-peer-dependencies=false
 ```
@@ -49,7 +49,7 @@ pnpm add -D gatsby-plugin-pnpm
 
 Include the plugin in your `gatsby-config.js`:
 
-```js:title=gatsby-config.js {3}
+```js {3} title="gatsby-config.js"
 module.exports = {
   plugins: [
     `gatsby-plugin-pnpm`,
