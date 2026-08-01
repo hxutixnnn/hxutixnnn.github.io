@@ -39,3 +39,5 @@ if (/^G-[A-Z0-9]+$/.test(measurementId) && !privacySignal) {
     analyticsWindow.gtag?.("event", detail.event, { app_id: detail.appId });
   });
 }
+
+export {};

@@ -28,6 +28,10 @@ pnpm test:lighthouse   # local static-output Lighthouse thresholds
 
 The initial shell budgets are 100 KiB gzip JavaScript, 30 KiB gzip CSS, and 250 KiB for the largest wallpaper/social image. `scripts/check-static-output.mjs` enforces those limits and rejects a `CNAME` in the Pages artifact.
 
+## Optional analytics
+
+Google Analytics is disabled unless `PUBLIC_GOOGLE_ANALYTICS_ID` contains a measurement ID matching `G-[A-Z0-9]+`. When configured, Tien OS waits for the first valid app open or close event before loading Google Tag Manager, so the initial shell makes no third-party request. Analytics remains disabled when Do Not Track or Global Privacy Control is enabled and on `/preview/` or `/do-not-track/` routes. The configuration anonymizes IP addresses, uses session-expiring cookies, and disables Google signals; interacting with an app can create requests to Google Analytics.
+
 ## Architecture
 
 - `content/` — preserved MDX pages/posts and editorial images

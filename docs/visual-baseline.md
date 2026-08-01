@@ -43,4 +43,4 @@ The visual material remains a self-authored approximation of the **principles**,
 
 This split is the smallest reuse-first baseline that survives the project gates: mature headless window mechanics are reused; identity, material, semantics, responsive policy, and state remain asset-clean and testable.
 
-The visual implementation must continue to pass the repository's bundle, no-third-party-request, provenance, responsive overflow, reduced-motion, contrast, and axe gates. If a true refractive lens is proposed later, benchmark it as an app-level enhancement rather than placing it in the shell critical path.
+The visual implementation must continue to pass the repository's bundle, no-third-party-requests-on-initial-shell-load, provenance, responsive overflow, reduced-motion, contrast, and axe gates. If a true refractive lens is proposed later, benchmark it as an app-level enhancement rather than placing it in the shell critical path.
