@@ -41,13 +41,22 @@ function initialState(initialAppId?: CoreAppId | null): DesktopState {
   return state;
 }
 
+function restoreSwitcherFocus(opener: HTMLElement | null) {
+  requestAnimationFrame(() => {
+    if (opener?.isConnected) opener.focus();
+    else document.querySelector<HTMLButtonElement>("[data-launcher-id]")?.focus();
+  });
+}
+
 export default function PortfolioShell({ initialAppId = null }: { initialAppId?: CoreAppId | null }) {
   const [state, dispatch] = useReducer(desktopReducer, undefined, () => initialState(initialAppId));
   const [announcement, setAnnouncement] = useState("Tien OS ready");
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const frameRefs = useRef(new Map<WindowId, HTMLElement>());
   const switcherOpenerRef = useRef<HTMLElement | null>(null);
+  const switcherOpenRef = useRef(switcherOpen);
   const stateRef = useRef(state);
+  switcherOpenRef.current = switcherOpen;
   stateRef.current = state;
   const mobile = state.viewportMode === "mobile";
   const orderedWindows = useMemo(() => selectWindowsByZ(state), [state]);
@@ -66,8 +75,14 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   useEffect(() => saveSession(state), [state]);
 
   useEffect(() => {
-    const onResize = () =>
-      dispatch({ type: "viewportChanged", mode: viewportMode(), viewport: viewportSize() });
+    const onResize = () => {
+      const mode = viewportMode();
+      if (mode === "desktop" && switcherOpenRef.current) {
+        setSwitcherOpen(false);
+        restoreSwitcherFocus(switcherOpenerRef.current);
+      }
+      dispatch({ type: "viewportChanged", mode, viewport: viewportSize() });
+    };
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
@@ -82,12 +97,17 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+      const key = event.key.toLowerCase();
+      if (switcherOpenRef.current && (key === "w" || key === "m")) {
+        event.preventDefault();
+        return;
+      }
       const focusedWindow = selectFocusedWindow(stateRef.current);
       if (!focusedWindow) return;
-      if (event.key.toLowerCase() === "w") {
+      if (key === "w") {
         event.preventDefault();
         closeWindow(focusedWindow);
-      } else if (event.key.toLowerCase() === "m") {
+      } else if (key === "m") {
         event.preventDefault();
         minimizeWindow(focusedWindow);
       }
@@ -159,11 +179,7 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
 
   function dismissSwitcher() {
     setSwitcherOpen(false);
-    requestAnimationFrame(() => {
-      const opener = switcherOpenerRef.current;
-      if (opener?.isConnected) opener.focus();
-      else document.querySelector<HTMLButtonElement>("[data-launcher-id]")?.focus();
-    });
+    restoreSwitcherFocus(switcherOpenerRef.current);
   }
 
   function switchTo(target: WindowState) {

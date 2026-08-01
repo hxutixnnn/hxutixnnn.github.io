@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import PortfolioShell from "@/os/shell/PortfolioShell";
@@ -83,4 +83,43 @@ it("keeps mobile switcher focus modal and restores its opener", async () => {
   const dialog = screen.getByRole("dialog", { name: "App switcher" });
   await user.click(within(dialog).getByRole("button", { name: "Close About" }));
   expect(within(dialog).getByRole("button", { name: "Close app switcher" })).toHaveFocus();
+});
+
+it("blocks shell shortcuts and restores focus when leaving mobile mode", async () => {
+  let mobile = true;
+  vi.spyOn(window, "matchMedia").mockImplementation(
+    (query) =>
+      ({
+        matches: mobile && query === "(max-width: 767px)",
+        media: query,
+        onchange: null,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        dispatchEvent: () => false,
+      }) as MediaQueryList,
+  );
+  vi.spyOn(window, "requestAnimationFrame").mockImplementation((callback) =>
+    window.setTimeout(() => callback(0), 0),
+  );
+  const user = userEvent.setup();
+  render(<PortfolioShell />);
+
+  await user.click(
+    within(screen.getByRole("main", { name: "Tien OS apps" })).getByRole("button", { name: "About" }),
+  );
+  await screen.findByRole("heading", { name: "Hi, I’m Tien." });
+  await user.click(screen.getByRole("button", { name: "Show running apps" }));
+  const done = screen.getByRole("button", { name: "Close app switcher" });
+
+  fireEvent.keyDown(window, { key: "w", ctrlKey: true });
+  fireEvent.keyDown(window, { key: "m", ctrlKey: true });
+  expect(document.querySelector('[data-app-id="about"]')).toBeVisible();
+  expect(done).toHaveFocus();
+
+  mobile = false;
+  fireEvent.resize(window);
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: "App switcher" })).not.toBeInTheDocument());
+  await waitFor(() => expect(screen.getByRole("button", { name: "Switch to About" })).toHaveFocus());
 });
