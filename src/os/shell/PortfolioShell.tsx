@@ -46,6 +46,7 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   const [announcement, setAnnouncement] = useState("Tien OS ready");
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const frameRefs = useRef(new Map<WindowId, HTMLElement>());
+  const switcherOpenerRef = useRef<HTMLElement | null>(null);
   const stateRef = useRef(state);
   stateRef.current = state;
   const mobile = state.viewportMode === "mobile";
@@ -117,8 +118,8 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     const existing = state.windows.find((window) => window.appId === appId);
     dispatch({ type: "open", appId, viewport: viewportSize() });
     updateRoute(appId, replaceRoute);
-    setAnnouncement(`${appById.get(appId)?.name} opened`);
-    track(appId, "app_open");
+    setAnnouncement(`${appById.get(appId)?.name} ${existing ? "focused" : "opened"}`);
+    if (!existing) track(appId, "app_open");
     const targetId: WindowId = existing?.id ?? `window-${state.nextWindowId}`;
     focusFrame(targetId);
   }
@@ -129,13 +130,13 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
       .sort((a, b) => b.z - a.z || b.id.localeCompare(a.id))[0];
   }
 
-  function closeWindow(target: WindowState) {
+  function closeWindow(target: WindowState, moveFocus = true) {
     const successor = successorAfter(target.id);
     dispatch({ type: "close", id: target.id });
     updateRoute(successor?.appId ?? null, true);
     setAnnouncement(`${appById.get(target.appId)?.name} closed`);
     track(target.appId, "app_close");
-    focusFrame(successor?.id ?? null, target.appId);
+    if (moveFocus) focusFrame(successor?.id ?? null, target.appId);
   }
 
   function minimizeWindow(target: WindowState) {
@@ -149,6 +150,20 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   function focusWindow(target: WindowState) {
     dispatch({ type: "focus", id: target.id });
     updateRoute(target.appId);
+  }
+
+  function showSwitcher() {
+    switcherOpenerRef.current = document.activeElement as HTMLElement | null;
+    setSwitcherOpen(true);
+  }
+
+  function dismissSwitcher() {
+    setSwitcherOpen(false);
+    requestAnimationFrame(() => {
+      const opener = switcherOpenerRef.current;
+      if (opener?.isConnected) opener.focus();
+      else document.querySelector<HTMLButtonElement>("[data-launcher-id]")?.focus();
+    });
   }
 
   function switchTo(target: WindowState) {
@@ -273,15 +288,15 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
         selected={state.selectedAppId}
         mobile={mobile}
         onOpen={openApp}
-        onShowSwitcher={() => setSwitcherOpen(true)}
+        onShowSwitcher={showSwitcher}
       />
 
       {mobile && switcherOpen && (
         <MobileSwitcher
           windows={orderedWindows}
           onSwitch={switchTo}
-          onCloseWindow={closeWindow}
-          onDismiss={() => setSwitcherOpen(false)}
+          onCloseWindow={(target) => closeWindow(target, false)}
+          onDismiss={dismissSwitcher}
         />
       )}
       <p className="sr-only" aria-live="polite" aria-atomic="true">

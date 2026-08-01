@@ -14,21 +14,28 @@ if (/^G-[A-Z0-9]+$/.test(measurementId) && !privacySignal) {
   const analyticsWindow = window as GtagWindow;
   analyticsWindow.dataLayer = analyticsWindow.dataLayer ?? [];
   analyticsWindow.gtag = (...args: unknown[]) => analyticsWindow.dataLayer?.push(args);
-  analyticsWindow.gtag("js", new Date());
-  analyticsWindow.gtag("config", measurementId, {
-    anonymize_ip: true,
-    cookie_expires: 0,
-    allow_google_signals: false,
-  });
+  let loaded = false;
 
-  const script = document.createElement("script");
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
-  document.head.append(script);
+  const loadAnalytics = () => {
+    if (loaded) return;
+    loaded = true;
+    analyticsWindow.gtag?.("js", new Date());
+    analyticsWindow.gtag?.("config", measurementId, {
+      anonymize_ip: true,
+      cookie_expires: 0,
+      allow_google_signals: false,
+    });
+
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
+    document.head.append(script);
+  };
 
   window.addEventListener("tien:analytics", (event) => {
     const detail = (event as CustomEvent<AnalyticsDetail>).detail;
     if (!detail?.event || !detail.appId || !/^[a-z0-9-]+$/.test(detail.appId)) return;
+    loadAnalytics();
     analyticsWindow.gtag?.("event", detail.event, { app_id: detail.appId });
   });
 }

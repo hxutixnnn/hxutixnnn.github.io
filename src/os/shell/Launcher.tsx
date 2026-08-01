@@ -6,13 +6,7 @@ export function DesktopIcons({ onOpen }: { onOpen: (id: CoreAppId) => void }) {
   return (
     <div className="desktop-icons" aria-label="Portfolio apps">
       {coreCatalogue.map((app) => (
-        <button
-          type="button"
-          className="desktop-icon"
-          key={app.id}
-          onClick={() => onOpen(app.id)}
-          onDoubleClick={() => onOpen(app.id)}
-        >
+        <button type="button" className="desktop-icon" key={app.id} onClick={() => onOpen(app.id)}>
           <AppIcon appId={app.id} />
           <span>{app.name}</span>
         </button>

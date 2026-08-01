@@ -79,7 +79,10 @@ export function MobileSwitcher({
                     type="button"
                     className="switcher-close"
                     aria-label={`Close ${app?.name}`}
-                    onClick={() => onCloseWindow(window)}
+                    onClick={() => {
+                      dismiss.current?.focus();
+                      onCloseWindow(window);
+                    }}
                   >
                     ×
                   </button>
