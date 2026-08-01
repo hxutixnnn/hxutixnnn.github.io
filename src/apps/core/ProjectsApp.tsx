@@ -1,4 +1,4 @@
-import { projects } from "@/content/portfolio";
+import { externalCatalogue } from "@/apps/catalog";
 import { AppIntro, DocumentLink, ExternalLink } from "./shared";
 
 export default function ProjectsApp() {
@@ -9,7 +9,7 @@ export default function ProjectsApp() {
         deterministic static site.
       </AppIntro>
       <div className="project-list">
-        {projects.map((project, index) => (
+        {externalCatalogue.map((project, index) => (
           <section className="project-card" key={project.id}>
             <span className="project-number" aria-hidden="true">
               {String(index + 1).padStart(2, "0")}
@@ -19,7 +19,7 @@ export default function ProjectsApp() {
               <p>{project.summary}</p>
               <div className="project-actions">
                 <a href={project.route}>Project details</a>
-                <ExternalLink href={project.url}>Launch project</ExternalLink>
+                <ExternalLink href={project.target.url}>Launch project</ExternalLink>
               </div>
             </div>
           </section>

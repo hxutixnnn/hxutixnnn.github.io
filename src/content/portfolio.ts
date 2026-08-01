@@ -7,30 +7,6 @@ export const socialLinks = [
   ["Email", "mailto:work@nguyenhuutien.com"],
 ] as const;
 
-export const projects = [
-  {
-    id: "image-restoration",
-    name: "Image Restoration",
-    summary: "A free image-restoration service built with Next.js, Tailwind, and Hugging Face APIs.",
-    route: "/apps/image-restoration/",
-    url: "https://khoiphucanh.com/?src=hxutixnnn.github.io",
-  },
-  {
-    id: "karaoke-player",
-    name: "Karaoke Player",
-    summary: "A focused web karaoke experiment built with Next.js and media APIs.",
-    route: "/apps/karaoke-player/",
-    url: "https://karatube.online/?src=hxutixnnn.github.io",
-  },
-  {
-    id: "car-rental",
-    name: "Car Rental Site",
-    summary: "A local car-rental site built with Next.js, Chakra UI, and a Notion-backed workflow.",
-    route: "/apps/car-rental/",
-    url: "https://daiphubinhan.com/?src=hxutixnnn.github.io",
-  },
-] as const;
-
 export const postSummaries = [
   {
     title: "Versioning The Right Way",
