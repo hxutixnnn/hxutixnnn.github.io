@@ -69,6 +69,41 @@ it("minimizes a focused mobile window after history hides its frame", async () =
   });
 });
 
+it("completes mobile minimize after switching dock apps", async () => {
+  vi.spyOn(window, "matchMedia").mockImplementation(
+    (query) =>
+      ({
+        matches: query === "(max-width: 767px)",
+        media: query,
+        onchange: null,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        dispatchEvent: () => false,
+      }) as MediaQueryList,
+  );
+  const user = userEvent.setup();
+  render(<PortfolioShell />);
+  await user.click(
+    within(screen.getByRole("main", { name: "Tien OS apps" })).getByRole("button", { name: "About" }),
+  );
+  await screen.findByRole("heading", { name: "Hi, I’m Tien." });
+
+  await user.click(screen.getByRole("button", { name: "Minimize About" }));
+  expect(document.querySelector('[data-app-id="about"]')).toHaveClass("is-minimizing");
+  await user.click(screen.getByRole("button", { name: "Open Projects" }));
+  await waitFor(() => expect(document.querySelector('[data-app-id="projects"]')).toBeInTheDocument());
+
+  await waitFor(() => {
+    const session = JSON.parse(window.localStorage.getItem(SESSION_KEY) ?? "null");
+    expect(session.windows.find((window: { appId: string }) => window.appId === "about")?.status).toBe(
+      "minimized",
+    );
+  });
+  expect(window.location.pathname).toBe("/apps/projects/");
+});
+
 it("hydrates a direct app route as selected", async () => {
   window.history.replaceState({}, "", "/apps/resources/");
   render(<PortfolioShell initialAppId="resources" />);

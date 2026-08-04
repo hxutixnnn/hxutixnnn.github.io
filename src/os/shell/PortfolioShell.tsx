@@ -14,7 +14,7 @@ import { Dock, MobileDockBar, MobileLauncher } from "./Launcher";
 import { MenuBar } from "./MenuBar";
 import { MobileSwitcher } from "./MobileSwitcher";
 import { Spotlight } from "./Spotlight";
-import { WindowFrame, type WindowFrameHandle } from "./WindowFrame";
+import { WindowFrame } from "./WindowFrame";
 
 const lazyApps = Object.fromEntries(
   Object.entries(appManifests).map(([id, manifest]) => [id, lazy(manifest.load)]),
@@ -55,8 +55,9 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [bounceToken, setBounceToken] = useState<string | null>(null);
+  const [minimizingWindowIds, setMinimizingWindowIds] = useState<ReadonlySet<WindowId>>(new Set());
   const frameRefs = useRef(new Map<WindowId, HTMLElement>());
-  const windowFrameRefs = useRef(new Map<WindowId, WindowFrameHandle>());
+  const minimizeTimers = useRef(new Map<WindowId, ReturnType<typeof globalThis.setTimeout>>());
   const switcherOpenerRef = useRef<HTMLElement | null>(null);
   const switcherOpenRef = useRef(switcherOpen);
   const spotlightOpenRef = useRef(spotlightOpen);
@@ -81,6 +82,13 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   }, []);
 
   useEffect(() => saveSession(state), [state]);
+
+  useEffect(
+    () => () => {
+      for (const timer of minimizeTimers.current.values()) globalThis.clearTimeout(timer);
+    },
+    [],
+  );
 
   useEffect(() => {
     const onResize = () => {
@@ -168,8 +176,8 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     focusFrame(targetId);
   }
 
-  function successorAfter(id: WindowId): WindowState | undefined {
-    return [...state.windows]
+  function successorAfter(id: WindowId, windows = state.windows): WindowState | undefined {
+    return [...windows]
       .filter((window) => window.id !== id && window.status !== "minimized")
       .sort((a, b) => b.z - a.z || b.id.localeCompare(a.id))[0];
   }
@@ -184,13 +192,34 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   }
 
   function requestMinimize(target: WindowState) {
-    const frame = windowFrameRefs.current.get(target.id);
-    if (frame) frame.minimize();
-    else minimizeWindow(target);
+    if (!frameRefs.current.has(target.id)) {
+      minimizeWindow(target);
+      return;
+    }
+    if (minimizeTimers.current.has(target.id)) return;
+    setMinimizingWindowIds((current) => new Set(current).add(target.id));
+    minimizeTimers.current.set(
+      target.id,
+      globalThis.setTimeout(() => completeMinimize(target.id), 300),
+    );
+  }
+
+  function completeMinimize(id: WindowId) {
+    const timer = minimizeTimers.current.get(id);
+    if (!timer) return;
+    globalThis.clearTimeout(timer);
+    minimizeTimers.current.delete(id);
+    setMinimizingWindowIds((current) => {
+      const next = new Set(current);
+      next.delete(id);
+      return next;
+    });
+    const target = stateRef.current.windows.find((window) => window.id === id);
+    if (target && target.status !== "minimized") minimizeWindow(target);
   }
 
   function minimizeWindow(target: WindowState) {
-    const successor = successorAfter(target.id);
+    const successor = successorAfter(target.id, stateRef.current.windows);
     dispatch({ type: "minimize", id: target.id });
     updateRoute(successor?.appId ?? null, true);
     setAnnouncement(`${appById.get(target.appId)?.name} minimized`);
@@ -349,15 +378,12 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
             return (
               <WindowFrame
                 key={windowState.id}
-                ref={(handle) => {
-                  if (handle) windowFrameRefs.current.set(windowState.id, handle);
-                  else windowFrameRefs.current.delete(windowState.id);
-                }}
                 window={windowState}
                 title={manifest.title}
                 viewport={viewportSize()}
                 mobile={mobile}
                 focused={state.focusedWindowId === windowState.id}
+                minimizing={minimizingWindowIds.has(windowState.id)}
                 resizable={manifest.resizable}
                 registerFrame={(element) => {
                   if (element) frameRefs.current.set(windowState.id, element);
@@ -365,7 +391,8 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
                 }}
                 onFocus={() => focusWindow(windowState)}
                 onClose={() => closeWindow(windowState)}
-                onMinimize={() => minimizeWindow(windowState)}
+                onRequestMinimize={() => requestMinimize(windowState)}
+                onMinimizeAnimationEnd={() => completeMinimize(windowState.id)}
                 onToggleMaximize={() =>
                   dispatch({ type: "toggleMaximize", id: windowState.id, viewport: viewportSize() })
                 }
