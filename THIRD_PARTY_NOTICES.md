@@ -20,4 +20,14 @@ Tien OS uses the pinned, asset-free [`react-rnd@10.5.3`](https://github.com/boku
 
 Its `tslib@2.6.2` runtime is 0BSD, Copyright © Microsoft Corporation.
 
+## Desktop interaction primitives
+
+Tien OS uses the pinned [`@base-ui/react@1.6.0`](https://github.com/base-ui/react/tree/1.6.0) package (Copyright © 2023 Base UI Contributors) for menu, popover, dialog, switch, slider, and tooltip primitives under the MIT License:
+
+> Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: the above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+Note: the earlier `@base-ui-components/react` package name was renamed by the upstream project to `@base-ui/react`; this repository depends on the current name.
+
 Asset-specific rights and provenance are authoritative in [`src/assets/provenance.yml`](src/assets/provenance.yml). No code or assets from the macOS/Tahoe visual replicas or liquid-glass candidates surveyed in [`docs/visual-baseline.md`](docs/visual-baseline.md) are included.

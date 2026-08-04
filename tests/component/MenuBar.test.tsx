@@ -9,11 +9,14 @@ function renderMenu() {
     <MenuBar
       activeTitle="Blog"
       hasActiveWindow
+      mobile={false}
       onOpenAbout={actions.about}
       onClose={actions.close}
       onMinimize={actions.minimize}
       onMaximize={actions.maximize}
       documentUrl="/blog/"
+      onOpenSpotlight={vi.fn()}
+      announce={vi.fn()}
     />,
   );
   return actions;

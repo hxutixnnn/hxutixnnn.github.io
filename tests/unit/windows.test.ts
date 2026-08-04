@@ -81,6 +81,37 @@ describe("desktopReducer", () => {
     expect(state.windows[0]!.rect).toEqual(beforeMobile);
   });
 
+  it("snaps a window to either half of the viewport and focuses it", () => {
+    let state = open();
+    const id = state.windows[0]!.id;
+    state = desktopReducer(state, { type: "snap", id, position: "left", viewport });
+    expect(state.windows[0]).toMatchObject({
+      rect: { x: 0, y: 0, width: 600, height: viewport.height },
+      status: "open",
+    });
+    expect(state.focusedWindowId).toBe(id);
+    state = desktopReducer(state, { type: "snap", id, position: "right", viewport });
+    expect(state.windows[0]).toMatchObject({
+      rect: { x: 600, y: 0, width: 600, height: viewport.height },
+      status: "open",
+    });
+  });
+
+  it("ignores snap requests for minimized or missing windows", () => {
+    let state = open();
+    const id = state.windows[0]!.id;
+    state = desktopReducer(state, { type: "minimize", id });
+    const minimized = desktopReducer(state, { type: "snap", id, position: "left", viewport });
+    expect(minimized.windows[0]?.rect).toEqual(state.windows[0]?.rect);
+    const missing = desktopReducer(state, {
+      type: "snap",
+      id: "window-999",
+      position: "right",
+      viewport,
+    });
+    expect(missing).toEqual(state);
+  });
+
   it("backs the selected app with route actions", () => {
     const state = desktopReducer(initialDesktopState, { type: "selectRoute", appId: "resources", viewport });
     expect(state.selectedAppId).toBe("resources");

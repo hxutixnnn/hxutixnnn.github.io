@@ -1,6 +1,7 @@
-import { useState, type PropsWithChildren } from "react";
+import { useEffect, useRef, useState, type PropsWithChildren } from "react";
 import { Rnd, type HandleStyles } from "react-rnd";
 import type { Rect, Viewport, WindowState } from "../domain/windows";
+import { CloseGlyph, FullscreenGlyph, MinimizeGlyph, RestoreGlyph } from "./StatusIcons";
 
 const resizeHandleClasses = {
   top: "resize-handle resize-handle--n",
@@ -17,13 +18,13 @@ const resizeHandleClasses = {
 // straddle each edge, which makes the exact center fall outside hit testing.
 const resizeHandleStyles: HandleStyles = {
   top: { top: 0 },
-  topRight: { top: 0, right: 0 },
+  topRight: { top: 0, right: 0, width: 12, height: 12 },
   right: { right: 0 },
-  bottomRight: { right: 0, bottom: 0 },
+  bottomRight: { right: 0, bottom: 0, width: 12, height: 12 },
   bottom: { bottom: 0 },
-  bottomLeft: { bottom: 0, left: 0 },
+  bottomLeft: { bottom: 0, left: 0, width: 12, height: 12 },
   left: { left: 0 },
-  topLeft: { top: 0, left: 0 },
+  topLeft: { top: 0, left: 0, width: 12, height: 12 },
 };
 
 export function WindowFrame({
@@ -40,6 +41,7 @@ export function WindowFrame({
   onToggleMaximize,
   onMove,
   onResize,
+  onSnap,
   children,
 }: PropsWithChildren<{
   window: WindowState;
@@ -55,18 +57,77 @@ export function WindowFrame({
   onToggleMaximize: () => void;
   onMove: (x: number, y: number) => void;
   onResize: (rect: Rect) => void;
+  onSnap: (position: "left" | "right") => void;
 }>) {
   const [draftRect, setDraftRect] = useState<Rect | null>(null);
+  const [minimizing, setMinimizing] = useState(false);
+  const [snapTransition, setSnapTransition] = useState(false);
+  const draggedRef = useRef(false);
+  const snapTimer = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
+  const minimizeTimer = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
   const titleId = `title-${window.id}`;
+
+  function handleMinimize() {
+    if (minimizing) return;
+    setMinimizing(true);
+    minimizeTimer.current = globalThis.setTimeout(() => {
+      minimizeTimer.current = null;
+      setMinimizing(false);
+      onMinimize();
+    }, 300);
+  }
+
+  function handleFrameAnimationEnd() {
+    if (!minimizing) return;
+    if (minimizeTimer.current) globalThis.clearTimeout(minimizeTimer.current);
+    minimizeTimer.current = null;
+    setMinimizing(false);
+    onMinimize();
+  }
+
+  function triggerSnapTransition() {
+    setSnapTransition(true);
+    if (snapTimer.current) globalThis.clearTimeout(snapTimer.current);
+    snapTimer.current = globalThis.setTimeout(() => setSnapTransition(false), 240);
+  }
+
+  useEffect(
+    () => () => {
+      if (minimizeTimer.current) globalThis.clearTimeout(minimizeTimer.current);
+      if (snapTimer.current) globalThis.clearTimeout(snapTimer.current);
+    },
+    [],
+  );
+
+  function commitDrag(x: number, y: number) {
+    const rect = draftRect ?? window.rect;
+    const left = x <= 4;
+    const right = x + rect.width >= viewport.width - 4;
+    const top = y <= 4 && !left && !right;
+    if (left || right) {
+      onSnap(left ? "left" : "right");
+      triggerSnapTransition();
+    } else if (top) {
+      onToggleMaximize();
+      triggerSnapTransition();
+    } else {
+      onMove(x, y);
+    }
+    setDraftRect(null);
+  }
+
   const frame = (
     <section
-      className={`window-frame glass-surface${focused ? " is-focused" : ""}${mobile ? " is-mobile" : ""}`}
+      className={`window-frame glass-surface${focused ? " is-focused" : ""}${mobile ? " is-mobile" : ""}${
+        minimizing ? " is-minimizing" : ""
+      }`}
       aria-labelledby={titleId}
       data-window-id={window.id}
       data-app-id={window.appId}
       tabIndex={-1}
       ref={registerFrame}
       onPointerDown={onFocus}
+      onAnimationEnd={handleFrameAnimationEnd}
     >
       <header className="window-titlebar" onDoubleClick={mobile ? undefined : onToggleMaximize}>
         <div className="window-controls" aria-label={`${title} window controls`}>
@@ -76,15 +137,15 @@ export function WindowFrame({
             aria-label={`Close ${title}`}
             className="window-control window-control--close"
           >
-            <span aria-hidden="true">×</span>
+            <CloseGlyph />
           </button>
           <button
             type="button"
-            onClick={onMinimize}
+            onClick={handleMinimize}
             aria-label={`Minimize ${title}`}
             className="window-control window-control--minimize"
           >
-            <span aria-hidden="true">−</span>
+            <MinimizeGlyph />
           </button>
           {!mobile && (
             <button
@@ -93,7 +154,7 @@ export function WindowFrame({
               aria-label={`${window.status === "maximized" ? "Restore" : "Maximize"} ${title}`}
               className="window-control window-control--maximize"
             >
-              <span aria-hidden="true">◇</span>
+              {window.status === "maximized" ? <RestoreGlyph /> : <FullscreenGlyph />}
             </button>
           )}
         </div>
@@ -118,7 +179,7 @@ export function WindowFrame({
   const position = maximized ? { x: 0, y: 0 } : activeRect;
   return (
     <Rnd
-      className="window-positioner"
+      className={`window-positioner${snapTransition ? " is-snapping" : ""}`}
       style={{ zIndex: window.z }}
       size={{ width: size.width, height: size.height }}
       position={{ x: position.x, y: position.y }}
@@ -134,7 +195,13 @@ export function WindowFrame({
       resizeHandleClasses={resizeHandleClasses}
       resizeHandleStyles={resizeHandleStyles}
       onDragStart={onFocus}
-      onDragStop={(_event, data) => onMove(data.x, data.y)}
+      onDrag={() => {
+        draggedRef.current = true;
+      }}
+      onDragStop={(_event, data) => {
+        if (draggedRef.current) commitDrag(data.x, data.y);
+        draggedRef.current = false;
+      }}
       onResizeStart={onFocus}
       onResize={(_event, _direction, element, _delta, nextPosition) =>
         setDraftRect({

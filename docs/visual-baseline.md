@@ -34,12 +34,12 @@ A focused reuse does save effort: Tien OS pins the MIT-licensed `react-rnd@10.5.
 The visual material remains a self-authored approximation of the **principles**, not Apple's pixels:
 
 - layered translucent surfaces using bounded `backdrop-filter` blur, tint, subtle borders, and a solid high-contrast fallback;
-- fluid blue/violet/cyan depth from CSS gradients rather than a copied Tahoe wallpaper;
-- generous rounded geometry and floating menu/launcher proportions without Apple logos or traffic-light cloning;
-- restrained transform/opacity motion, disabled for reduced motion and coarse/mobile interaction;
+- Golden Gate coastal dusk wallpaper drawn entirely in CSS and inline SVG (gradient sky, sun, haze, bridge cables/towers/deck, sea, shimmer, vignette) rather than a copied wallpaper image;
+- slim edge-to-edge menu bar, compact translucent Control Center, centered magnifying dock, and window traffic lights rendered as original inline SVG glyphs on plain colored circles;
+- restrained transform/opacity motion (dock bounce and magnification, window minimize, snap glide), disabled for reduced motion and coarse/mobile interaction;
 - system fonts and original inline SVG app glyphs;
 - mobile single-surface navigation rather than a shrunken desktop;
-- no refraction JavaScript, WebGL, remote imagery, candidate CSS, or candidate assets in the initial shell.
+- no refraction JavaScript, WebGL, remote imagery, candidate CSS, or candidate assets in the shell.
 
 This split is the smallest reuse-first baseline that survives the project gates: mature headless window mechanics are reused; identity, material, semantics, responsive policy, and state remain asset-clean and testable.
 

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { WindowFrame } from "@/os/shell/WindowFrame";
@@ -31,6 +31,7 @@ it("uses a labelled modeless region with named native controls", async () => {
       onToggleMaximize={() => undefined}
       onMove={() => undefined}
       onResize={() => undefined}
+      onSnap={() => undefined}
     >
       <p>About content</p>
     </WindowFrame>,
@@ -43,7 +44,8 @@ it("uses a labelled modeless region with named native controls", async () => {
   await user.click(screen.getByRole("button", { name: "Close About" }));
   await user.click(screen.getByRole("button", { name: "Minimize About" }));
   expect(close).toHaveBeenCalledOnce();
-  expect(minimize).toHaveBeenCalledOnce();
+  expect(minimize).not.toHaveBeenCalled();
+  await waitFor(() => expect(minimize).toHaveBeenCalledOnce());
 });
 
 it("removes maximize and resize affordances in mobile mode", () => {
@@ -62,6 +64,7 @@ it("removes maximize and resize affordances in mobile mode", () => {
       onToggleMaximize={() => undefined}
       onMove={() => undefined}
       onResize={() => undefined}
+      onSnap={() => undefined}
     >
       <p>About content</p>
     </WindowFrame>,

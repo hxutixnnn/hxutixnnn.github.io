@@ -108,3 +108,80 @@ export function saveSession(state: DesktopState): void {
     // Storage is optional; private modes and disabled storage must not break navigation.
   }
 }
+
+export type OsSettings = {
+  brightness: number;
+  volume: number;
+  wifi: boolean;
+  bluetooth: boolean;
+  airdrop: boolean;
+  focus: boolean;
+  appearance: "dark" | "light";
+};
+
+export const SETTINGS_KEY = "tien-os:settings";
+export const SETTINGS_VERSION = 1;
+
+export const defaultOsSettings: OsSettings = {
+  brightness: 1,
+  volume: 0.6,
+  wifi: true,
+  bluetooth: false,
+  airdrop: true,
+  focus: false,
+  appearance: "dark",
+};
+
+function isOsSettings(value: unknown): value is OsSettings {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.brightness === "number" &&
+    Number.isFinite(value.brightness) &&
+    typeof value.volume === "number" &&
+    Number.isFinite(value.volume) &&
+    typeof value.wifi === "boolean" &&
+    typeof value.bluetooth === "boolean" &&
+    typeof value.airdrop === "boolean" &&
+    typeof value.focus === "boolean" &&
+    (value.appearance === "dark" || value.appearance === "light")
+  );
+}
+
+function clampLevel(level: number): number {
+  return Math.min(1, Math.max(0, level));
+}
+
+export function hydrateSettings(raw: string | null): OsSettings {
+  if (!raw) return defaultOsSettings;
+  try {
+    const payload: unknown = JSON.parse(raw);
+    if (!isOsSettings(payload)) return defaultOsSettings;
+    return {
+      brightness: clampLevel(payload.brightness),
+      volume: clampLevel(payload.volume),
+      wifi: payload.wifi,
+      bluetooth: payload.bluetooth,
+      airdrop: payload.airdrop,
+      focus: payload.focus,
+      appearance: payload.appearance,
+    };
+  } catch {
+    return defaultOsSettings;
+  }
+}
+
+export function loadSettings(): OsSettings {
+  try {
+    return hydrateSettings(window.localStorage.getItem(SETTINGS_KEY));
+  } catch {
+    return defaultOsSettings;
+  }
+}
+
+export function saveSettings(settings: OsSettings): void {
+  try {
+    window.localStorage.setItem(SETTINGS_KEY, JSON.stringify({ version: SETTINGS_VERSION, ...settings }));
+  } catch {
+    // Storage is optional; private modes and disabled storage must not break navigation.
+  }
+}

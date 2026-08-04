@@ -10,9 +10,10 @@ import {
 } from "../domain/windows";
 import type { DesktopState, Viewport, WindowId, WindowState } from "../domain/windows";
 import { loadSession, saveSession } from "../store/persistence";
-import { DesktopIcons, Launcher, MobileLauncher } from "./Launcher";
+import { Dock, MobileDockBar, MobileLauncher } from "./Launcher";
 import { MenuBar } from "./MenuBar";
 import { MobileSwitcher } from "./MobileSwitcher";
+import { Spotlight } from "./Spotlight";
 import { WindowFrame } from "./WindowFrame";
 
 const lazyApps = Object.fromEntries(
@@ -52,16 +53,22 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   const [state, dispatch] = useReducer(desktopReducer, undefined, () => initialState(initialAppId));
   const [announcement, setAnnouncement] = useState("Tien OS ready");
   const [switcherOpen, setSwitcherOpen] = useState(false);
+  const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const [bounceToken, setBounceToken] = useState<string | null>(null);
   const frameRefs = useRef(new Map<WindowId, HTMLElement>());
   const switcherOpenerRef = useRef<HTMLElement | null>(null);
   const switcherOpenRef = useRef(switcherOpen);
+  const spotlightOpenRef = useRef(spotlightOpen);
+  const bounceTimer = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
   const stateRef = useRef(state);
   switcherOpenRef.current = switcherOpen;
+  spotlightOpenRef.current = spotlightOpen;
   stateRef.current = state;
   const mobile = state.viewportMode === "mobile";
   const orderedWindows = useMemo(() => selectWindowsByZ(state), [state]);
   const focused = selectFocusedWindow(state);
   const running = selectRunningAppIds(state);
+  const minimizedWindows = orderedWindows.filter((window) => window.status === "minimized");
   const activeTitle = focused ? (appById.get(focused.appId)?.name ?? "Tien OS") : "Tien OS";
   const activeDocument = focused
     ? (appById.get(focused.appId)?.documentRoute ?? `/apps/${focused.appId}/`)
@@ -98,6 +105,12 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
       const key = event.key.toLowerCase();
+      if (key === " ") {
+        event.preventDefault();
+        setSpotlightOpen((open) => !open);
+        return;
+      }
+      if (spotlightOpenRef.current) return;
       if (switcherOpenRef.current && (key === "w" || key === "m")) {
         event.preventDefault();
         return;
@@ -134,12 +147,22 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     });
   }
 
+  function bounceApp(appId: CoreAppId) {
+    const token = `${appId}:${Date.now()}`;
+    setBounceToken(token);
+    if (bounceTimer.current) globalThis.clearTimeout(bounceTimer.current);
+    bounceTimer.current = globalThis.setTimeout(() => setBounceToken(null), 1200);
+  }
+
   function openApp(appId: CoreAppId, replaceRoute = false) {
     const existing = state.windows.find((window) => window.appId === appId);
     dispatch({ type: "open", appId, viewport: viewportSize() });
     updateRoute(appId, replaceRoute);
     setAnnouncement(`${appById.get(appId)?.name} ${existing ? "focused" : "opened"}`);
-    if (!existing) track(appId, "app_open");
+    if (!existing) {
+      track(appId, "app_open");
+      bounceApp(appId);
+    }
     const targetId: WindowId = existing?.id ?? `window-${state.nextWindowId}`;
     focusFrame(targetId);
   }
@@ -165,6 +188,15 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     updateRoute(successor?.appId ?? null, true);
     setAnnouncement(`${appById.get(target.appId)?.name} minimized`);
     focusFrame(successor?.id ?? null, target.appId);
+  }
+
+  function restoreMinimized(id: WindowId) {
+    const target = state.windows.find((window) => window.id === id);
+    if (!target) return;
+    dispatch({ type: "restore", id });
+    updateRoute(target.appId);
+    setAnnouncement(`${appById.get(target.appId)?.name} restored`);
+    focusFrame(id);
   }
 
   function focusWindow(target: WindowState) {
@@ -201,6 +233,28 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     }
   }
 
+  function trashFocused() {
+    if (focused) {
+      closeWindow(focused);
+      setAnnouncement(`${appById.get(focused.appId)?.name} moved to Trash`);
+    } else {
+      setAnnouncement("Trash is empty");
+    }
+  }
+
+  function openSpotlight() {
+    setSpotlightOpen(true);
+  }
+
+  function closeSpotlight() {
+    setSpotlightOpen(false);
+    requestAnimationFrame(() => {
+      if (document.activeElement === document.body) {
+        document.querySelector<HTMLButtonElement>("[data-spotlight-opener]")?.focus();
+      }
+    });
+  }
+
   const visibleWindows = mobile
     ? orderedWindows
         .filter((window) => window.appId === state.selectedAppId && window.status !== "minimized")
@@ -212,40 +266,75 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
       <a className="skip-link" href="#tien-os-main">
         Skip desktop and view portfolio content
       </a>
+      <div className="os-scene" aria-hidden="true">
+        <span className="os-scene__sky" />
+        <span className="os-scene__sun" />
+        <span className="os-scene__haze os-scene__haze--far" />
+        <svg
+          className="os-scene__bridge"
+          viewBox="0 0 1440 280"
+          preserveAspectRatio="xMidYMid slice"
+          focusable="false"
+        >
+          <path
+            className="os-scene__hill"
+            d="M0 118 Q 180 96 360 108 T 720 112 T 1080 106 T 1440 118 V 150 H 0 Z"
+          />
+          {(() => {
+            const cables: React.ReactNode[] = [];
+            const suspenders: React.ReactNode[] = [];
+            const deckY = 150;
+            const cableY = (x: number) => 52 + 64 * ((x - 720) / 357) ** 2;
+            for (let x = 384; x <= 690; x += 24) {
+              const y = cableY(x);
+              suspenders.push(<line key={`sl-${x}`} x1={x} y1={y} x2={x} y2={deckY} />);
+            }
+            for (let x = 750; x <= 1056; x += 24) {
+              const y = cableY(x);
+              suspenders.push(<line key={`sr-${x}`} x1={x} y1={y} x2={x} y2={deckY} />);
+            }
+            cables.push(<path key="cable-main" d="M 363 52 Q 720 116 1077 52" />);
+            cables.push(<path key="cable-left" d="M 40 150 Q 200 104 363 52" />);
+            cables.push(<path key="cable-right" d="M 1400 150 Q 1240 104 1077 52" />);
+            return (
+              <g className="os-scene__bridge-line">
+                {cables}
+                {suspenders}
+              </g>
+            );
+          })()}
+          <g className="os-scene__bridge-tower">
+            <path d="M 349 52 v 98 h 28 v -98 z" />
+            <path d="M 1063 52 v 98 h 28 v -98 z" />
+            <path d="M 342 52 h 140 v 10 h -140 z" />
+            <path d="M 1056 52 h 140 v 10 h -140 z" />
+          </g>
+          <path className="os-scene__bridge-deck" d="M 30 150 H 1410" />
+          <g className="os-scene__bridge-tower" opacity="0.55">
+            <path d="M 331 40 v 110 h 14 v -110 z" />
+            <path d="M 1095 40 v 110 h 14 v -110 z" />
+          </g>
+        </svg>
+        <span className="os-scene__haze os-scene__haze--near" />
+        <span className="os-scene__sea" />
+        <span className="os-scene__shimmer" />
+        <span className="os-scene__vignette" />
+      </div>
+
       <MenuBar
         activeTitle={activeTitle}
         hasActiveWindow={Boolean(focused)}
+        mobile={mobile}
         onOpenAbout={() => openApp("about")}
         onClose={() => actOnFocused("close")}
         onMinimize={() => actOnFocused("minimize")}
         onMaximize={() => actOnFocused("maximize")}
         documentUrl={activeDocument}
+        onOpenSpotlight={openSpotlight}
+        announce={setAnnouncement}
       />
 
       <div className="os-main" id="tien-os-main">
-        {!mobile && (
-          <>
-            <DesktopIcons onOpen={openApp} />
-            {state.windows.length === 0 && (
-              <section className="desktop-welcome glass-surface" aria-labelledby="welcome-title">
-                <span>TIEN / PERSONAL SYSTEM</span>
-                <h1 id="welcome-title">Ideas, work, and notes in one place.</h1>
-                <p>
-                  Open an app to explore, or choose the document view for a conventional reading experience.
-                </p>
-                <div>
-                  <button type="button" onClick={() => openApp("about")}>
-                    Start with About
-                  </button>
-                  <a href="/blog/">Read the blog</a>
-                </div>
-              </section>
-            )}
-          </>
-        )}
-
-        {mobile && visibleWindows.length === 0 && <MobileLauncher onOpen={openApp} />}
-
         <main className="window-layer" aria-label="Open Tien OS windows">
           {visibleWindows.map((windowState) => {
             const manifest = appManifests[windowState.appId];
@@ -268,6 +357,9 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
                 onMinimize={() => minimizeWindow(windowState)}
                 onToggleMaximize={() =>
                   dispatch({ type: "toggleMaximize", id: windowState.id, viewport: viewportSize() })
+                }
+                onSnap={(position) =>
+                  dispatch({ type: "snap", id: windowState.id, position, viewport: viewportSize() })
                 }
                 onMove={(x, y) =>
                   dispatch({ type: "move", id: windowState.id, x, y, viewport: viewportSize() })
@@ -297,15 +389,27 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
             );
           })}
         </main>
+        {mobile && visibleWindows.length === 0 && <MobileLauncher onOpen={openApp} />}
       </div>
 
-      <Launcher
-        running={running}
-        selected={state.selectedAppId}
-        mobile={mobile}
-        onOpen={openApp}
-        onShowSwitcher={showSwitcher}
-      />
+      {mobile ? (
+        <MobileDockBar
+          running={running}
+          selected={state.selectedAppId}
+          onOpen={openApp}
+          onShowSwitcher={showSwitcher}
+        />
+      ) : (
+        <Dock
+          running={running}
+          selected={state.selectedAppId}
+          minimized={minimizedWindows}
+          bounceToken={bounceToken}
+          onOpen={openApp}
+          onRestoreMinimized={restoreMinimized}
+          onTrash={trashFocused}
+        />
+      )}
 
       {mobile && switcherOpen && (
         <MobileSwitcher
@@ -315,6 +419,15 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
           onDismiss={dismissSwitcher}
         />
       )}
+
+      <Spotlight
+        open={spotlightOpen}
+        onOpenChange={(open) => (open ? openSpotlight() : closeSpotlight())}
+        onOpenApp={openApp}
+        onNavigate={(url) => window.location.assign(url)}
+        onAnnounce={setAnnouncement}
+      />
+
       <p className="sr-only" aria-live="polite" aria-atomic="true">
         {announcement}
       </p>

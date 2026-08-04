@@ -70,7 +70,7 @@ test("keyboard menus and window shortcuts remain operable", async ({ page }) => 
   await page.keyboard.press("End");
   await expect(page.getByRole("menuitem", { name: "Open document view" })).toBeFocused();
   await page.keyboard.press("Escape");
-  await expect(appMenu).toBeFocused();
+  await expect(page.getByRole("menuitem", { name: "Blog", exact: true })).toBeFocused();
   await page.keyboard.press(process.platform === "darwin" ? "Meta+w" : "Control+w");
   await expect(page.locator('[data-app-id="blog"]')).toHaveCount(0);
 });
