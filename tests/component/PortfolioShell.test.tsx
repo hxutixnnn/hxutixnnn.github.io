@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import PortfolioShell from "@/os/shell/PortfolioShell";
+import { SESSION_KEY } from "@/os/store/persistence";
 
 beforeEach(() => window.history.replaceState({}, "", "/"));
 afterEach(() => vi.restoreAllMocks());
@@ -33,6 +34,39 @@ it("routes keyboard minimize through the window animation gate", async () => {
 
   await waitFor(() => expect(document.querySelector('[data-app-id="about"]')).not.toBeInTheDocument());
   expect(screen.getByText("About minimized")).toBeInTheDocument();
+});
+
+it("minimizes a focused mobile window after history hides its frame", async () => {
+  vi.spyOn(window, "matchMedia").mockImplementation(
+    (query) =>
+      ({
+        matches: query === "(max-width: 767px)",
+        media: query,
+        onchange: null,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        dispatchEvent: () => false,
+      }) as MediaQueryList,
+  );
+  const user = userEvent.setup();
+  render(<PortfolioShell />);
+  await user.click(
+    within(screen.getByRole("main", { name: "Tien OS apps" })).getByRole("button", { name: "About" }),
+  );
+  await screen.findByRole("heading", { name: "Hi, I’m Tien." });
+
+  window.history.back();
+  await waitFor(() => expect(window.location.pathname).toBe("/"));
+  await waitFor(() => expect(document.querySelector('[data-app-id="about"]')).not.toBeInTheDocument());
+
+  fireEvent.keyDown(window, { key: "m", ctrlKey: true });
+  expect(screen.getByText("About minimized")).toBeInTheDocument();
+  await waitFor(() => {
+    const session = JSON.parse(window.localStorage.getItem(SESSION_KEY) ?? "null");
+    expect(session.windows[0].status).toBe("minimized");
+  });
 });
 
 it("hydrates a direct app route as selected", async () => {

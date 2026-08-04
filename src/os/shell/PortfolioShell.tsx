@@ -184,7 +184,9 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   }
 
   function requestMinimize(target: WindowState) {
-    windowFrameRefs.current.get(target.id)?.minimize();
+    const frame = windowFrameRefs.current.get(target.id);
+    if (frame) frame.minimize();
+    else minimizeWindow(target);
   }
 
   function minimizeWindow(target: WindowState) {
