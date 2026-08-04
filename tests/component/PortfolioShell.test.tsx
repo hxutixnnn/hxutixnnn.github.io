@@ -21,6 +21,20 @@ it("opens a route-backed lazy app, announces lifecycle, and restores launcher fo
   expect(screen.getByText("About closed")).toBeInTheDocument();
 });
 
+it("routes keyboard minimize through the window animation gate", async () => {
+  const user = userEvent.setup();
+  render(<PortfolioShell />);
+  await user.click(screen.getByRole("button", { name: "Open About" }));
+  await screen.findByRole("heading", { name: "Hi, I’m Tien." });
+
+  fireEvent.keyDown(window, { key: "m", ctrlKey: true });
+  expect(document.querySelector('[data-app-id="about"]')).toHaveClass("is-minimizing");
+  expect(screen.queryByText("About minimized")).not.toBeInTheDocument();
+
+  await waitFor(() => expect(document.querySelector('[data-app-id="about"]')).not.toBeInTheDocument());
+  expect(screen.getByText("About minimized")).toBeInTheDocument();
+});
+
 it("hydrates a direct app route as selected", async () => {
   window.history.replaceState({}, "", "/apps/resources/");
   render(<PortfolioShell initialAppId="resources" />);

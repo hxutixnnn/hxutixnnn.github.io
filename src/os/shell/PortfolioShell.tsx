@@ -14,7 +14,7 @@ import { Dock, MobileDockBar, MobileLauncher } from "./Launcher";
 import { MenuBar } from "./MenuBar";
 import { MobileSwitcher } from "./MobileSwitcher";
 import { Spotlight } from "./Spotlight";
-import { WindowFrame } from "./WindowFrame";
+import { WindowFrame, type WindowFrameHandle } from "./WindowFrame";
 
 const lazyApps = Object.fromEntries(
   Object.entries(appManifests).map(([id, manifest]) => [id, lazy(manifest.load)]),
@@ -56,6 +56,7 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const [bounceToken, setBounceToken] = useState<string | null>(null);
   const frameRefs = useRef(new Map<WindowId, HTMLElement>());
+  const windowFrameRefs = useRef(new Map<WindowId, WindowFrameHandle>());
   const switcherOpenerRef = useRef<HTMLElement | null>(null);
   const switcherOpenRef = useRef(switcherOpen);
   const spotlightOpenRef = useRef(spotlightOpen);
@@ -122,7 +123,7 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
         closeWindow(focusedWindow);
       } else if (key === "m") {
         event.preventDefault();
-        minimizeWindow(focusedWindow);
+        requestMinimize(focusedWindow);
       }
     };
     window.addEventListener("keydown", onKeyDown);
@@ -182,6 +183,10 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     if (moveFocus) focusFrame(successor?.id ?? null, target.appId);
   }
 
+  function requestMinimize(target: WindowState) {
+    windowFrameRefs.current.get(target.id)?.minimize();
+  }
+
   function minimizeWindow(target: WindowState) {
     const successor = successorAfter(target.id);
     dispatch({ type: "minimize", id: target.id });
@@ -225,7 +230,7 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   function actOnFocused(action: "close" | "minimize" | "maximize") {
     if (!focused) return;
     if (action === "close") closeWindow(focused);
-    else if (action === "minimize") minimizeWindow(focused);
+    else if (action === "minimize") requestMinimize(focused);
     else {
       dispatch({ type: "toggleMaximize", id: focused.id, viewport: viewportSize() });
       setAnnouncement(`${activeTitle} size changed`);
@@ -342,6 +347,10 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
             return (
               <WindowFrame
                 key={windowState.id}
+                ref={(handle) => {
+                  if (handle) windowFrameRefs.current.set(windowState.id, handle);
+                  else windowFrameRefs.current.delete(windowState.id);
+                }}
                 window={windowState}
                 title={manifest.title}
                 viewport={viewportSize()}

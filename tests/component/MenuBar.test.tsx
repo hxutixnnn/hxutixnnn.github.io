@@ -3,13 +3,13 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { MenuBar } from "@/os/shell/MenuBar";
 
-function renderMenu() {
+function renderMenu(mobile = false) {
   const actions = { about: vi.fn(), close: vi.fn(), minimize: vi.fn(), maximize: vi.fn() };
   render(
     <MenuBar
       activeTitle="Blog"
       hasActiveWindow
-      mobile={false}
+      mobile={mobile}
       onOpenAbout={actions.about}
       onClose={actions.close}
       onMinimize={actions.minimize}
@@ -52,5 +52,15 @@ describe("MenuBar", () => {
     renderMenu();
     expect(screen.getByRole("menuitem", { name: "Tien OS menu" })).toHaveAttribute("aria-haspopup", "menu");
     expect(screen.getByLabelText(/Local time/)).toBeInTheDocument();
+  });
+
+  it("hides desktop-only window commands on mobile", async () => {
+    const user = userEvent.setup();
+    renderMenu(true);
+    const appMenu = screen.getByRole("menuitem", { name: "Blog" });
+    appMenu.focus();
+    await user.keyboard("{ArrowDown}");
+    expect(screen.queryByRole("menuitem", { name: "Maximize or restore" })).not.toBeInTheDocument();
+    expect(screen.getByRole("menuitem", { name: /^Minimize/ })).toBeInTheDocument();
   });
 });

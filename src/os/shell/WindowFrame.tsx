@@ -1,4 +1,12 @@
-import { useEffect, useRef, useState, type PropsWithChildren } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+  type PropsWithChildren,
+} from "react";
 import { Rnd, type HandleStyles } from "react-rnd";
 import type { Rect, Viewport, WindowState } from "../domain/windows";
 import { CloseGlyph, FullscreenGlyph, MinimizeGlyph, RestoreGlyph } from "./StatusIcons";
@@ -27,23 +35,11 @@ const resizeHandleStyles: HandleStyles = {
   topLeft: { top: 0, left: 0, width: 12, height: 12 },
 };
 
-export function WindowFrame({
-  window,
-  title,
-  viewport,
-  mobile,
-  focused,
-  resizable,
-  registerFrame,
-  onFocus,
-  onClose,
-  onMinimize,
-  onToggleMaximize,
-  onMove,
-  onResize,
-  onSnap,
-  children,
-}: PropsWithChildren<{
+export type WindowFrameHandle = {
+  minimize: () => void;
+};
+
+type WindowFrameProps = PropsWithChildren<{
   window: WindowState;
   title: string;
   viewport: Viewport;
@@ -58,32 +54,56 @@ export function WindowFrame({
   onMove: (x: number, y: number) => void;
   onResize: (rect: Rect) => void;
   onSnap: (position: "left" | "right") => void;
-}>) {
+}>;
+
+export const WindowFrame = forwardRef<WindowFrameHandle, WindowFrameProps>(function WindowFrame(
+  {
+    window,
+    title,
+    viewport,
+    mobile,
+    focused,
+    resizable,
+    registerFrame,
+    onFocus,
+    onClose,
+    onMinimize,
+    onToggleMaximize,
+    onMove,
+    onResize,
+    onSnap,
+    children,
+  },
+  ref,
+) {
   const [draftRect, setDraftRect] = useState<Rect | null>(null);
   const [minimizing, setMinimizing] = useState(false);
   const [snapTransition, setSnapTransition] = useState(false);
   const draggedRef = useRef(false);
   const snapTimer = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
   const minimizeTimer = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
+  const minimizingRef = useRef(false);
+  const onMinimizeRef = useRef(onMinimize);
   const titleId = `title-${window.id}`;
+  onMinimizeRef.current = onMinimize;
 
-  function handleMinimize() {
-    if (minimizing) return;
-    setMinimizing(true);
-    minimizeTimer.current = globalThis.setTimeout(() => {
-      minimizeTimer.current = null;
-      setMinimizing(false);
-      onMinimize();
-    }, 300);
-  }
-
-  function handleFrameAnimationEnd() {
-    if (!minimizing) return;
+  const finishMinimize = useCallback(() => {
+    if (!minimizingRef.current) return;
     if (minimizeTimer.current) globalThis.clearTimeout(minimizeTimer.current);
     minimizeTimer.current = null;
+    minimizingRef.current = false;
     setMinimizing(false);
-    onMinimize();
-  }
+    onMinimizeRef.current();
+  }, []);
+
+  const handleMinimize = useCallback(() => {
+    if (minimizingRef.current) return;
+    minimizingRef.current = true;
+    setMinimizing(true);
+    minimizeTimer.current = globalThis.setTimeout(finishMinimize, 300);
+  }, [finishMinimize]);
+
+  useImperativeHandle(ref, () => ({ minimize: handleMinimize }), [handleMinimize]);
 
   function triggerSnapTransition() {
     setSnapTransition(true);
@@ -127,7 +147,7 @@ export function WindowFrame({
       tabIndex={-1}
       ref={registerFrame}
       onPointerDown={onFocus}
-      onAnimationEnd={handleFrameAnimationEnd}
+      onAnimationEnd={finishMinimize}
     >
       <header className="window-titlebar" onDoubleClick={mobile ? undefined : onToggleMaximize}>
         <div className="window-controls" aria-label={`${title} window controls`}>
@@ -224,4 +244,4 @@ export function WindowFrame({
       {frame}
     </Rnd>
   );
-}
+});

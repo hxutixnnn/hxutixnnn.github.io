@@ -92,7 +92,9 @@ export function MenuBar({
   const appCommands: MenuCommand[] = [
     { label: `About ${activeTitle}`, onSelect: onOpenAbout },
     { label: "Minimize", shortcut: "⌘M", onSelect: onMinimize, disabled: !hasActiveWindow },
-    { label: "Maximize or restore", onSelect: onMaximize, disabled: !hasActiveWindow },
+    ...(!mobile
+      ? [{ label: "Maximize or restore", onSelect: onMaximize, disabled: !hasActiveWindow }]
+      : []),
     { label: "Close", shortcut: "⌘W", onSelect: onClose, disabled: !hasActiveWindow },
     { label: "Open document view", onSelect: () => window.location.assign(documentUrl) },
   ];

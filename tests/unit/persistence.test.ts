@@ -4,6 +4,7 @@ import {
   hydrateSession,
   serializeSession,
   SESSION_VERSION,
+  SETTINGS_VERSION,
   defaultOsSettings,
   hydrateSettings,
   loadSettings,
@@ -57,7 +58,17 @@ describe("desktop settings persistence", () => {
     expect(hydrateSettings(null)).toEqual(defaultOsSettings);
     expect(hydrateSettings("not-json")).toEqual(defaultOsSettings);
     expect(hydrateSettings(JSON.stringify({ brightness: 3, volume: -2 }))).toEqual(defaultOsSettings);
-    const clamped = hydrateSettings(JSON.stringify({ ...defaultOsSettings, brightness: 3, volume: -2 }));
+    expect(hydrateSettings(JSON.stringify({ ...defaultOsSettings, brightness: 0.2 }))).toEqual(
+      defaultOsSettings,
+    );
+    expect(
+      hydrateSettings(
+        JSON.stringify({ version: SETTINGS_VERSION + 1, ...defaultOsSettings, appearance: "light" }),
+      ),
+    ).toEqual(defaultOsSettings);
+    const clamped = hydrateSettings(
+      JSON.stringify({ version: SETTINGS_VERSION, ...defaultOsSettings, brightness: 3, volume: -2 }),
+    );
     expect(clamped.brightness).toBe(1);
     expect(clamped.volume).toBe(0);
   });

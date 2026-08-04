@@ -1697,6 +1697,9 @@
     .menu-bar__status {
       display: none;
     }
+    .menu-popup__item {
+      min-height: 44px;
+    }
     .menu-bar__menus {
       max-width: 100%;
     }

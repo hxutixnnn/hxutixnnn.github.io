@@ -135,6 +135,7 @@ export const defaultOsSettings: OsSettings = {
 function isOsSettings(value: unknown): value is OsSettings {
   if (!isRecord(value)) return false;
   return (
+    value.version === SETTINGS_VERSION &&
     typeof value.brightness === "number" &&
     Number.isFinite(value.brightness) &&
     typeof value.volume === "number" &&
