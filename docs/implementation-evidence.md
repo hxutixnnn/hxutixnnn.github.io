@@ -20,12 +20,14 @@ The existing pages, five posts, editorial images, resume, and canonical content 
 
 Tien OS uses the asset-free, MIT-licensed `react-rnd@10.5.3` at upstream ref [`fec7303134ab0f0bbe83fdf975ddc15c340f7e5d`](https://github.com/bokuweb/react-rnd/tree/fec7303134ab0f0bbe83fdf975ddc15c340f7e5d) for desktop drag, bounds, and eight-way resize. The lockfile pins integrity `sha512-s/sIT3pGZnQ+57egijkTp9mizjIWrJz68Pq6yd+F/wniFY3IriML18dUXnQe/HP9uMiJ+9MAp44hljG99fZu6Q==`.
 
-Controlled resize dimensions are mirrored only into `WindowFrame` component-local draft state while the pointer moves, committed once to the headless reducer on stop, and then cleared. The mobile path does not mount `react-rnd`. Tien OS owns visuals, routes, focus, persistence, semantics, and responsive policy. The full MIT notice and dependency copyrights are retained in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md).
+Desktop interaction primitives come from the pinned, asset-free, MIT-licensed `@base-ui/react@1.6.0` (see [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md)); menu, popover, dialog, switch, slider, and tooltip behavior is upstream, while Tien OS owns the coordinated menubar roving, Spotlight ranking/activation, Control Center binding to the settings store, window chrome, dock magnification, and mobile policy.
+
+Controlled resize dimensions are mirrored only into `WindowFrame` component-local draft state while the pointer moves, committed once to the headless reducer on stop, and then cleared. The mobile path does not mount `react-rnd`. Tien OS owns visuals, routes, focus, persistence, semantics, and responsive policy. The full MIT notices and dependency copyrights are retained in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md).
 
 ## Built-output and browser evidence
 
-- `scripts/check-static-output.mjs`: **34 HTML routes**, **84.2 KiB** first-party JavaScript gzip, **6.1 KiB** CSS gzip, and **159.4 KiB** banner. Limits are 100 KiB, 30 KiB, and 250 KiB respectively.
-- Vitest: **6 files / 19 tests** passed, including reducer properties, persistence validation, catalogue schema, and shell components.
+- `scripts/check-static-output.mjs`: **34 HTML routes**, **145.1 KiB** first-party JavaScript gzip, **7.6 KiB** CSS gzip, and **159.4 KiB** banner. Limits are 160 KiB (raised from 100 KiB by the approved Base UI budget), 30 KiB, and 250 KiB respectively.
+- Vitest: **7 files / 31 tests** passed, including reducer properties (snap included), persistence validation (windows and OS settings), catalogue schema, and shell components.
 - Playwright against `dist/` through `astro preview`: **15 tests** cover desktop lifecycle/drag/resize/persistence, keyboard menus and focus, direct/no-JS routes, axe, no third-party requests, lazy app code, 320/375/390/430 px viewports, breakpoint transitions, a 200%-zoom-equivalent CSS viewport, forced colors, and reduced motion.
 - Lighthouse static-output runs:
 
@@ -41,7 +43,7 @@ Scores are one local desktop run with the pinned Playwright Chromium and are gat
 
 `chrome-devtools-axi` inspected the built artifact, not the development server:
 
-- **1440×900:** the fluid blue/violet original background remained crisp; the translucent menu, centered About window, six distinct original app glyphs, and floating launcher had clear depth and readable contrast. The window title bar and all three desktop window controls were exposed by name in the accessibility tree.
+- **1440×900:** the Golden Gate dusk wallpaper rendered edge to edge; the slim 30 px menu bar, dock with six original app glyphs, and traffic-light window controls had clear depth and readable contrast. The menu bar, Control Center, Spotlight, dock, and all three desktop window controls were exposed by name in the accessibility tree.
 - **390×844:** `.portfolio-shell` switched to `is-mobile`; the About surface measured `x=8`, `y=60`, `width=374`, `height=708`. Both document and body scroll widths were exactly **390 px**. Desktop resize/maximize controls disappeared, while close/minimize and the responsive four-item launcher remained at least 44 px.
 - The mobile switcher opened as a named modal dialog, focused its named close control, dimmed the underlying surface, and exposed separate switch/close controls for the running app.
 - The southeast resize handle center resolved to a resize handle with pointer events enabled. The browser lifecycle test dragged that center and asserted the `.window-positioner` width increased before confirming persistence after reload.

@@ -15,22 +15,26 @@ const windowState: WindowState = {
 it("uses a labelled modeless region with named native controls", async () => {
   const user = userEvent.setup();
   const close = vi.fn();
-  const minimize = vi.fn();
-  render(
+  const requestMinimize = vi.fn();
+  const finishMinimize = vi.fn();
+  const { rerender } = render(
     <WindowFrame
       window={windowState}
       title="About"
       viewport={{ width: 1200, height: 700 }}
       mobile={false}
       focused
+      minimizing={false}
       resizable
       registerFrame={() => undefined}
       onFocus={() => undefined}
       onClose={close}
-      onMinimize={minimize}
+      onRequestMinimize={requestMinimize}
+      onMinimizeAnimationEnd={finishMinimize}
       onToggleMaximize={() => undefined}
       onMove={() => undefined}
       onResize={() => undefined}
+      onSnap={() => undefined}
     >
       <p>About content</p>
     </WindowFrame>,
@@ -43,7 +47,32 @@ it("uses a labelled modeless region with named native controls", async () => {
   await user.click(screen.getByRole("button", { name: "Close About" }));
   await user.click(screen.getByRole("button", { name: "Minimize About" }));
   expect(close).toHaveBeenCalledOnce();
-  expect(minimize).toHaveBeenCalledOnce();
+  expect(requestMinimize).toHaveBeenCalledOnce();
+  expect(finishMinimize).not.toHaveBeenCalled();
+
+  rerender(
+    <WindowFrame
+      window={windowState}
+      title="About"
+      viewport={{ width: 1200, height: 700 }}
+      mobile={false}
+      focused
+      minimizing
+      resizable
+      registerFrame={() => undefined}
+      onFocus={() => undefined}
+      onClose={close}
+      onRequestMinimize={requestMinimize}
+      onMinimizeAnimationEnd={finishMinimize}
+      onToggleMaximize={() => undefined}
+      onMove={() => undefined}
+      onResize={() => undefined}
+      onSnap={() => undefined}
+    >
+      <p>About content</p>
+    </WindowFrame>,
+  );
+  expect(screen.getByRole("region", { name: "About" })).toHaveClass("is-minimizing");
 });
 
 it("removes maximize and resize affordances in mobile mode", () => {
@@ -54,14 +83,17 @@ it("removes maximize and resize affordances in mobile mode", () => {
       viewport={{ width: 390, height: 700 }}
       mobile
       focused
+      minimizing={false}
       resizable
       registerFrame={() => undefined}
       onFocus={() => undefined}
       onClose={() => undefined}
-      onMinimize={() => undefined}
+      onRequestMinimize={() => undefined}
+      onMinimizeAnimationEnd={() => undefined}
       onToggleMaximize={() => undefined}
       onMove={() => undefined}
       onResize={() => undefined}
+      onSnap={() => undefined}
     >
       <p>About content</p>
     </WindowFrame>,

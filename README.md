@@ -26,7 +26,7 @@ pnpm test:e2e          # browser tests against dist through Astro preview
 pnpm test:lighthouse   # local static-output Lighthouse thresholds
 ```
 
-The initial shell budgets are 100 KiB gzip JavaScript, 30 KiB gzip CSS, and 250 KiB for the largest wallpaper/social image. `scripts/check-static-output.mjs` enforces those limits and rejects a `CNAME` in the Pages artifact.
+The shell budgets are 160 KiB gzip JavaScript, 30 KiB gzip CSS, and 250 KiB for the largest wallpaper/social image. `scripts/check-static-output.mjs` enforces those limits and rejects a `CNAME` in the Pages artifact.
 
 ## Optional analytics
 

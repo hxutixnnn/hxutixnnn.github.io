@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import PortfolioShell from "@/os/shell/PortfolioShell";
+import { hydrateSession, SESSION_KEY } from "@/os/store/persistence";
 
 beforeEach(() => window.history.replaceState({}, "", "/"));
 afterEach(() => vi.restoreAllMocks());
@@ -19,6 +20,92 @@ it("opens a route-backed lazy app, announces lifecycle, and restores launcher fo
   expect(window.location.pathname).toBe("/");
   await waitFor(() => expect(launcher).toHaveFocus());
   expect(screen.getByText("About closed")).toBeInTheDocument();
+});
+
+it("routes keyboard minimize through the window animation gate", async () => {
+  const user = userEvent.setup();
+  render(<PortfolioShell />);
+  await user.click(screen.getByRole("button", { name: "Open About" }));
+  await screen.findByRole("heading", { name: "Hi, I’m Tien." });
+
+  fireEvent.keyDown(window, { key: "m", ctrlKey: true });
+  expect(document.querySelector('[data-app-id="about"]')).toHaveClass("is-minimizing");
+  expect(screen.queryByText("About minimized")).not.toBeInTheDocument();
+
+  await waitFor(() => expect(document.querySelector('[data-app-id="about"]')).not.toBeInTheDocument());
+  expect(screen.getByText("About minimized")).toBeInTheDocument();
+});
+
+it("minimizes a focused mobile window after history hides its frame", async () => {
+  vi.spyOn(window, "matchMedia").mockImplementation(
+    (query) =>
+      ({
+        matches: query === "(max-width: 767px)",
+        media: query,
+        onchange: null,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        dispatchEvent: () => false,
+      }) as MediaQueryList,
+  );
+  const user = userEvent.setup();
+  render(<PortfolioShell />);
+  await user.click(
+    within(screen.getByRole("main", { name: "Tien OS apps" })).getByRole("button", { name: "About" }),
+  );
+  await screen.findByRole("heading", { name: "Hi, I’m Tien." });
+
+  window.history.back();
+  await waitFor(() => expect(window.location.pathname).toBe("/"));
+  await waitFor(() => expect(document.querySelector('[data-app-id="about"]')).not.toBeInTheDocument());
+
+  fireEvent.keyDown(window, { key: "m", ctrlKey: true });
+  expect(screen.getByText("About minimized")).toBeInTheDocument();
+  await waitFor(() => {
+    const session = hydrateSession(window.localStorage.getItem(SESSION_KEY), {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
+    expect(session.windows[0]?.status).toBe("minimized");
+  });
+});
+
+it("completes mobile minimize after switching dock apps", async () => {
+  vi.spyOn(window, "matchMedia").mockImplementation(
+    (query) =>
+      ({
+        matches: query === "(max-width: 767px)",
+        media: query,
+        onchange: null,
+        addListener: () => undefined,
+        removeListener: () => undefined,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+        dispatchEvent: () => false,
+      }) as MediaQueryList,
+  );
+  const user = userEvent.setup();
+  render(<PortfolioShell />);
+  await user.click(
+    within(screen.getByRole("main", { name: "Tien OS apps" })).getByRole("button", { name: "About" }),
+  );
+  await screen.findByRole("heading", { name: "Hi, I’m Tien." });
+
+  await user.click(screen.getByRole("button", { name: "Minimize About" }));
+  expect(document.querySelector('[data-app-id="about"]')).toHaveClass("is-minimizing");
+  await user.click(screen.getByRole("button", { name: "Open Projects" }));
+  await waitFor(() => expect(document.querySelector('[data-app-id="projects"]')).toBeInTheDocument());
+
+  await waitFor(() => {
+    const session = hydrateSession(window.localStorage.getItem(SESSION_KEY), {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
+    expect(session.windows.find((window) => window.appId === "about")?.status).toBe("minimized");
+  });
+  expect(window.location.pathname).toBe("/apps/projects/");
 });
 
 it("hydrates a direct app route as selected", async () => {

@@ -1,6 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { desktopReducer, initialDesktopState } from "@/os/domain/windows";
-import { hydrateSession, serializeSession, SESSION_VERSION } from "@/os/store/persistence";
+import {
+  hydrateSession,
+  serializeSession,
+  SESSION_VERSION,
+  SETTINGS_VERSION,
+  defaultOsSettings,
+  hydrateSettings,
+  loadSettings,
+  saveSettings,
+} from "@/os/store/persistence";
 
 const viewport = { width: 1000, height: 680 };
 
@@ -41,5 +50,34 @@ describe("window session persistence", () => {
     expect(hydrated.windows).toHaveLength(1);
     expect(hydrated.nextWindowId).toBe(9);
     expect(hydrated.nextZ).toBe(10);
+  });
+});
+
+describe("desktop settings persistence", () => {
+  it("returns defaults for empty, corrupt, and out-of-range payloads", () => {
+    expect(hydrateSettings(null)).toEqual(defaultOsSettings);
+    expect(hydrateSettings("not-json")).toEqual(defaultOsSettings);
+    expect(hydrateSettings(JSON.stringify({ brightness: 3, volume: -2 }))).toEqual(defaultOsSettings);
+    expect(hydrateSettings(JSON.stringify({ ...defaultOsSettings, brightness: 0.2 }))).toEqual(
+      defaultOsSettings,
+    );
+    expect(
+      hydrateSettings(
+        JSON.stringify({ version: SETTINGS_VERSION + 1, ...defaultOsSettings, appearance: "light" }),
+      ),
+    ).toEqual(defaultOsSettings);
+    const clamped = hydrateSettings(
+      JSON.stringify({ version: SETTINGS_VERSION, ...defaultOsSettings, brightness: 3, volume: -2 }),
+    );
+    expect(clamped.brightness).toBe(1);
+    expect(clamped.volume).toBe(0);
+  });
+
+  it("round-trips settings through storage", () => {
+    const custom = { ...defaultOsSettings, brightness: 0.5, wifi: false, appearance: "light" as const };
+    saveSettings(custom);
+    expect(loadSettings()).toEqual(custom);
+    window.localStorage.clear();
+    expect(loadSettings()).toEqual(defaultOsSettings);
   });
 });

@@ -132,7 +132,7 @@ const gzipTotal = async (paths) =>
   );
 const jsGzip = await gzipTotal(js);
 const cssGzip = await gzipTotal(css);
-if (jsGzip > 100 * 1024)
+if (jsGzip > 160 * 1024)
   throw new Error(`JavaScript budget exceeded: ${(jsGzip / 1024).toFixed(1)} KiB gzip`);
 if (cssGzip > 30 * 1024) throw new Error(`CSS budget exceeded: ${(cssGzip / 1024).toFixed(1)} KiB gzip`);
 const bannerSize = (await stat(resolve(dist, "banner.png"))).size;

@@ -33,6 +33,7 @@ export type DesktopAction =
   | { type: "minimize"; id: WindowId }
   | { type: "restore"; id: WindowId }
   | { type: "toggleMaximize"; id: WindowId; viewport: Viewport }
+  | { type: "snap"; id: WindowId; position: "left" | "right"; viewport: Viewport }
   | { type: "move"; id: WindowId; x: number; y: number; viewport: Viewport }
   | { type: "resize"; id: WindowId; rect: Rect; viewport: Viewport }
   | { type: "viewportChanged"; mode: ViewportMode; viewport: Viewport }
@@ -190,6 +191,27 @@ export function desktopReducer(state: DesktopState, action: DesktopAction): Desk
               restoreRect: target.rect,
               rect: { x: 0, y: 0, width: action.viewport.width, height: action.viewport.height },
             };
+      return focusWindow(
+        { ...state, windows: state.windows.map((window) => (window.id === action.id ? nextWindow : window)) },
+        action.id,
+      );
+    }
+    case "snap": {
+      const target = state.windows.find((window) => window.id === action.id);
+      if (!target || target.status === "minimized") return state;
+      const half = Math.round(action.viewport.width / 2);
+      const rect =
+        action.position === "left"
+          ? { x: 0, y: 0, width: half, height: action.viewport.height }
+          : { x: half, y: 0, width: action.viewport.width - half, height: action.viewport.height };
+      const nextWindow: WindowState = {
+        id: target.id,
+        appId: target.appId,
+        z: target.z,
+        status: "open",
+        rect,
+        ...(target.restoreRect === undefined ? {} : { restoreRect: target.restoreRect }),
+      };
       return focusWindow(
         { ...state, windows: state.windows.map((window) => (window.id === action.id ? nextWindow : window)) },
         action.id,
