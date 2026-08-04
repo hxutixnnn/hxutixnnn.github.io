@@ -13,6 +13,10 @@ test("desktop, open app, and mobile switcher pass axe", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator(".portfolio-shell")).toBeVisible();
   await expectNoSeriousViolations(page);
+  await page.getByRole("button", { name: "Control Center" }).click();
+  await expect(page.getByRole("dialog", { name: "Control Center" })).toBeVisible();
+  await expectNoSeriousViolations(page);
+  await page.keyboard.press("Escape");
   await page.getByRole("button", { name: "Open About" }).click();
   await expect(page.locator('[data-app-id="about"]')).toBeVisible();
   await expectNoSeriousViolations(page);

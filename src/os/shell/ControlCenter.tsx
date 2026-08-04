@@ -45,7 +45,6 @@ function LevelSlider({
 }) {
   return (
     <div className="cc-level">
-      <span className="cc-level__label">{label}</span>
       <Slider.Root
         className="cc-slider"
         value={value}
@@ -54,8 +53,8 @@ function LevelSlider({
         step={0.01}
         onValueChange={onChange}
         onValueCommitted={onCommitted}
-        aria-label={label}
       >
+        <Slider.Label className="cc-level__label">{label}</Slider.Label>
         <Slider.Control className="cc-slider__control">
           <Slider.Track className="cc-slider__track">
             <Slider.Indicator className="cc-slider__indicator" />

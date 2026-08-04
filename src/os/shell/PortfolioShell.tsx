@@ -62,10 +62,8 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   const switcherOpenRef = useRef(switcherOpen);
   const spotlightOpenRef = useRef(spotlightOpen);
   const bounceTimer = useRef<ReturnType<typeof globalThis.setTimeout> | null>(null);
+  const bounceSequence = useRef(0);
   const stateRef = useRef(state);
-  switcherOpenRef.current = switcherOpen;
-  spotlightOpenRef.current = spotlightOpen;
-  stateRef.current = state;
   const mobile = state.viewportMode === "mobile";
   const orderedWindows = useMemo(() => selectWindowsByZ(state), [state]);
   const focused = selectFocusedWindow(state);
@@ -82,6 +80,18 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   }, []);
 
   useEffect(() => saveSession(state), [state]);
+
+  useEffect(() => {
+    switcherOpenRef.current = switcherOpen;
+  }, [switcherOpen]);
+
+  useEffect(() => {
+    spotlightOpenRef.current = spotlightOpen;
+  }, [spotlightOpen]);
+
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
   useEffect(
     () => () => {
@@ -110,34 +120,6 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
-      const key = event.key.toLowerCase();
-      if (key === " ") {
-        event.preventDefault();
-        setSpotlightOpen((open) => !open);
-        return;
-      }
-      if (spotlightOpenRef.current) return;
-      if (switcherOpenRef.current && (key === "w" || key === "m")) {
-        event.preventDefault();
-        return;
-      }
-      const focusedWindow = selectFocusedWindow(stateRef.current);
-      if (!focusedWindow) return;
-      if (key === "w") {
-        event.preventDefault();
-        closeWindow(focusedWindow);
-      } else if (key === "m") {
-        event.preventDefault();
-        requestMinimize(focusedWindow);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  });
-
   function track(appId: CoreAppId, action: "app_open" | "app_close") {
     window.dispatchEvent(new CustomEvent("tien:analytics", { detail: { event: action, appId } }));
   }
@@ -157,7 +139,8 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
   }
 
   function bounceApp(appId: CoreAppId) {
-    const token = `${appId}:${Date.now()}`;
+    bounceSequence.current += 1;
+    const token = `${appId}:${bounceSequence.current}`;
     setBounceToken(token);
     if (bounceTimer.current) globalThis.clearTimeout(bounceTimer.current);
     bounceTimer.current = globalThis.setTimeout(() => setBounceToken(null), 1200);
@@ -290,6 +273,34 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
       }
     });
   }
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
+      const key = event.key.toLowerCase();
+      if (key === " ") {
+        event.preventDefault();
+        setSpotlightOpen((open) => !open);
+        return;
+      }
+      if (spotlightOpenRef.current) return;
+      if (switcherOpenRef.current && (key === "w" || key === "m")) {
+        event.preventDefault();
+        return;
+      }
+      const focusedWindow = selectFocusedWindow(stateRef.current);
+      if (!focusedWindow) return;
+      if (key === "w") {
+        event.preventDefault();
+        closeWindow(focusedWindow);
+      } else if (key === "m") {
+        event.preventDefault();
+        requestMinimize(focusedWindow);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
 
   const visibleWindows = mobile
     ? orderedWindows

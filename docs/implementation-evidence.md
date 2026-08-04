@@ -27,8 +27,8 @@ Controlled resize dimensions are mirrored only into `WindowFrame` component-loca
 ## Built-output and browser evidence
 
 - `scripts/check-static-output.mjs`: **34 HTML routes**, **145.1 KiB** first-party JavaScript gzip, **7.6 KiB** CSS gzip, and **159.4 KiB** banner. Limits are 160 KiB (raised from 100 KiB by the approved Base UI budget), 30 KiB, and 250 KiB respectively.
-- Vitest: **7 files / 27 tests** passed, including reducer properties (snap included), persistence validation (windows and OS settings), catalogue schema, and shell components.
-- Playwright against `dist/` through `astro preview`: **15 tests** cover desktop lifecycle/drag/resize/snap/persistence, keyboard menus and focus, direct/no-JS routes, axe, no third-party requests, lazy app code, 320/375/390/430 px viewports, breakpoint transitions, a 200%-zoom-equivalent CSS viewport, forced colors, and reduced motion.
+- Vitest: **7 files / 31 tests** passed, including reducer properties (snap included), persistence validation (windows and OS settings), catalogue schema, and shell components.
+- Playwright against `dist/` through `astro preview`: **15 tests** cover desktop lifecycle/drag/resize/persistence, keyboard menus and focus, direct/no-JS routes, axe, no third-party requests, lazy app code, 320/375/390/430 px viewports, breakpoint transitions, a 200%-zoom-equivalent CSS viewport, forced colors, and reduced motion.
 - Lighthouse static-output runs:
 
   | Route          | Performance | Accessibility | Best practices | SEO |    LCP |    CLS |

@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import PortfolioShell from "@/os/shell/PortfolioShell";
-import { SESSION_KEY } from "@/os/store/persistence";
+import { hydrateSession, SESSION_KEY } from "@/os/store/persistence";
 
 beforeEach(() => window.history.replaceState({}, "", "/"));
 afterEach(() => vi.restoreAllMocks());
@@ -64,8 +64,11 @@ it("minimizes a focused mobile window after history hides its frame", async () =
   fireEvent.keyDown(window, { key: "m", ctrlKey: true });
   expect(screen.getByText("About minimized")).toBeInTheDocument();
   await waitFor(() => {
-    const session = JSON.parse(window.localStorage.getItem(SESSION_KEY) ?? "null");
-    expect(session.windows[0].status).toBe("minimized");
+    const session = hydrateSession(window.localStorage.getItem(SESSION_KEY), {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
+    expect(session.windows[0]?.status).toBe("minimized");
   });
 });
 
@@ -96,10 +99,11 @@ it("completes mobile minimize after switching dock apps", async () => {
   await waitFor(() => expect(document.querySelector('[data-app-id="projects"]')).toBeInTheDocument());
 
   await waitFor(() => {
-    const session = JSON.parse(window.localStorage.getItem(SESSION_KEY) ?? "null");
-    expect(session.windows.find((window: { appId: string }) => window.appId === "about")?.status).toBe(
-      "minimized",
-    );
+    const session = hydrateSession(window.localStorage.getItem(SESSION_KEY), {
+      width: window.innerWidth,
+      height: window.innerHeight,
+    });
+    expect(session.windows.find((window) => window.appId === "about")?.status).toBe("minimized");
   });
   expect(window.location.pathname).toBe("/apps/projects/");
 });
