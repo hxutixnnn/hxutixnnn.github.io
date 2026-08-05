@@ -203,6 +203,11 @@ export function Spotlight({
                         : result.subtitle}
                     </small>
                   </span>
+                  {result.kind === "app" && appById.get(result.appId)?.target?.kind === "external" && (
+                    <span className="spotlight-result__external">
+                      <span aria-hidden="true">↗ </span>New tab
+                    </span>
+                  )}
                   {index === clampedActive && (
                     <span className="spotlight-result__open" aria-hidden="true">
                       ↵

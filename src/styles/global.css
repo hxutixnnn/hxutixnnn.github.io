@@ -1316,6 +1316,7 @@
   .spotlight-result__text {
     display: flex;
     min-width: 0;
+    flex: 1;
     flex-direction: column;
   }
   .spotlight-result__text strong {
@@ -1329,8 +1330,13 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .spotlight-result__external {
+    flex: 0 0 auto;
+    color: var(--ink-muted);
+    font-size: 11.5px;
+  }
   .spotlight-result__open {
-    margin-left: auto;
+    flex: 0 0 auto;
     color: var(--ink-muted);
     font-size: 13px;
   }

@@ -185,22 +185,5 @@
     "topics": [],
     "updatedAt": "2022-12-08T05:49:56Z",
     "visibility": "public"
-  },
-  {
-    "archived": false,
-    "description": null,
-    "disabled": true,
-    "fork": false,
-    "fullName": "hxutixnnn/s1ngularity-repository-1",
-    "homepage": null,
-    "htmlUrl": "https://github.com/hxutixnnn/s1ngularity-repository-1",
-    "id": 1045332167,
-    "language": null,
-    "name": "s1ngularity-repository-1",
-    "owner": "hxutixnnn",
-    "private": false,
-    "topics": [],
-    "updatedAt": "2025-08-27T08:53:59Z",
-    "visibility": "public"
   }
 ]

@@ -157,7 +157,9 @@ it("finds repository apps and launches their configured homepage", async () => {
 
   await user.click(screen.getByRole("button", { name: "Spotlight search" }));
   await user.type(screen.getByRole("combobox", { name: "Search or ask" }), "jquery-website-input");
-  await user.click(screen.getByRole("option", { name: /jquery-website-input/ }));
+  const result = screen.getByRole("option", { name: /jquery-website-input.*New tab/ });
+  expect(within(result).getByText("New tab")).toBeVisible();
+  await user.click(result);
 
   expect(open).toHaveBeenCalledWith(
     "https://hxutixnnn.github.io/jquery-website-input",
