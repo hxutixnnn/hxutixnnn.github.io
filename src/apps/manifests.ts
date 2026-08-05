@@ -52,4 +52,12 @@ export const appManifests = {
     initial: { width: 620, height: 500 },
     load: coreLoaders.til,
   },
+  airconsole: {
+    ...base,
+    id: "airconsole",
+    title: "Relay Arcade",
+    initial: { width: 780, height: 640 },
+    min: { width: 360, height: 470 },
+    load: coreLoaders.airconsole,
+  },
 } satisfies Record<CoreAppId, AppWindowManifest>;
