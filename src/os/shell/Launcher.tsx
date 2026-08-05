@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Tooltip } from "@base-ui/react/tooltip";
-import { appById, coreCatalogue } from "@/apps/catalog";
-import type { CoreAppId } from "@/apps/contract";
+import { appById, appCatalogue, coreCatalogue } from "@/apps/catalog";
+import type { AppId, CoreAppId } from "@/apps/contract";
 import type { WindowId, WindowState } from "../domain/windows";
 import { AppIcon } from "./AppIcon";
 import { TrashIcon } from "./StatusIcons";
@@ -175,7 +175,7 @@ export function MobileDockBar({
   );
 }
 
-export function MobileLauncher({ onOpen }: { onOpen: (id: CoreAppId) => void }) {
+export function MobileLauncher({ onLaunch }: { onLaunch: (id: AppId) => void }) {
   return (
     <main className="mobile-home" aria-label="Tien OS apps">
       <header>
@@ -184,8 +184,14 @@ export function MobileLauncher({ onOpen }: { onOpen: (id: CoreAppId) => void }) 
         <p>Open a section, or use the document link below for a conventional portfolio.</p>
       </header>
       <div className="mobile-app-grid">
-        {coreCatalogue.map((app) => (
-          <button type="button" key={app.id} data-launcher-id={app.id} onClick={() => onOpen(app.id)}>
+        {appCatalogue.map((app) => (
+          <button
+            type="button"
+            key={app.id}
+            data-launcher-id={app.id}
+            aria-label={app.target?.kind === "external" ? `Open ${app.name} in a new tab` : app.name}
+            onClick={() => onLaunch(app.id)}
+          >
             <AppIcon appId={app.id} />
             <span>{app.name}</span>
           </button>

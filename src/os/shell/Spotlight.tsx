@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
-import { appById, coreCatalogue } from "@/apps/catalog";
-import type { CoreAppId } from "@/apps/contract";
+import { appById, appCatalogue } from "@/apps/catalog";
+import type { AppId, CoreAppId } from "@/apps/contract";
 import { AppIcon } from "./AppIcon";
 import { SpotlightIcon } from "./StatusIcons";
 
@@ -12,7 +12,7 @@ type SpotlightAction = {
   run: () => void;
 };
 
-type SpotlightResult = { kind: "app"; appId: CoreAppId } | ({ kind: "action" } & Omit<SpotlightAction, "id">);
+type SpotlightResult = { kind: "app"; appId: AppId } | ({ kind: "action" } & Omit<SpotlightAction, "id">);
 
 function normalize(value: string): string {
   return value.toLocaleLowerCase().trim();
@@ -32,12 +32,14 @@ export function Spotlight({
   open,
   onOpenChange,
   onOpenApp,
+  onOpenExternal,
   onNavigate,
   onAnnounce,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOpenApp: (appId: CoreAppId) => void;
+  onOpenExternal: (appId: AppId) => void;
   onNavigate: (url: string) => void;
   onAnnounce: (message: string) => void;
 }) {
@@ -72,7 +74,7 @@ export function Spotlight({
 
   const results = useMemo<SpotlightResult[]>(() => {
     const q = normalize(query);
-    const apps: SpotlightResult[] = coreCatalogue
+    const apps: SpotlightResult[] = appCatalogue
       .map((app) => ({ kind: "app" as const, appId: app.id, rank: rank(app.name, app.summary, q) }))
       .filter((item) => item.rank !== Number.MAX_SAFE_INTEGER)
       .sort((a, b) => a.rank - b.rank || a.appId.localeCompare(b.appId))
@@ -96,7 +98,8 @@ export function Spotlight({
     if (result.kind === "app") {
       const app = appById.get(result.appId);
       onAnnounce(`${app?.name ?? "App"} opened`);
-      onOpenApp(result.appId);
+      if (app?.target?.kind === "core") onOpenApp(app.target.loaderKey);
+      else onOpenExternal(result.appId);
     } else {
       onAnnounce(`${result.title} opened`);
       result.run();

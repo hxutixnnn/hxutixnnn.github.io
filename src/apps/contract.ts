@@ -1,10 +1,24 @@
 import type { ComponentType } from "react";
 
 export type CoreAppId = "about" | "projects" | "blog" | "uses" | "resources" | "til";
-export type ExternalAppId = "image-restoration" | "karaoke-player" | "car-rental";
-export type AppId = CoreAppId | ExternalAppId;
+export type ExternalAppId = string;
+export type AppId = string;
 export type IconName =
-  "person" | "projects" | "blog" | "tools" | "resources" | "idea" | "image" | "music" | "car";
+  | "person"
+  | "projects"
+  | "blog"
+  | "tools"
+  | "resources"
+  | "idea"
+  | "image"
+  | "music"
+  | "car"
+  | "code"
+  | "github"
+  | "linkedin"
+  | "twitter"
+  | "facebook"
+  | "instagram";
 
 export type CoreAppProps = {
   appId: CoreAppId;
@@ -31,6 +45,7 @@ export type AppDescriptor = {
   schemaVersion: 1;
   id: AppId;
   status: "active" | "retired";
+  category: "system" | "project" | "social";
   name: string;
   summary: string;
   route: `/apps/${string}/`;

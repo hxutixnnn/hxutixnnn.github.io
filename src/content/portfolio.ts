@@ -1,11 +1,6 @@
-export const socialLinks = [
-  ["GitHub", "https://github.com/hxutixnnn"],
-  ["LinkedIn", "https://www.linkedin.com/in/tiennguyenhuu"],
-  ["Twitter", "https://twitter.com/hxutixnnn"],
-  ["Facebook", "https://www.facebook.com/hxutixnnn"],
-  ["Instagram", "https://www.instagram.com/hxutixnnn"],
-  ["Email", "mailto:work@nguyenhuutien.com"],
-] as const;
+import socialProfiles from "@/apps/social-links.json";
+
+export const socialLinks = socialProfiles.map(({ name, url }) => [name, url] as const);
 
 export const postSummaries = [
   {

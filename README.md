@@ -35,7 +35,9 @@ Google Analytics is disabled unless `PUBLIC_GOOGLE_ANALYTICS_ID` contains a meas
 ## Architecture
 
 - `content/` — preserved MDX pages/posts and editorial images
-- `src/apps/catalog.json` — reviewed app descriptors; validated before build
+- `src/apps/catalog.json` — reviewed core and standalone app descriptors; validated before build
+- `src/apps/repositories.json` — generated public-repository inventory used to create project apps
+- `src/apps/social-links.json` — published social profiles used by About and generated social apps
 - `src/apps/loaders.ts` — compile-time-only lazy core app map
 - `src/os/domain/windows.ts` — headless window reducer
 - `react-rnd@10.5.3` — pinned, asset-free desktop drag/resize mechanics
@@ -44,7 +46,18 @@ Google Analytics is disabled unless `PUBLIC_GOOGLE_ANALYTICS_ID` contains a meas
 - `src/assets/provenance.yml` — authoritative non-code asset register
 - `tests/` — reducer, component, static output, axe, and responsive browser coverage
 
-Substantial projects remain external HTTPS destinations and open in a new tab. Tien OS never discovers repositories at runtime, imports remote modules, or embeds unreviewed iframes.
+Substantial projects and social profiles remain external HTTPS destinations and open in a protected new tab. Tien OS never discovers repositories at runtime, imports remote modules, embeds unreviewed iframes, or turns social links into fake internal clients.
+
+## Refreshing public repositories
+
+Use the authenticated `gh-axi` CLI to refresh the complete owned public-repository inventory:
+
+```sh
+pnpm sync:repositories
+pnpm validate:catalog
+```
+
+The sync follows every API page, retains useful repository metadata, and writes `src/apps/repositories.json` in deterministic name order. The static catalogue maps each repository to its configured HTTPS homepage when safe, otherwise to its GitHub URL. Forked, archived, and disabled public repositories remain represented; private or unrelated repositories are rejected. `hxutixnnn.github.io` is the sole mapping exclusion because the current repository is already represented by the Tien OS system surface. Review and commit the generated JSON diff. Repository display overrides belong in `src/apps/catalog.config.mjs`; social profiles are maintained once in `src/apps/social-links.json`.
 
 ## Deployment boundary
 

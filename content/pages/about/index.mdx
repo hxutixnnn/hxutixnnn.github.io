@@ -3,6 +3,8 @@ title: About
 slug: "/about"
 ---
 
+import socialProfiles from "../../../src/apps/social-links.json";
+
 ### Hi, my name is Tien! 🙋🏻‍♂️
 
 > I like building apps. I have used React since 2018 in my professional work, and I use personal projects to explore other languages and ideas.
@@ -11,9 +13,13 @@ I want to become a better developer every day. This is where I keep track of tha
 
 You can find me, usually as `@hxutixnnn`, on:
 
-- [GitHub](https://github.com/hxutixnnn)
-- [LinkedIn](https://www.linkedin.com/in/tiennguyenhuu)
-- [Twitter](https://twitter.com/hxutixnnn)
-- [Facebook](https://www.facebook.com/hxutixnnn)
-- [Instagram](https://www.instagram.com/hxutixnnn)
-- [Email](mailto:work@nguyenhuutien.com)
+<ul>
+  {socialProfiles.map(({ name, url }) => (
+    <li>
+      <a href={url} target="_blank" rel="noopener noreferrer">
+        {name}
+        <span className="sr-only"> in a new tab</span>
+      </a>
+    </li>
+  ))}
+</ul>

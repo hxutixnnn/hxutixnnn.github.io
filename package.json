@@ -24,6 +24,7 @@
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots",
     "test:lighthouse": "lhci autorun",
+    "sync:repositories": "node scripts/sync-repositories.mjs",
     "validate:catalog": "node scripts/validate-apps.mjs",
     "validate:assets": "node scripts/check-asset-provenance.mjs",
     "check:output": "node scripts/check-static-output.mjs",

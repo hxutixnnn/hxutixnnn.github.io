@@ -1,9 +1,30 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { z } from "zod";
+import baseCatalog from "../src/apps/catalog.json" with { type: "json" };
+import repositories from "../src/apps/repositories.json" with { type: "json" };
+import socialProfiles from "../src/apps/social-links.json" with { type: "json" };
+import { mapRepositoriesToApps, mapSocialProfilesToApps } from "../src/apps/catalog-mapping.mjs";
+import { repositoryCatalogConfig } from "../src/apps/catalog.config.mjs";
 
 const coreIds = ["about", "projects", "blog", "uses", "resources", "til"];
-const iconNames = ["person", "projects", "blog", "tools", "resources", "idea", "image", "music", "car"];
+const iconNames = [
+  "person",
+  "projects",
+  "blog",
+  "tools",
+  "resources",
+  "idea",
+  "image",
+  "music",
+  "car",
+  "code",
+  "github",
+  "linkedin",
+  "twitter",
+  "facebook",
+  "instagram",
+];
 const httpsUrl = z
   .string()
   .url()
@@ -24,6 +45,7 @@ const appSchema = z
     schemaVersion: z.literal(1),
     id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
     status: z.enum(["active", "retired"]),
+    category: z.enum(["system", "project", "social"]),
     name: z.string().min(1).max(60),
     summary: z.string().min(20).max(240),
     route: z.string().regex(/^\/apps\/[a-z0-9-]+\/$/),
@@ -40,10 +62,15 @@ const appSchema = z
   .strict();
 
 const file = resolve(import.meta.dirname, "../src/apps/catalog.json");
+await readFile(file, "utf8");
 const catalogue = z
   .array(appSchema)
   .min(1)
-  .parse(JSON.parse(await readFile(file, "utf8")));
+  .parse([
+    ...baseCatalog,
+    ...mapRepositoriesToApps(repositories, repositoryCatalogConfig),
+    ...mapSocialProfilesToApps(socialProfiles, repositoryCatalogConfig.displayOwner),
+  ]);
 const ids = new Set();
 const routes = new Set();
 for (const app of catalogue) {
@@ -69,6 +96,30 @@ for (const coreId of coreIds) {
   if (!catalogue.some((app) => app.id === coreId && app.target?.kind === "core"))
     throw new Error(`Missing core app: ${coreId}`);
 }
+const repositoryNames = new Set();
+for (const repository of repositories) {
+  if (
+    repository.owner !== repositoryCatalogConfig.owner ||
+    repository.private !== false ||
+    repository.visibility !== "public"
+  ) {
+    throw new Error(`Repository inventory contains an unrelated or non-public entry: ${repository.fullName}`);
+  }
+  if (repositoryNames.has(repository.fullName))
+    throw new Error(`Duplicate repository: ${repository.fullName}`);
+  repositoryNames.add(repository.fullName);
+}
+const excludedNames = new Set(Object.keys(repositoryCatalogConfig.excludedRepositories));
+for (const repository of repositories) {
+  const represented = catalogue.some((app) => app.source === repository.htmlUrl);
+  if (represented === excludedNames.has(repository.name)) {
+    throw new Error(`Repository representation mismatch: ${repository.fullName}`);
+  }
+}
+for (const profile of socialProfiles) {
+  if (!catalogue.some((app) => app.category === "social" && app.target?.url === profile.url))
+    throw new Error(`Missing social app: ${profile.name}`);
+}
 console.log(
-  `App catalogue verified: ${catalogue.length} apps (${coreIds.length} compile-time core loaders).`,
+  `App catalogue verified: ${catalogue.length} apps (${repositories.length} public repositories, ${socialProfiles.length} social profiles, ${coreIds.length} compile-time core loaders).`,
 );
