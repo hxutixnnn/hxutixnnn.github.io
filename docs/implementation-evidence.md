@@ -11,7 +11,7 @@ This record captures the durable before/after and visual checks for the first Ti
 | Runtime         | Gatsby `^3.6.1`, React `^17.0.2`, LekoArts theme `^3.0.0`; no pinned Node or package manager | Astro `7.1.6` static output, React `19.2.8`, TypeScript `6.0.3`, exact Node `22.23.1` and pnpm `11.10.0`                                |
 | Presentation    | Theme-driven blog with no app/window model or responsive OS policy                           | Original glass-and-depth desktop, semantic menu/launcher, tested reducer, real lazy app surfaces, and mobile single-surface switcher    |
 | Domain artifact | `static/CNAME` contained `nguyenhuutien.com`                                                 | The output checker rejects `dist/CNAME`; canonical metadata and Pages deployment target only `https://hxutixnnn.github.io/`             |
-| Delivery        | Gatsby build; no repository CI/browser suite                                                 | 49 generated pages, 48 canonical HTML routes checked, RSS and modern/legacy sitemaps, PR validation, and GitHub Pages artifact workflow |
+| Delivery        | Gatsby build; no repository CI/browser suite                                                 | 48 generated pages, 47 canonical HTML routes checked, RSS and modern/legacy sitemaps, PR validation, and GitHub Pages artifact workflow |
 | Assets          | Starter theme assets plus a 468 KiB banner                                                   | Original generated 159.4 KiB banner; every shipped binary recorded with checksum in `src/assets/provenance.yml`                         |
 
 The existing pages, five posts, editorial images, resume, and canonical content routes remain available. Each catalogue entry also has useful static `/apps/<id>/` HTML without requiring JavaScript.
@@ -26,8 +26,8 @@ Controlled resize dimensions are mirrored only into `WindowFrame` component-loca
 
 ## Built-output and browser evidence
 
-- `scripts/check-static-output.mjs`: **48 HTML routes**, **148.7 KiB** first-party JavaScript gzip, **7.7 KiB** CSS gzip, and **159.4 KiB** banner. Limits are 160 KiB (raised from 100 KiB by the approved Base UI budget), 30 KiB, and 250 KiB respectively.
-- The build-time app catalogue records **12 owned public repositories** and maps 11 to external apps; `hxutixnnn.github.io` is represented by Tien OS itself. It also maps all **5 published social profiles** to exact new-tab destinations.
+- `scripts/check-static-output.mjs`: **47 HTML routes**, **148.7 KiB** first-party JavaScript gzip, **7.7 KiB** CSS gzip, and **159.4 KiB** banner. Limits are 160 KiB (raised from 100 KiB by the approved Base UI budget), 30 KiB, and 250 KiB respectively.
+- The build-time app catalogue records **11 owned public repositories** and maps 10 to external apps; `hxutixnnn.github.io` is represented by Tien OS itself. It also maps all **5 published social profiles** to exact new-tab destinations.
 - Vitest: **9 files / 42 tests** passed, including reducer properties (snap included), persistence validation (windows and OS settings), repository/social mapping, safe external launch behavior, catalogue schema, and shell components.
 - Playwright against `dist/` through `astro preview`: **15 tests** cover desktop lifecycle/drag/resize/persistence, keyboard menus and focus, direct/no-JS routes, axe, no third-party requests, lazy app code, 320/375/390/430 px viewports, breakpoint transitions, a 200%-zoom-equivalent CSS viewport, forced colors, and reduced motion.
 - Lighthouse static-output runs:
