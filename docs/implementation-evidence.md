@@ -1,8 +1,8 @@
 # Tien OS implementation evidence
 
-**Measured:** 2026-08-05 on the production static build (`pnpm build`).
+**Baseline measured:** 2026-08-05 at commit `10c0c28` on the production static build (`pnpm build`).
 
-This record captures the durable before/after and visual checks for the first Tien OS baseline. It complements the licensing and selection record in [`visual-baseline.md`](visual-baseline.md).
+This historical record captures the durable before/after and visual checks for the first Tien OS baseline. It complements the licensing and selection record in [`visual-baseline.md`](visual-baseline.md).
 
 ## Before and after
 

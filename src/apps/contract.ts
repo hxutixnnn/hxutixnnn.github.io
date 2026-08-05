@@ -1,6 +1,6 @@
 import type { ComponentType } from "react";
 
-export type CoreAppId = "about" | "projects" | "blog" | "uses" | "resources" | "til";
+export type CoreAppId = "about" | "projects" | "blog" | "uses" | "resources" | "til" | "airconsole";
 export type ExternalAppId = string;
 export type AppId = string;
 export type IconName =
@@ -10,6 +10,7 @@ export type IconName =
   | "tools"
   | "resources"
   | "idea"
+  | "game"
   | "image"
   | "music"
   | "car"

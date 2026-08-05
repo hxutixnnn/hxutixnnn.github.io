@@ -7,7 +7,7 @@ import socialProfiles from "../src/apps/social-links.json" with { type: "json" }
 import { mapRepositoriesToApps, mapSocialProfilesToApps } from "../src/apps/catalog-mapping.mjs";
 import { repositoryCatalogConfig } from "../src/apps/catalog.config.mjs";
 
-const coreIds = ["about", "projects", "blog", "uses", "resources", "til"];
+const coreIds = ["about", "projects", "blog", "uses", "resources", "til", "airconsole"];
 const iconNames = [
   "person",
   "projects",
@@ -15,6 +15,7 @@ const iconNames = [
   "tools",
   "resources",
   "idea",
+  "game",
   "image",
   "music",
   "car",

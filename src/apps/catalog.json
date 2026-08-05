@@ -85,6 +85,20 @@
   },
   {
     "schemaVersion": 1,
+    "id": "airconsole",
+    "status": "active",
+    "category": "system",
+    "name": "Relay Arcade",
+    "summary": "A local party-console arcade where a keyboard or a second same-origin tab can steer the action.",
+    "route": "/apps/airconsole/",
+    "documentRoute": "/airconsole/",
+    "icon": "game",
+    "owner": "Nguyễn Hữu Tiền",
+    "tags": ["arcade", "party-console", "local-play"],
+    "target": { "kind": "core", "loaderKey": "airconsole" }
+  },
+  {
+    "schemaVersion": 1,
     "id": "car-rental",
     "status": "active",
     "category": "project",

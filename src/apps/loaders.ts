@@ -7,4 +7,5 @@ export const coreLoaders: Record<CoreAppId, () => Promise<CoreAppModule>> = {
   uses: () => import("./core/UsesApp"),
   resources: () => import("./core/ResourcesApp"),
   til: () => import("./core/TilApp"),
+  airconsole: () => import("./core/AirconsoleApp"),
 };

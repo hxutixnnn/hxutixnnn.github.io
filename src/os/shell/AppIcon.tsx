@@ -37,6 +37,12 @@ const paths: Record<IconName, React.ReactNode> = {
       <path d="M19 38h10M21 42h6" />
     </>
   ),
+  game: (
+    <>
+      <path d="M13 18h22c5 0 8 4 9 10l1 7c1 6-6 8-9 3l-4-6H16l-4 6c-3 5-10 3-9-3l1-7c1-6 4-10 9-10z" />
+      <path d="M14 25v8M10 29h8M34 27h.01M39 31h.01" />
+    </>
+  ),
   image: (
     <>
       <rect x="8" y="10" width="32" height="28" rx="5" />
