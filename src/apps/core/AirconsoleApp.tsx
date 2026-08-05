@@ -441,11 +441,7 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
           {game.phase === "playing" ? (
             <ControlPad onInput={(direction) => (inputRef.current = direction)} />
           ) : (
-            <button
-              type="button"
-              className="arcade-primary-button"
-              onClick={startRound}
-            >
+            <button type="button" className="arcade-primary-button" onClick={startRound}>
               {game.phase === "finished" ? "Play again" : "Start round"}
             </button>
           )}

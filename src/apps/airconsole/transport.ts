@@ -5,7 +5,13 @@ export type ControllerCommand = "start" | "reset";
 export type RoomMessage =
   | { type: "controller:join"; room: string; clientId: string; hostId?: string; senderId?: string }
   | { type: "controller:input"; room: string; direction: GameInput; hostId?: string; senderId?: string }
-  | { type: "controller:command"; room: string; command: ControllerCommand; hostId?: string; senderId?: string }
+  | {
+      type: "controller:command";
+      room: string;
+      command: ControllerCommand;
+      hostId?: string;
+      senderId?: string;
+    }
   | { type: "host:presence"; room: string; senderId?: string }
   | { type: "host:state"; room: string; state: ArcadeGameState; senderId?: string };
 
@@ -34,7 +40,11 @@ export function makeRoomCode(random = Math.random): string {
   return Array.from({ length: 4 }, () => ROOM_ALPHABET[Math.floor(random() * ROOM_ALPHABET.length)]).join("");
 }
 
-export function createControllerInputMessage(room: string, direction: GameInput, hostId?: string): RoomMessage {
+export function createControllerInputMessage(
+  room: string,
+  direction: GameInput,
+  hostId?: string,
+): RoomMessage {
   return { type: "controller:input", room, direction, ...(hostId ? { hostId } : {}) };
 }
 

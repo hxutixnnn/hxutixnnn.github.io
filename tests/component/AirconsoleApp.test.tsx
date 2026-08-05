@@ -64,7 +64,7 @@ it("renders controller mode with accessible movement controls", () => {
   expect(screen.getByRole("button", { name: "Move left" })).toBeEnabled();
 });
 
-it("leases one host and reconnects after it leaves", () => {
+it("leases one host and reconnects after it leaves", async () => {
   vi.useFakeTimers();
   vi.stubGlobal("BroadcastChannel", MockBroadcastChannel);
   window.history.replaceState({}, "", "/apps/airconsole/?mode=controller&room=Q2RT");
@@ -88,13 +88,13 @@ it("leases one host and reconnects after it leaves", () => {
   fireEvent.click(replacementHost.getByRole("button", { name: "Host a round" }));
   const messagesBeforeOverlap = MockBroadcastChannel.messages.length;
 
-  act(() => vi.advanceTimersByTime(3_000));
+  await act(() => vi.advanceTimersByTime(3_000));
 
   expect(replacementHost.getByText("Solo keyboard ready")).toBeInTheDocument();
   expect(MockBroadcastChannel.messages.length - messagesBeforeOverlap).toBeLessThan(10);
 
   activeHost.unmount();
-  act(() => vi.advanceTimersByTime(5_000));
+  await act(() => vi.advanceTimersByTime(5_000));
 
   expect(replacementHost.getByText("Controller linked")).toBeInTheDocument();
 });

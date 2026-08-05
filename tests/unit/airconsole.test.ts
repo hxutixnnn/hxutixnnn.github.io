@@ -60,9 +60,7 @@ describe("Relay Arcade controller messages", () => {
     expect(isRoomMessage(message)).toBe(true);
     expect(isControllerMessage(message)).toBe(true);
     expect(isRoomMessage({ type: "controller:input", room: "AB2C", direction: 2 })).toBe(false);
-    expect(isRoomMessage({ type: "controller:input", room: "AB2C", direction: -1, hostId: 2 })).toBe(
-      false,
-    );
+    expect(isRoomMessage({ type: "controller:input", room: "AB2C", direction: -1, hostId: 2 })).toBe(false);
     expect(makeRoomCode(() => 0)).toBe("AAAA");
   });
 });

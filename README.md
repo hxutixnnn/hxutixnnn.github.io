@@ -63,7 +63,7 @@ The sync follows every API page, retains useful repository metadata, and writes 
 
 `.github/workflows/pages.yml` publishes `dist/` from `main` to GitHub Pages without a `CNAME`. It is intentionally scoped to `hxutixnnn.github.io`; do not change DNS, GitHub custom-domain settings, or the separate `nguyenhuutien.com` Vercel presentation as part of this repository deployment.
 
-See [`docs/visual-baseline.md`](docs/visual-baseline.md) for the licensing and fit decision, [`docs/implementation-evidence.md`](docs/implementation-evidence.md) for measured build/browser evidence, and [`AGENTS.md`](AGENTS.md) for concise maintainer guidance.
+See [`docs/visual-baseline.md`](docs/visual-baseline.md) for the licensing and fit decision, [`docs/implementation-evidence.md`](docs/implementation-evidence.md) for the first baseline's measured build/browser evidence, and [`AGENTS.md`](AGENTS.md) for concise maintainer guidance.
 
 ## License
 
