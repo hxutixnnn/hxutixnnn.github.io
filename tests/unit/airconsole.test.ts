@@ -35,6 +35,20 @@ describe("Relay Arcade game state", () => {
     expect(finished.phase).toBe("finished");
     expect(gameStatus(finished)).toMatch(/Round over/);
   });
+
+  it("starts a fresh playable round after finishing", () => {
+    const finished = stepGame(
+      { ...startGame(createGameState(9)), score: 4, misses: 2, elapsedMs: GAME_DURATION_MS - 100 },
+      0,
+      100,
+    );
+    const replayed = startGame(finished);
+
+    expect(replayed.phase).toBe("playing");
+    expect(replayed.elapsedMs).toBe(0);
+    expect(replayed.score).toBe(0);
+    expect(replayed.misses).toBe(0);
+  });
 });
 
 describe("Relay Arcade controller messages", () => {

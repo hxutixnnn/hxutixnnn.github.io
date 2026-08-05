@@ -15,6 +15,7 @@ import {
   createControllerInputMessage,
   createControllerJoinMessage,
   createRoomTransport,
+  isControllerMessage,
   makeRoomCode,
 } from "@/apps/airconsole/transport";
 import type { RoomTransport, TransportMode } from "@/apps/airconsole/transport";
@@ -132,6 +133,7 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
   const inputRef = useRef<GameInput>(0);
   const gameRef = useRef(game);
   const clientIdRef = useRef<string | null>(null);
+  const controllerOnlineRef = useRef(false);
 
   function updateLocation(nextMode: ArcadeMode, nextRoom = room) {
     const url = new URL(window.location.href);
@@ -139,6 +141,7 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
     else url.searchParams.set("mode", nextMode);
     url.searchParams.set("room", nextRoom);
     window.history.replaceState({ mode: nextMode, room: nextRoom }, "", url);
+    controllerOnlineRef.current = false;
     setControllerOnline(false);
     setRemoteGame(null);
     if (nextMode === "lobby") setTransportMode("unavailable");
@@ -168,11 +171,15 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
 
     const transport = createRoomTransport(room, (message) => {
       if (mode === "host") {
-        if (message.type === "controller:join") {
+        if (isControllerMessage(message)) {
+          const newlyConnected = !controllerOnlineRef.current;
+          controllerOnlineRef.current = true;
           setControllerOnline(true);
+          if (newlyConnected) announce("A controller joined the room");
+        }
+        if (message.type === "controller:join") {
           transport.send({ type: "host:presence", room });
           transport.send({ type: "host:state", room, state: gameRef.current });
-          announce("A controller joined the room");
         } else if (message.type === "controller:input") {
           inputRef.current = message.direction;
         } else if (message.type === "controller:command") {
@@ -180,8 +187,15 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
           if (message.command === "reset") setGame(resetGame());
         }
       } else if (message.type === "host:presence" || message.type === "host:state") {
+        const shouldReconnect = !controllerOnlineRef.current;
+        controllerOnlineRef.current = true;
         setControllerOnline(true);
         if (message.type === "host:state") setRemoteGame(message.state);
+        if (shouldReconnect) {
+          const clientId = clientIdRef.current ?? `controller-${Math.random().toString(36).slice(2)}`;
+          clientIdRef.current = clientId;
+          transport.send(createControllerJoinMessage(room, clientId));
+        }
       }
     });
     transportRef.current = transport;
@@ -258,11 +272,6 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
   function startRound() {
     setGame((current) => startGame(current));
     announce("Round started — catch the falling sparks");
-  }
-
-  function resetRound() {
-    setGame(resetGame());
-    announce("New round ready");
   }
 
   function sendControllerInput(direction: GameInput) {
@@ -394,7 +403,7 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
             <button
               type="button"
               className="arcade-primary-button"
-              onClick={game.phase === "finished" ? resetRound : startRound}
+              onClick={startRound}
             >
               {game.phase === "finished" ? "Play again" : "Start round"}
             </button>

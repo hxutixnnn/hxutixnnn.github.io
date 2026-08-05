@@ -58,7 +58,9 @@ export function createGameState(seed = 0x1a2b3c4d): ArcadeGameState {
 }
 
 export function startGame(state: ArcadeGameState): ArcadeGameState {
-  return state.phase === "playing" ? state : { ...state, phase: "playing" };
+  if (state.phase === "playing") return state;
+  const nextState = state.phase === "finished" ? resetGame() : state;
+  return { ...nextState, phase: "playing" };
 }
 
 export function resetGame(seed = Date.now()): ArcadeGameState {
