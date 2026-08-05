@@ -57,7 +57,7 @@ pnpm sync:repositories
 pnpm validate:catalog
 ```
 
-The sync follows every API page, retains useful repository metadata, and writes `src/apps/repositories.json` in deterministic name order. The static catalogue maps each repository to its configured HTTPS homepage when safe, otherwise to its GitHub URL. Forked, archived, and disabled public repositories remain represented; private or unrelated repositories are rejected. `hxutixnnn.github.io` is the sole mapping exclusion because the current repository is already represented by the Tien OS system surface. Review and commit the generated JSON diff. Repository display overrides belong in `src/apps/catalog.config.mjs`; social profiles are maintained once in `src/apps/social-links.json`.
+The sync follows every API page, retains useful repository metadata, and writes `src/apps/repositories.json` in deterministic name order. The static catalogue maps each repository to its credential-free HTTPS homepage when available, otherwise to its exact GitHub URL. Forked, archived, and disabled public repositories remain represented; private or unrelated repositories are rejected. `hxutixnnn.github.io` is the sole mapping exclusion because the current repository is already represented by the Tien OS system surface. Review the generated JSON diff, including changed homepage values and resulting launch targets, before committing it. Repository display overrides belong in `src/apps/catalog.config.mjs`; social profiles are maintained once in `src/apps/social-links.json`.
 
 ## Deployment boundary
 
