@@ -59,7 +59,7 @@ it("renders controller mode with accessible movement controls", () => {
   expect(screen.getByRole("button", { name: "Move left" })).toBeEnabled();
 });
 
-it("reconnects a controller that opened before the host", async () => {
+it("reconnects a controller to late and replacement hosts", async () => {
   const user = userEvent.setup();
   vi.stubGlobal("BroadcastChannel", MockBroadcastChannel);
   window.history.replaceState({}, "", "/apps/airconsole/?mode=controller&room=Q2RT");
@@ -75,4 +75,13 @@ it("reconnects a controller that opened before the host", async () => {
 
   expect(await screen.findByText("Controller linked")).toBeInTheDocument();
   expect(screen.getByText(/Host connected/)).toBeInTheDocument();
+
+  host.unmount();
+  window.history.replaceState({}, "", "/apps/airconsole/?room=Q2RT");
+  const replacementHost = render(
+    <AirconsoleApp appId="airconsole" announce={vi.fn()} navigate={vi.fn()} openExternal={vi.fn()} />,
+  );
+  await user.click(replacementHost.getByRole("button", { name: "Host a round" }));
+
+  expect(await replacementHost.findByText("Controller linked")).toBeInTheDocument();
 });

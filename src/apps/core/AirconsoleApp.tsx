@@ -134,6 +134,7 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
   const gameRef = useRef(game);
   const clientIdRef = useRef<string | null>(null);
   const controllerOnlineRef = useRef(false);
+  const activeHostIdRef = useRef<string | null>(null);
 
   function updateLocation(nextMode: ArcadeMode, nextRoom = room) {
     const url = new URL(window.location.href);
@@ -142,6 +143,7 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
     url.searchParams.set("room", nextRoom);
     window.history.replaceState({ mode: nextMode, room: nextRoom }, "", url);
     controllerOnlineRef.current = false;
+    activeHostIdRef.current = null;
     setControllerOnline(false);
     setRemoteGame(null);
     if (nextMode === "lobby") setTransportMode("unavailable");
@@ -187,6 +189,10 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
           if (message.command === "reset") setGame(resetGame());
         }
       } else if (message.type === "host:presence" || message.type === "host:state") {
+        if (message.senderId && message.senderId !== activeHostIdRef.current) {
+          activeHostIdRef.current = message.senderId;
+          controllerOnlineRef.current = false;
+        }
         const shouldReconnect = !controllerOnlineRef.current;
         controllerOnlineRef.current = true;
         setControllerOnline(true);
