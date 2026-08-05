@@ -3,16 +3,22 @@ title: Works
 slug: "/works"
 ---
 
-These are substantial projects with their own deployment and release lifecycle. They open outside Tien OS rather than being placed in an iframe.
+import { projectCatalogue } from "../../../src/apps/catalog";
 
-## Image Restoration
+This is the complete build-time index of owned public GitHub repositories and selected deployed work. Each project opens outside Tien OS at its credential-free HTTPS homepage when available, or at its exact GitHub repository URL.
 
-[khoiphucanh.com](https://khoiphucanh.com/?src=hxutixnnn.github.io) is a free online image-restoration service built with Next.js, Tailwind, and Hugging Face APIs. [View project details](/apps/image-restoration/).
+{projectCatalogue.map((project) => (
 
-## Karaoke Player
-
-[karatube.online](https://karatube.online/?src=hxutixnnn.github.io) is a web karaoke experiment using YouTube video sources and a focused playback interface. [View project details](/apps/karaoke-player/).
-
-## Car Rental Site
-
-[daiphubinhan.com](https://daiphubinhan.com/?src=hxutixnnn.github.io) is a local car-rental site built with Next.js, Chakra UI, and a Notion-backed workflow. [View project details](/apps/car-rental/).
+  <section>
+    <h2>{project.name}</h2>
+    <p>{project.summary}</p>
+    <p>
+      <a href={project.route}>View project details</a>
+      {" · "}
+      <a href={project.target.url} target="_blank" rel="noopener noreferrer">
+        Launch project
+        <span className="sr-only"> in a new tab</span>
+      </a>
+    </p>
+  </section>
+))}

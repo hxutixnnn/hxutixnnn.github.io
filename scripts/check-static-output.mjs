@@ -1,7 +1,17 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { resolve, extname } from "node:path";
 import { gzipSync } from "node:zlib";
-import catalog from "../src/apps/catalog.json" with { type: "json" };
+import baseCatalog from "../src/apps/catalog.json" with { type: "json" };
+import repositories from "../src/apps/repositories.json" with { type: "json" };
+import socialProfiles from "../src/apps/social-links.json" with { type: "json" };
+import { mapRepositoriesToApps, mapSocialProfilesToApps } from "../src/apps/catalog-mapping.mjs";
+import { repositoryCatalogConfig } from "../src/apps/catalog.config.mjs";
+
+const catalog = [
+  ...baseCatalog,
+  ...mapRepositoriesToApps(repositories, repositoryCatalogConfig),
+  ...mapSocialProfilesToApps(socialProfiles, repositoryCatalogConfig.displayOwner),
+];
 
 const root = resolve(import.meta.dirname, "..");
 const dist = resolve(root, "dist");

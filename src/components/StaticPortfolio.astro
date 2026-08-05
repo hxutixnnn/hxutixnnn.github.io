@@ -1,5 +1,5 @@
 ---
-import { coreCatalogue, externalCatalogue } from "@/apps/catalog";
+import { coreCatalogue, projectCatalogue, socialCatalogue } from "@/apps/catalog";
 import { postSummaries } from "@/content/portfolio";
 ---
 
@@ -44,7 +44,24 @@ import { postSummaries } from "@/content/portfolio";
       </header>
       <ul class="fallback-projects">
         {
-          externalCatalogue.map((app) => (
+          projectCatalogue.map((app) => (
+            <li>
+              <a href={app.route}>
+                <>
+                  <strong>{app.name}</strong>
+                  <span>{app.summary}</span>
+                </>
+              </a>
+            </li>
+          ))
+        }
+      </ul>
+    </section>
+    <section aria-labelledby="social-title">
+      <header class="section-heading"><span>03</span><h2 id="social-title">Social profiles</h2></header>
+      <ul class="fallback-projects">
+        {
+          socialCatalogue.map((app) => (
             <li>
               <a href={app.route}>
                 <>
@@ -58,7 +75,7 @@ import { postSummaries } from "@/content/portfolio";
       </ul>
     </section>
     <section aria-labelledby="writing-title">
-      <header class="section-heading"><span>03</span><h2 id="writing-title">Recent writing</h2></header>
+      <header class="section-heading"><span>04</span><h2 id="writing-title">Recent writing</h2></header>
       <ol class="fallback-posts">
         {
           postSummaries.slice(0, 3).map((post) => (

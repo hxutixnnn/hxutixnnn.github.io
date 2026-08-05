@@ -1,7 +1,25 @@
-import catalogData from "./catalog.json";
+import baseCatalogData from "./catalog.json";
+import repositoryData from "./repositories.json";
+import socialProfileData from "./social-links.json";
+import { mapRepositoriesToApps, mapSocialProfilesToApps } from "./catalog-mapping.mjs";
+import { repositoryCatalogConfig } from "./catalog.config.mjs";
 import type { AppDescriptor, AppId, CoreAppId } from "./contract";
+import type { RepositoryInventoryItem, SocialProfile } from "./catalog-mapping.mjs";
 
-export const appCatalogue = catalogData as readonly AppDescriptor[];
+const generatedRepositoryApps = mapRepositoriesToApps(
+  repositoryData as RepositoryInventoryItem[],
+  repositoryCatalogConfig,
+);
+const generatedSocialApps = mapSocialProfilesToApps(
+  socialProfileData as SocialProfile[],
+  repositoryCatalogConfig.displayOwner,
+);
+
+export const appCatalogue = [
+  ...(baseCatalogData as AppDescriptor[]),
+  ...generatedRepositoryApps,
+  ...generatedSocialApps,
+] as readonly AppDescriptor[];
 
 export const appById = new Map<AppId, AppDescriptor>(appCatalogue.map((app) => [app.id, app] as const));
 
@@ -15,6 +33,9 @@ export const externalCatalogue = appCatalogue.filter(
     app.target?.kind === "external",
 );
 
+export const projectCatalogue = externalCatalogue.filter((app) => app.category === "project");
+export const socialCatalogue = externalCatalogue.filter((app) => app.category === "social");
+
 export function getApp(id: string): AppDescriptor | undefined {
-  return appById.get(id as AppId);
+  return appById.get(id);
 }

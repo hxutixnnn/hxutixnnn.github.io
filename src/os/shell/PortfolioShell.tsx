@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { appById } from "@/apps/catalog";
-import type { CoreAppId, CoreAppProps } from "@/apps/contract";
+import type { AppId, CoreAppId, CoreAppProps } from "@/apps/contract";
+import { openExternalTarget } from "@/apps/launch";
 import { appManifests } from "@/apps/manifests";
 import {
   desktopReducer,
@@ -120,7 +121,7 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  function track(appId: CoreAppId, action: "app_open" | "app_close") {
+  function track(appId: AppId, action: "app_open" | "app_close") {
     window.dispatchEvent(new CustomEvent("tien:analytics", { detail: { event: action, appId } }));
   }
 
@@ -157,6 +158,23 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     }
     const targetId: WindowId = existing?.id ?? `window-${state.nextWindowId}`;
     focusFrame(targetId);
+  }
+
+  function launchExternalApp(appId: AppId) {
+    const app = appById.get(appId);
+    if (app?.target?.kind !== "external") return;
+    if (openExternalTarget(app.target)) {
+      track(appId, "app_open");
+      setAnnouncement(`${app.name} opened in a new tab`);
+    } else {
+      setAnnouncement(`${app.name} could not be opened`);
+    }
+  }
+
+  function launchApp(appId: AppId) {
+    const app = appById.get(appId);
+    if (app?.target?.kind === "core") openApp(app.target.loaderKey);
+    else launchExternalApp(appId);
   }
 
   function successorAfter(id: WindowId, windows = state.windows): WindowState | undefined {
@@ -438,7 +456,7 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
             );
           })}
         </main>
-        {mobile && visibleWindows.length === 0 && <MobileLauncher onOpen={openApp} />}
+        {mobile && visibleWindows.length === 0 && <MobileLauncher onLaunch={launchApp} />}
       </div>
 
       {mobile ? (
@@ -473,6 +491,7 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
         open={spotlightOpen}
         onOpenChange={(open) => (open ? openSpotlight() : closeSpotlight())}
         onOpenApp={openApp}
+        onOpenExternal={launchExternalApp}
         onNavigate={(url) => window.location.assign(url)}
         onAnnounce={setAnnouncement}
       />

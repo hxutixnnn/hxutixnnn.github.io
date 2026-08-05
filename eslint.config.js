@@ -3,7 +3,7 @@ import jsxA11y from "eslint-plugin-jsx-a11y";
 import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
-const typescriptFiles = ["**/*.{ts,tsx}"];
+const typescriptFiles = ["**/*.{ts,tsx,mts}"];
 
 export default tseslint.config(
   {

@@ -137,6 +137,37 @@ it("tracks app opens only when a new window is created", async () => {
   window.removeEventListener("tien:analytics", listener);
 });
 
+it("finds and safely launches social apps through Spotlight", async () => {
+  const user = userEvent.setup();
+  const open = vi.spyOn(window, "open").mockImplementation(() => null);
+  render(<PortfolioShell />);
+
+  await user.click(screen.getByRole("button", { name: "Spotlight search" }));
+  await user.type(screen.getByRole("combobox", { name: "Search or ask" }), "Facebook");
+  await user.click(screen.getByRole("option", { name: /Facebook/ }));
+
+  expect(open).toHaveBeenCalledWith("https://www.facebook.com/hxutixnnn", "_blank", "noopener,noreferrer");
+  expect(screen.getByText("Facebook opened in a new tab")).toBeInTheDocument();
+});
+
+it("finds repository apps and launches their configured homepage", async () => {
+  const user = userEvent.setup();
+  const open = vi.spyOn(window, "open").mockImplementation(() => null);
+  render(<PortfolioShell />);
+
+  await user.click(screen.getByRole("button", { name: "Spotlight search" }));
+  await user.type(screen.getByRole("combobox", { name: "Search or ask" }), "jquery-website-input");
+  const result = screen.getByRole("option", { name: /jquery-website-input.*New tab/ });
+  expect(within(result).getByText("New tab")).toBeVisible();
+  await user.click(result);
+
+  expect(open).toHaveBeenCalledWith(
+    "https://hxutixnnn.github.io/jquery-website-input",
+    "_blank",
+    "noopener,noreferrer",
+  );
+});
+
 it("keeps mobile switcher focus modal and restores its opener", async () => {
   vi.spyOn(window, "matchMedia").mockImplementation(
     (query) =>
