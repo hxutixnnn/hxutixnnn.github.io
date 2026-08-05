@@ -22,6 +22,9 @@ import type { RoomTransport, TransportMode } from "@/apps/airconsole/transport";
 
 type ArcadeMode = "lobby" | "host" | "controller";
 
+const HOST_HEARTBEAT_MS = 1_000;
+const HOST_LEASE_MS = 4_000;
+
 function queryMode(): ArcadeMode {
   if (typeof window === "undefined") return "lobby";
   return new URLSearchParams(window.location.search).get("mode") === "controller" ? "controller" : "lobby";
@@ -135,6 +138,7 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
   const clientIdRef = useRef<string | null>(null);
   const controllerOnlineRef = useRef(false);
   const activeHostIdRef = useRef<string | null>(null);
+  const lastHostSeenRef = useRef(0);
 
   function updateLocation(nextMode: ArcadeMode, nextRoom = room) {
     const url = new URL(window.location.href);
@@ -144,6 +148,7 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
     window.history.replaceState({ mode: nextMode, room: nextRoom }, "", url);
     controllerOnlineRef.current = false;
     activeHostIdRef.current = null;
+    lastHostSeenRef.current = 0;
     setControllerOnline(false);
     setRemoteGame(null);
     if (nextMode === "lobby") setTransportMode("unavailable");
@@ -173,6 +178,7 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
 
     const transport = createRoomTransport(room, (message) => {
       if (mode === "host") {
+        if (isControllerMessage(message) && message.hostId && message.hostId !== transport.id) return;
         if (isControllerMessage(message)) {
           const newlyConnected = !controllerOnlineRef.current;
           controllerOnlineRef.current = true;
@@ -189,18 +195,19 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
           if (message.command === "reset") setGame(resetGame());
         }
       } else if (message.type === "host:presence" || message.type === "host:state") {
-        if (message.senderId && message.senderId !== activeHostIdRef.current) {
-          activeHostIdRef.current = message.senderId;
-          controllerOnlineRef.current = false;
-        }
-        const shouldReconnect = !controllerOnlineRef.current;
+        const hostId = message.senderId;
+        if (!hostId) return;
+        if (activeHostIdRef.current && activeHostIdRef.current !== hostId) return;
+        const shouldReconnect = !controllerOnlineRef.current || activeHostIdRef.current === null;
+        activeHostIdRef.current = hostId;
+        lastHostSeenRef.current = Date.now();
         controllerOnlineRef.current = true;
         setControllerOnline(true);
         if (message.type === "host:state") setRemoteGame(message.state);
         if (shouldReconnect) {
           const clientId = clientIdRef.current ?? `controller-${Math.random().toString(36).slice(2)}`;
           clientIdRef.current = clientId;
-          transport.send(createControllerJoinMessage(room, clientId));
+          transport.send(createControllerJoinMessage(room, clientId, hostId));
         }
       }
     });
@@ -218,6 +225,30 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
       if (transportRef.current === transport) transportRef.current = null;
     };
   }, [announce, mode, room]);
+
+  useEffect(() => {
+    if (mode !== "host") return;
+    const timer = window.setInterval(() => {
+      transportRef.current?.send({ type: "host:presence", room });
+    }, HOST_HEARTBEAT_MS);
+    return () => window.clearInterval(timer);
+  }, [mode, room]);
+
+  useEffect(() => {
+    if (mode !== "controller") return;
+    const timer = window.setInterval(() => {
+      if (!activeHostIdRef.current || Date.now() - lastHostSeenRef.current < HOST_LEASE_MS) return;
+      activeHostIdRef.current = null;
+      lastHostSeenRef.current = 0;
+      controllerOnlineRef.current = false;
+      setControllerOnline(false);
+      setRemoteGame(null);
+      const clientId = clientIdRef.current ?? `controller-${Math.random().toString(36).slice(2)}`;
+      clientIdRef.current = clientId;
+      transportRef.current?.send(createControllerJoinMessage(room, clientId));
+    }, HOST_HEARTBEAT_MS);
+    return () => window.clearInterval(timer);
+  }, [mode, room]);
 
   useEffect(() => {
     if (mode !== "host") return;
@@ -281,11 +312,15 @@ export default function AirconsoleApp({ announce }: CoreAppProps) {
   }
 
   function sendControllerInput(direction: GameInput) {
-    transportRef.current?.send(createControllerInputMessage(room, direction));
+    transportRef.current?.send(
+      createControllerInputMessage(room, direction, activeHostIdRef.current ?? undefined),
+    );
   }
 
   function sendControllerCommand(command: "start" | "reset") {
-    transportRef.current?.send(createControllerCommandMessage(room, command));
+    transportRef.current?.send(
+      createControllerCommandMessage(room, command, activeHostIdRef.current ?? undefined),
+    );
     announce(command === "start" ? "Start signal sent" : "Reset signal sent");
   }
 

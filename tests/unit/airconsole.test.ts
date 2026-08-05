@@ -53,12 +53,16 @@ describe("Relay Arcade game state", () => {
 
 describe("Relay Arcade controller messages", () => {
   it("creates room-safe controller messages and validates their shape", () => {
-    const message = createControllerInputMessage("ab2c", -1);
+    const message = createControllerInputMessage("ab2c", -1, "host-1");
 
     expect(roomChannelName("ab2c")).toBe("tien-relay-arcade:AB2C");
+    expect(message).toMatchObject({ hostId: "host-1" });
     expect(isRoomMessage(message)).toBe(true);
     expect(isControllerMessage(message)).toBe(true);
     expect(isRoomMessage({ type: "controller:input", room: "AB2C", direction: 2 })).toBe(false);
+    expect(isRoomMessage({ type: "controller:input", room: "AB2C", direction: -1, hostId: 2 })).toBe(
+      false,
+    );
     expect(makeRoomCode(() => 0)).toBe("AAAA");
   });
 });

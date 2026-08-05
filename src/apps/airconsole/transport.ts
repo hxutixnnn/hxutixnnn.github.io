@@ -3,15 +3,21 @@ import type { ArcadeGameState, GameInput } from "./game";
 export type ControllerCommand = "start" | "reset";
 
 export type RoomMessage =
-  | { type: "controller:join"; room: string; clientId: string; senderId?: string }
-  | { type: "controller:input"; room: string; direction: GameInput; senderId?: string }
-  | { type: "controller:command"; room: string; command: ControllerCommand; senderId?: string }
+  | { type: "controller:join"; room: string; clientId: string; hostId?: string; senderId?: string }
+  | { type: "controller:input"; room: string; direction: GameInput; hostId?: string; senderId?: string }
+  | { type: "controller:command"; room: string; command: ControllerCommand; hostId?: string; senderId?: string }
   | { type: "host:presence"; room: string; senderId?: string }
   | { type: "host:state"; room: string; state: ArcadeGameState; senderId?: string };
+
+export type ControllerMessage = Extract<
+  RoomMessage,
+  { type: "controller:join" | "controller:input" | "controller:command" }
+>;
 
 export type TransportMode = "broadcast-channel" | "storage" | "unavailable";
 
 export type RoomTransport = {
+  id: string;
   mode: TransportMode;
   send: (message: RoomMessage) => void;
   close: () => void;
@@ -28,26 +34,32 @@ export function makeRoomCode(random = Math.random): string {
   return Array.from({ length: 4 }, () => ROOM_ALPHABET[Math.floor(random() * ROOM_ALPHABET.length)]).join("");
 }
 
-export function createControllerInputMessage(room: string, direction: GameInput): RoomMessage {
-  return { type: "controller:input", room, direction };
+export function createControllerInputMessage(room: string, direction: GameInput, hostId?: string): RoomMessage {
+  return { type: "controller:input", room, direction, ...(hostId ? { hostId } : {}) };
 }
 
-export function createControllerJoinMessage(room: string, clientId: string): RoomMessage {
-  return { type: "controller:join", room, clientId };
+export function createControllerJoinMessage(room: string, clientId: string, hostId?: string): RoomMessage {
+  return { type: "controller:join", room, clientId, ...(hostId ? { hostId } : {}) };
 }
 
-export function createControllerCommandMessage(room: string, command: ControllerCommand): RoomMessage {
-  return { type: "controller:command", room, command };
+export function createControllerCommandMessage(
+  room: string,
+  command: ControllerCommand,
+  hostId?: string,
+): RoomMessage {
+  return { type: "controller:command", room, command, ...(hostId ? { hostId } : {}) };
 }
 
-export function isControllerMessage(message: RoomMessage): boolean {
+export function isControllerMessage(message: RoomMessage): message is ControllerMessage {
   return message.type.startsWith("controller:");
 }
 
 export function isRoomMessage(value: unknown): value is RoomMessage {
   if (!value || typeof value !== "object") return false;
   const message = value as Partial<RoomMessage>;
+  const hostId = (message as { hostId?: unknown }).hostId;
   if (typeof message.room !== "string" || typeof message.type !== "string") return false;
+  if (hostId !== undefined && typeof hostId !== "string") return false;
   if (message.type === "controller:join") return typeof message.clientId === "string";
   if (message.type === "controller:input")
     return message.direction === -1 || message.direction === 0 || message.direction === 1;
@@ -64,7 +76,7 @@ function makeSenderId(): string {
 
 export function createRoomTransport(room: string, onMessage: (message: RoomMessage) => void): RoomTransport {
   if (typeof window === "undefined") {
-    return { mode: "unavailable", send: () => undefined, close: () => undefined };
+    return { id: "unavailable", mode: "unavailable", send: () => undefined, close: () => undefined };
   }
 
   const senderId = makeSenderId();
@@ -111,6 +123,7 @@ export function createRoomTransport(room: string, onMessage: (message: RoomMessa
   }
 
   return {
+    id: senderId,
     get mode() {
       return mode;
     },
