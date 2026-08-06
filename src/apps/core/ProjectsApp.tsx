@@ -1,12 +1,14 @@
 import { projectCatalogue } from "@/apps/catalog";
-import { AppIntro, DocumentLink, ExternalLink } from "./shared";
+import type { CoreAppProps } from "@/apps/contract";
+import { AppIntro, DocumentLink } from "./shared";
 
-export default function ProjectsApp() {
+export default function ProjectsApp({ openApp }: Pick<CoreAppProps, "openApp">) {
   return (
     <article className="app-document">
       <AppIntro eyebrow="Public work" title="Every project has a real destination.">
-        This build-time catalogue includes every owned public GitHub repository plus selected deployed work.
-        Each app opens its configured homepage when available, or falls back to its repository.
+        This build-time catalogue includes reviewed deployed work from owned public repositories. Projects
+        with no deployed HTTPS homepage are intentionally omitted; each retained project opens inside this
+        shell.
       </AppIntro>
       <div className="project-list">
         {projectCatalogue.map((project, index) => (
@@ -19,7 +21,16 @@ export default function ProjectsApp() {
               <p>{project.summary}</p>
               <div className="project-actions">
                 <a href={project.route}>Project details</a>
-                <ExternalLink href={project.target.url}>Launch project</ExternalLink>
+                <a
+                  href={project.route}
+                  onClick={(event) => {
+                    if (!openApp) return;
+                    event.preventDefault();
+                    openApp(project.id);
+                  }}
+                >
+                  Launch project
+                </a>
               </div>
             </div>
           </section>

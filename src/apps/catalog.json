@@ -109,9 +109,9 @@
     "owner": "Nguyễn Hữu Tiền",
     "tags": ["nextjs", "local-business"],
     "target": {
-      "kind": "external",
+      "kind": "embedded",
       "url": "https://daiphubinhan.com/?src=hxutixnnn.github.io",
-      "presentation": "new-tab",
+      "presentation": "embedded",
       "allowedOrigin": "https://daiphubinhan.com"
     }
   }

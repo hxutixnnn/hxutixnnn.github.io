@@ -1,5 +1,6 @@
-import type { AppDescriptor, ExternalTarget, IconName } from "./contract";
+import type { AppDescriptor, EmbeddedTarget, ExternalTarget, IconName } from "./contract";
 
+export type EmbeddedAppDescriptor = AppDescriptor & { target: EmbeddedTarget };
 export type ExternalAppDescriptor = AppDescriptor & { target: ExternalTarget };
 
 export type RepositoryInventoryItem = {
@@ -29,11 +30,11 @@ export type RepositoryCatalogConfig = {
 
 export type SocialProfile = { id: string; name: string; url: string; icon: IconName };
 
-export function selectRepositoryLaunchUrl(repository: RepositoryInventoryItem): string;
+export function selectRepositoryLaunchUrl(repository: RepositoryInventoryItem): string | null;
 export function mapRepositoriesToApps(
   repositories: readonly RepositoryInventoryItem[],
   config: RepositoryCatalogConfig,
-): ExternalAppDescriptor[];
+): EmbeddedAppDescriptor[];
 export function mapSocialProfilesToApps(
   profiles: readonly SocialProfile[],
   displayOwner: string,

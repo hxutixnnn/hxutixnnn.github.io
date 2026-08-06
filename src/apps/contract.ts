@@ -25,6 +25,7 @@ export type CoreAppProps = {
   appId: CoreAppId;
   announce: (message: string) => void;
   navigate: (url: string) => void;
+  openApp?: (appId: AppId) => void;
   openExternal: (url: string) => void;
 };
 
@@ -33,6 +34,13 @@ export type CoreAppModule = { default: ComponentType<CoreAppProps> };
 export type CoreTarget = {
   kind: "core";
   loaderKey: CoreAppId;
+};
+
+export type EmbeddedTarget = {
+  kind: "embedded";
+  url: `https://${string}`;
+  presentation: "embedded";
+  allowedOrigin: `https://${string}`;
 };
 
 export type ExternalTarget = {
@@ -55,7 +63,7 @@ export type AppDescriptor = {
   owner: string;
   tags: readonly string[];
   source?: `https://github.com/${string}`;
-  target?: CoreTarget | ExternalTarget;
+  target?: CoreTarget | EmbeddedTarget | ExternalTarget;
 };
 
 export type AppWindowManifest = {
@@ -69,3 +77,16 @@ export type AppWindowManifest = {
   commands: readonly ("close" | "minimize" | "maximize" | "document")[];
   load: () => Promise<CoreAppModule>;
 };
+
+export type EmbeddedWindowManifest = {
+  id: "embedded";
+  title: string;
+  singleton: true;
+  mobile: "fullscreen";
+  resizable: true;
+  initial: { width: number; height: number };
+  min: { width: number; height: number };
+  commands: readonly ("close" | "minimize" | "maximize" | "document")[];
+};
+
+export type WindowManifest = AppWindowManifest | EmbeddedWindowManifest;

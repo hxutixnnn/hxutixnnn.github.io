@@ -150,22 +150,31 @@ it("finds and safely launches social apps through Spotlight", async () => {
   expect(screen.getByText("Facebook opened in a new tab")).toBeInTheDocument();
 });
 
-it("finds repository apps and launches their configured homepage", async () => {
+it("finds retained repository apps and opens them inside a generic project window", async () => {
   const user = userEvent.setup();
-  const open = vi.spyOn(window, "open").mockImplementation(() => null);
   render(<PortfolioShell />);
 
   await user.click(screen.getByRole("button", { name: "Spotlight search" }));
   await user.type(screen.getByRole("combobox", { name: "Search or ask" }), "jquery-website-input");
-  const result = screen.getByRole("option", { name: /jquery-website-input.*New tab/ });
-  expect(within(result).getByText("New tab")).toBeVisible();
+  const result = screen.getByRole("option", { name: /jquery-website-input/ });
+  expect(within(result).queryByText("New tab")).not.toBeInTheDocument();
   await user.click(result);
 
-  expect(open).toHaveBeenCalledWith(
-    "https://hxutixnnn.github.io/jquery-website-input",
-    "_blank",
-    "noopener,noreferrer",
+  const frame = await screen.findByTitle("jquery-website-input deployed project");
+  expect(frame.closest("[data-embedded-app]")).toHaveAttribute(
+    "data-embedded-app",
+    "repo-jquery-website-input",
   );
+  expect(frame).toHaveAttribute("src", "https://hxutixnnn.github.io/jquery-website-input");
+});
+
+it("omits GitHub-only repositories from Spotlight", async () => {
+  const user = userEvent.setup();
+  render(<PortfolioShell />);
+
+  await user.click(screen.getByRole("button", { name: "Spotlight search" }));
+  await user.type(screen.getByRole("combobox", { name: "Search or ask" }), "harness-skills");
+  expect(screen.queryByRole("option", { name: /harness-skills/ })).not.toBeInTheDocument();
 });
 
 it("keeps mobile switcher focus modal and restores its opener", async () => {

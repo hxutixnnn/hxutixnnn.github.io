@@ -37,32 +37,42 @@ function repository(overrides: Partial<RepositoryInventoryItem> = {}): Repositor
 }
 
 describe("repository app mapping", () => {
-  it("maps every eligible owned public repository once in deterministic order", () => {
+  it("maps only deployed owned public repositories once in deterministic order", () => {
     const input = [
       repository({
         name: "z-last",
         fullName: "hxutixnnn/z-last",
         htmlUrl: "https://github.com/hxutixnnn/z-last",
+        homepage: "https://z.example.com",
       }),
       repository({
         name: "a-first",
         fullName: "hxutixnnn/a-first",
         htmlUrl: "https://github.com/hxutixnnn/a-first",
+        homepage: "https://a.example.com",
       }),
       repository({
         name: "a-first",
         fullName: "hxutixnnn/a-first",
         htmlUrl: "https://github.com/hxutixnnn/a-first",
+        homepage: "https://a.example.com",
+      }),
+      repository({
+        name: "github-only",
+        fullName: "hxutixnnn/github-only",
+        htmlUrl: "https://github.com/hxutixnnn/github-only",
       }),
       repository({
         name: "hxutixnnn.github.io",
         fullName: "hxutixnnn/hxutixnnn.github.io",
         htmlUrl: "https://github.com/hxutixnnn/hxutixnnn.github.io",
+        homepage: "https://portfolio.example.com",
       }),
       repository({
         name: "private",
         fullName: "hxutixnnn/private",
         htmlUrl: "https://github.com/hxutixnnn/private",
+        homepage: "https://private.example.com",
         private: true,
       }),
       repository({
@@ -70,6 +80,7 @@ describe("repository app mapping", () => {
         fullName: "other/unrelated",
         owner: "other",
         htmlUrl: "https://github.com/other/unrelated",
+        homepage: "https://other.example.com",
       }),
     ];
 
@@ -79,20 +90,25 @@ describe("repository app mapping", () => {
     ]);
   });
 
-  it("uses a safe homepage, falls back to GitHub, and handles missing metadata", () => {
+  it("requires a safe deployed homepage and never falls back to GitHub", () => {
     const deployed = repository({ homepage: "https://demo.example.com/path" });
     const unsafeHomepage = repository({ homepage: "http://demo.example.com" });
+    const githubHomepage = repository({ homepage: "https://github.com/hxutixnnn/sample-app" });
     expect(selectRepositoryLaunchUrl(deployed)).toBe("https://demo.example.com/path");
-    expect(selectRepositoryLaunchUrl(unsafeHomepage)).toBe("https://github.com/hxutixnnn/sample-app");
+    expect(selectRepositoryLaunchUrl(unsafeHomepage)).toBeNull();
+    expect(selectRepositoryLaunchUrl(githubHomepage)).toBeNull();
+    expect(mapRepositoriesToApps([unsafeHomepage, githubHomepage], config)).toEqual([]);
 
-    const app = mapRepositoriesToApps([unsafeHomepage], config)[0];
+    const app = mapRepositoriesToApps([deployed], config)[0];
     if (!app) throw new Error("Expected a mapped repository app");
-    expect(app.summary).toBe("Explore the sample-app public repository on GitHub.");
+    expect(app.summary).toBe("Explore the sample-app deployed project.");
     expect(app.tags).toEqual(["github"]);
+    expect(app.source).toBe("https://github.com/hxutixnnn/sample-app");
     expect(app.target).toMatchObject({
-      url: "https://github.com/hxutixnnn/sample-app",
-      allowedOrigin: "https://github.com",
-      presentation: "new-tab",
+      kind: "embedded",
+      url: "https://demo.example.com/path",
+      allowedOrigin: "https://demo.example.com",
+      presentation: "embedded",
     });
   });
 

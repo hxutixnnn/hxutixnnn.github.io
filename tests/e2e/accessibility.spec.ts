@@ -41,9 +41,9 @@ test("document route remains useful with JavaScript disabled", async ({ browser 
   await context.close();
 });
 
-test("external app details use safe new-tab links and load no embedded app", async ({ page }) => {
-  await page.goto("/apps/image-restoration/");
-  const launch = page.getByRole("link", { name: /Launch Image Restoration/ });
+test("social app details use safe new-tab links and load no embedded app", async ({ page }) => {
+  await page.goto("/apps/social-github/");
+  const launch = page.getByRole("link", { name: /Launch GitHub/ });
   await expect(launch).toHaveAttribute("target", "_blank");
   await expect(launch).toHaveAttribute("rel", /noopener/);
   await expect(launch).toHaveAttribute("rel", /noreferrer/);

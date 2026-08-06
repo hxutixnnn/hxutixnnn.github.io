@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { appById, appCatalogue } from "@/apps/catalog";
-import type { AppId, CoreAppId } from "@/apps/contract";
+import type { AppId } from "@/apps/contract";
 import { AppIcon } from "./AppIcon";
 import { SpotlightIcon } from "./StatusIcons";
 
@@ -38,7 +38,7 @@ export function Spotlight({
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onOpenApp: (appId: CoreAppId) => void;
+  onOpenApp: (appId: AppId) => void;
   onOpenExternal: (appId: AppId) => void;
   onNavigate: (url: string) => void;
   onAnnounce: (message: string) => void;
@@ -98,8 +98,8 @@ export function Spotlight({
     if (result.kind === "app") {
       const app = appById.get(result.appId);
       onAnnounce(`${app?.name ?? "App"} opened`);
-      if (app?.target?.kind === "core") onOpenApp(app.target.loaderKey);
-      else onOpenExternal(result.appId);
+      if (app?.target?.kind === "external") onOpenExternal(result.appId);
+      else onOpenApp(result.appId);
     } else {
       onAnnounce(`${result.title} opened`);
       result.run();

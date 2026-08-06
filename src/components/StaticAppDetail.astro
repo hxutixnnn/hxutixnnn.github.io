@@ -7,6 +7,8 @@ interface Props {
 }
 const { app, hideWhenHydrated = false } = Astro.props;
 const external = app.target?.kind === "external" ? app.target : null;
+const embedded = app.target?.kind === "embedded" ? app.target : null;
+const launchTarget = external ?? embedded;
 ---
 
 <div class:list={["app-detail-document", hideWhenHydrated && "static-fallback"]}>
@@ -31,8 +33,8 @@ const external = app.target?.kind === "external" ? app.target : null;
         )
       }
       {
-        external && (
-          <a class="primary-link" href={external.url} target="_blank" rel="noopener noreferrer">
+        launchTarget && (
+          <a class="primary-link" href={launchTarget.url} target="_blank" rel="noopener noreferrer">
             Launch {app.name}
             <span class="sr-only"> in a new tab</span>
           </a>
@@ -48,16 +50,24 @@ const external = app.target?.kind === "external" ? app.target : null;
       <a href="/">Return to Tien OS</a>
     </div>
     {
-      external && (
+      embedded ? (
         <aside class="notice-card">
-          <>
+          <strong>Embedded project</strong>
+          <p>
+            The deployed project opens inside Tien OS when launched from the shell. This document view keeps a
+            safe new-tab fallback if the site refuses framing or is unavailable.
+          </p>
+        </aside>
+      ) : (
+        external && (
+          <aside class="notice-card">
             <strong>External application</strong>
             <p>
-              This project has its own deployment, privacy behavior, and availability. Tien OS never loads it
-              until you choose to leave this site.
+              This profile has its own privacy behavior and availability. Tien OS only opens it after you
+              choose to leave this site.
             </p>
-          </>
-        </aside>
+          </aside>
+        )
       )
     }
   </main>

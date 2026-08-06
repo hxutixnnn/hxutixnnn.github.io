@@ -52,7 +52,14 @@ export function selectRepositoryLaunchUrl(repository) {
   if (source.pathname.replace(/\/$/, "").toLowerCase() !== expectedPath) {
     throw new Error(`Repository URL does not match its owner and name: ${repository.fullName}`);
   }
-  return safeHttpsUrl(repository.homepage)?.href ?? source.href;
+  const homepage = safeHttpsUrl(repository.homepage);
+  if (!homepage || homepage.hostname === "github.com" || homepage.hostname === "www.github.com") return null;
+  if (
+    homepage.origin === source.origin &&
+    homepage.pathname.replace(/\/$/, "").toLowerCase() === expectedPath
+  )
+    return null;
+  return homepage.href;
 }
 
 export function mapRepositoriesToApps(repositories, config) {
@@ -77,7 +84,9 @@ export function mapRepositoriesToApps(repositories, config) {
   }
 
   const ids = new Set();
-  return [...unique.values()].map((repository) => {
+  return [...unique.values()].flatMap((repository) => {
+    const url = selectRepositoryLaunchUrl(repository);
+    if (!url) return [];
     const override = config.overrides?.[repository.name] ?? {};
     const id =
       override.id ??
@@ -87,30 +96,28 @@ export function mapRepositoriesToApps(repositories, config) {
         .replace(/^-|-$/g, "")}`;
     if (!idPattern.test(id) || ids.has(id)) throw new Error(`Invalid or duplicate repository app ID: ${id}`);
     ids.add(id);
-    const url = selectRepositoryLaunchUrl(repository);
     const name = override.name ?? repository.name;
-    return {
-      schemaVersion: 1,
-      id,
-      status: "active",
-      category: "project",
-      name,
-      summary: summary(
-        override.summary ?? repository.description,
-        `Explore the ${name} public repository on GitHub.`,
-      ),
-      route: `/apps/${id}/`,
-      icon: override.icon ?? "code",
-      owner: config.displayOwner,
-      tags: repositoryTags(repository),
-      source: repository.htmlUrl,
-      target: {
-        kind: "external",
-        url,
-        presentation: "new-tab",
-        allowedOrigin: new URL(url).origin,
+    return [
+      {
+        schemaVersion: 1,
+        id,
+        status: "active",
+        category: "project",
+        name,
+        summary: summary(override.summary ?? repository.description, `Explore the ${name} deployed project.`),
+        route: `/apps/${id}/`,
+        icon: override.icon ?? "code",
+        owner: config.displayOwner,
+        tags: repositoryTags(repository),
+        source: repository.htmlUrl,
+        target: {
+          kind: "embedded",
+          url,
+          presentation: "embedded",
+          allowedOrigin: new URL(url).origin,
+        },
       },
-    };
+    ];
   });
 }
 

@@ -4,7 +4,11 @@ import { z } from "zod";
 import baseCatalog from "../src/apps/catalog.json" with { type: "json" };
 import repositories from "../src/apps/repositories.json" with { type: "json" };
 import socialProfiles from "../src/apps/social-links.json" with { type: "json" };
-import { mapRepositoriesToApps, mapSocialProfilesToApps } from "../src/apps/catalog-mapping.mjs";
+import {
+  mapRepositoriesToApps,
+  mapSocialProfilesToApps,
+  selectRepositoryLaunchUrl,
+} from "../src/apps/catalog-mapping.mjs";
 import { repositoryCatalogConfig } from "../src/apps/catalog.config.mjs";
 
 const coreIds = ["about", "projects", "blog", "uses", "resources", "til", "airconsole"];
@@ -32,6 +36,14 @@ const httpsUrl = z
   .refine((value) => new URL(value).protocol === "https:", "must use HTTPS");
 const targetSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("core"), loaderKey: z.enum(coreIds) }).strict(),
+  z
+    .object({
+      kind: z.literal("embedded"),
+      url: httpsUrl,
+      presentation: z.literal("embedded"),
+      allowedOrigin: httpsUrl,
+    })
+    .strict(),
   z
     .object({
       kind: z.literal("external"),
@@ -85,12 +97,21 @@ for (const app of catalogue) {
     if (app.target.loaderKey !== app.id) throw new Error(`Core loader key must match ID: ${app.id}`);
     if (!app.documentRoute) throw new Error(`Core app needs a document route: ${app.id}`);
   }
-  if (app.target?.kind === "external") {
+  if (app.category === "project" && app.target?.kind !== "embedded") {
+    throw new Error(`Project app must use an embedded target: ${app.id}`);
+  }
+  if (app.target?.kind === "embedded" || app.target?.kind === "external") {
     const url = new URL(app.target.url);
     const allowedOrigin = new URL(app.target.allowedOrigin);
-    if (url.username || url.password) throw new Error(`External URL contains credentials: ${app.id}`);
-    if (url.origin !== allowedOrigin.origin || allowedOrigin.pathname !== "/")
-      throw new Error(`Allowed origin mismatch: ${app.id}`);
+    if (
+      url.username ||
+      url.password ||
+      allowedOrigin.username ||
+      allowedOrigin.password ||
+      url.origin !== allowedOrigin.origin ||
+      allowedOrigin.pathname !== "/"
+    )
+      throw new Error(`Target origin or credentials are invalid: ${app.id}`);
   }
 }
 for (const coreId of coreIds) {
@@ -113,7 +134,8 @@ for (const repository of repositories) {
 const excludedNames = new Set(Object.keys(repositoryCatalogConfig.excludedRepositories));
 for (const repository of repositories) {
   const represented = catalogue.some((app) => app.source === repository.htmlUrl);
-  if (represented === excludedNames.has(repository.name)) {
+  const expected = !excludedNames.has(repository.name) && Boolean(selectRepositoryLaunchUrl(repository));
+  if (represented !== expected) {
     throw new Error(`Repository representation mismatch: ${repository.fullName}`);
   }
 }
