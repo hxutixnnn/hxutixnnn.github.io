@@ -72,7 +72,7 @@ export function ControlCenter({
   mobile: boolean;
   announce: (message: string) => void;
   persistSettings?: boolean;
-  settingsScope?: RefObject<HTMLElement | null>;
+  settingsScope?: RefObject<HTMLElement | null> | undefined;
 }) {
   const idPrefix = useId();
   const [settings, setSettings] = useState<OsSettings>(() =>
@@ -81,7 +81,7 @@ export function ControlCenter({
 
   useEffect(() => {
     const root = settingsScope ? settingsScope.current : document.documentElement;
-    if (!root) return;
+    if (!root) return undefined;
 
     root.style.setProperty("--os-brightness", String(settings.brightness));
     root.style.setProperty("--os-volume", String(settings.volume));
@@ -97,6 +97,8 @@ export function ControlCenter({
         root.removeAttribute("data-focus");
       };
     }
+
+    return undefined;
   }, [persistSettings, settings, settingsScope]);
 
   if (mobile) return null;

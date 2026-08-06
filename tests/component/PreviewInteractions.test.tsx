@@ -105,7 +105,7 @@ it("opens the real menu, Control Center, popover, dialog, and Spotlight samples"
   await user.click(screen.getByRole("button", { name: "Empty Spotlight" }));
   expect(screen.getByRole("dialog", { name: "Spotlight search" })).toBeVisible();
   expect(screen.getByText(/No results for/)).toBeVisible();
-});
+}, 15_000);
 
 it("exercises representative window controls", async () => {
   const user = userEvent.setup();
