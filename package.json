@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "vite",
     "start": "vite",
-    "build": "vite build",
+    "build": "vite build && pnpm check:output",
     "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -24,7 +24,9 @@
     "test:e2e": "playwright test",
     "test:e2e:update": "playwright test --update-snapshots",
     "test:lighthouse": "lhci autorun",
-    "validate": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test"
+    "validate:assets": "node scripts/check-asset-provenance.mjs",
+    "check:output": "node scripts/check-static-output.mjs",
+    "validate": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm validate:assets && pnpm test"
   },
   "dependencies": {
     "@base-ui/react": "1.6.0",
