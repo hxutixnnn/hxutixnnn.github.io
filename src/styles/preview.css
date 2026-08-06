@@ -1542,6 +1542,25 @@
   .preview-live-system .dock__apps {
     min-width: max-content;
   }
+  .preview-settings-scope .preview-system-stage,
+  .preview-settings-scope .preview-live-system__stage {
+    filter: brightness(var(--os-brightness, 1));
+  }
+  .preview-settings-scope[data-focus="on"] .preview-system-stage,
+  .preview-settings-scope[data-focus="on"] .preview-live-system__stage {
+    filter: brightness(var(--os-brightness, 1)) saturate(0.8);
+  }
+  .preview-settings-scope[data-appearance="light"] .menu-bar {
+    border-bottom-color: rgba(20, 30, 50, 0.18);
+    background: rgba(246, 248, 252, 0.55);
+    color: #10182b;
+  }
+  .preview-settings-scope[data-appearance="light"] .dock,
+  .preview-settings-scope[data-appearance="light"] .cc-panel {
+    border-color: rgba(20, 30, 50, 0.18);
+    background: rgba(242, 245, 250, 0.72);
+    color: #10182b;
+  }
   .preview-live-system__actions {
     display: flex;
     flex-wrap: wrap;
@@ -1566,6 +1585,24 @@
   }
 
   @media (forced-colors: active) {
+    .preview-page-shell {
+      --preview-canvas: Canvas;
+      --preview-panel: Canvas;
+      --preview-panel-strong: Canvas;
+      --preview-panel-soft: Canvas;
+      --preview-line: CanvasText;
+      --preview-line-strong: CanvasText;
+      --preview-ink: CanvasText;
+      --preview-soft: CanvasText;
+      --preview-muted: CanvasText;
+      --preview-accent: LinkText;
+      --preview-accent-2: LinkText;
+      --preview-focus: Highlight;
+      --preview-success: CanvasText;
+      --preview-warning: CanvasText;
+      --preview-danger: CanvasText;
+    }
+
     .preview-page-shell,
     .preview-page-shell .preview-token-swatches,
     .preview-page-shell .preview-toc {
@@ -1599,6 +1636,7 @@
       border: 1px solid CanvasText;
       background: Canvas;
       background-image: none;
+      filter: none;
     }
 
     .preview-page-shell .preview-dialog-backdrop {

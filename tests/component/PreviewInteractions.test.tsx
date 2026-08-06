@@ -1,7 +1,17 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, it } from "vitest";
+import { afterEach, expect, it } from "vitest";
 import PreviewInteractions from "@/os/preview/PreviewInteractions";
+import { SETTINGS_KEY } from "@/os/store/persistence";
+
+afterEach(() => {
+  localStorage.clear();
+  const root = document.documentElement;
+  root.style.removeProperty("--os-brightness");
+  root.style.removeProperty("--os-volume");
+  delete root.dataset.appearance;
+  delete root.dataset.focus;
+});
 
 it("keeps the live control lab interactive", async () => {
   const user = userEvent.setup();
@@ -36,6 +46,22 @@ it("keeps the live control lab interactive", async () => {
 
 it("opens the real menu, Control Center, popover, dialog, and Spotlight samples", async () => {
   const user = userEvent.setup();
+  const persistedSettings = JSON.stringify({
+    version: 1,
+    brightness: 0.2,
+    volume: 0.1,
+    wifi: false,
+    bluetooth: true,
+    airdrop: false,
+    focus: true,
+    appearance: "light",
+  });
+  localStorage.setItem(SETTINGS_KEY, persistedSettings);
+  const root = document.documentElement;
+  root.style.setProperty("--os-brightness", "0.91");
+  root.style.setProperty("--os-volume", "0.81");
+  root.dataset.appearance = "dark";
+  root.dataset.focus = "off";
   render(<PreviewInteractions mode="system" />);
 
   const systemMenu = screen.getByRole("menuitem", { name: "Tien OS menu" });
@@ -44,7 +70,26 @@ it("opens the real menu, Control Center, popover, dialog, and Spotlight samples"
   expect(screen.getByRole("menuitem", { name: "About Tien OS" })).toBeVisible();
   await user.keyboard("{Escape}");
   await user.click(screen.getByRole("button", { name: "Control Center" }));
-  expect(screen.getByRole("dialog", { name: "Control Center" })).toBeVisible();
+  const controlCenter = screen.getByRole("dialog", { name: "Control Center" });
+  const settingsScope = document.querySelector<HTMLElement>(".preview-settings-scope");
+  expect(controlCenter).toBeVisible();
+  expect(settingsScope).not.toBeNull();
+  expect(controlCenter.closest(".preview-settings-scope")).toBe(settingsScope);
+  expect(screen.getByRole("switch", { name: "Appearance" })).toHaveAttribute("aria-checked", "false");
+  expect(screen.getByRole("switch", { name: "Focus" })).toHaveAttribute("aria-checked", "false");
+  expect(settingsScope).toHaveAttribute("data-appearance", "dark");
+  expect(settingsScope).toHaveAttribute("data-focus", "off");
+  expect(settingsScope?.style.getPropertyValue("--os-brightness")).toBe("1");
+  expect(root.style.getPropertyValue("--os-brightness")).toBe("0.91");
+  expect(root.style.getPropertyValue("--os-volume")).toBe("0.81");
+
+  await user.click(screen.getByRole("switch", { name: "Appearance" }));
+  await user.click(screen.getByRole("switch", { name: "Focus" }));
+  expect(settingsScope).toHaveAttribute("data-appearance", "light");
+  expect(settingsScope).toHaveAttribute("data-focus", "on");
+  expect(root).toHaveAttribute("data-appearance", "dark");
+  expect(root).toHaveAttribute("data-focus", "off");
+  expect(localStorage.getItem(SETTINGS_KEY)).toBe(persistedSettings);
   await user.keyboard("{Escape}");
   await user.click(screen.getByRole("button", { name: "Open popover" }));
   expect(screen.getByRole("dialog", { name: "Live material notes" })).toBeVisible();

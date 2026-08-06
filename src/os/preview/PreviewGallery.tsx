@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { Popover } from "@base-ui/react/popover";
 import { Slider } from "@base-ui/react/slider";
@@ -229,6 +229,7 @@ function PreviewSystemSurface() {
   const [spotlightMode, setSpotlightMode] = useState<"populated" | "empty">("populated");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [popoverOpen, setPopoverOpen] = useState(false);
+  const settingsScope = useRef<HTMLDivElement>(null);
 
   function openSpotlight(mode: "populated" | "empty") {
     setSpotlightMode(mode);
@@ -237,7 +238,7 @@ function PreviewSystemSurface() {
   }
 
   return (
-    <>
+    <div className="preview-system-sample preview-settings-scope" ref={settingsScope}>
       <div className="preview-system-stage">
         <MenuBar
           activeTitle="Preview Gallery"
@@ -251,6 +252,7 @@ function PreviewSystemSurface() {
           onOpenSpotlight={() => openSpotlight("populated")}
           announce={setAnnouncement}
           persistSettings={false}
+          settingsScope={settingsScope}
         />
         <div className="preview-system-stage__copy">
           <span className="preview-eyebrow">LIVE SYSTEM CHROME</span>
@@ -357,7 +359,7 @@ function PreviewSystemSurface() {
         onNavigate={(url) => setAnnouncement(`${url} selected`)}
         onAnnounce={setAnnouncement}
       />
-    </>
+    </div>
   );
 }
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { Popover } from "@base-ui/react/popover";
 import { Slider } from "@base-ui/react/slider";
@@ -130,6 +130,7 @@ function InteractiveSystem() {
   const [emptySpotlight, setEmptySpotlight] = useState(false);
   const [popover, setPopover] = useState(false);
   const [dialog, setDialog] = useState(false);
+  const settingsScope = useRef<HTMLElement>(null);
 
   function openSpotlight(empty: boolean) {
     setEmptySpotlight(empty);
@@ -137,7 +138,7 @@ function InteractiveSystem() {
   }
 
   return (
-    <article className="preview-card preview-live-system">
+    <article className="preview-card preview-live-system preview-settings-scope" ref={settingsScope}>
       <p className="preview-sample-label">LIVE SYSTEM SURFACES</p>
       <h3>Open, close, search, and return.</h3>
       <p className="preview-live-controls__copy">
@@ -156,6 +157,7 @@ function InteractiveSystem() {
           onOpenSpotlight={() => openSpotlight(false)}
           announce={setAnnouncement}
           persistSettings={false}
+          settingsScope={settingsScope}
         />
         <div className="preview-live-system__copy">
           <span className="preview-eyebrow">MENU BAR / STATUS / DOCK</span>
