@@ -1,5 +1,4 @@
 {
-  "plugins": ["prettier-plugin-astro"],
   "printWidth": 110,
   "proseWrap": "preserve"
 }
