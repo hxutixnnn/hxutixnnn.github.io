@@ -42,7 +42,7 @@ Google Analytics is disabled unless `PUBLIC_GOOGLE_ANALYTICS_ID` contains a meas
 - `src/os/domain/windows.ts` — headless window reducer
 - `react-rnd@10.5.3` — pinned, asset-free desktop drag/resize mechanics
 - `src/os/shell/` — accessible menu, launcher, desktop, mobile switcher, and window UI
-- `src/pages/` — real static routes, including every `/apps/<id>/`
+- `src/pages/` — real static routes with useful detail HTML for every `/apps/<id>/`; core and approved embedded-project routes hydrate the requested app in Tien OS
 - `src/assets/provenance.yml` — authoritative non-code asset register
 - `tests/` — reducer, component, static output, axe, and responsive browser coverage
 
