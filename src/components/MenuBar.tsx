@@ -8,7 +8,7 @@ type MenuBarProps = {
 };
 
 const triggerClassName =
-  "tienos-menu-trigger rounded-full px-2 py-0.5 font-medium text-white/90 transition-colors";
+  "tienos-menu-trigger rounded-full px-2 py-0.5 text-left font-medium text-white/90 transition-colors";
 const itemClassName =
   "tienos-menu-item flex min-h-7 w-full items-center gap-3 rounded-2xl px-2 py-1 text-left text-white/90";
 const popupClassName = "tienos-menu-popup min-w-60 rounded-3xl p-1";

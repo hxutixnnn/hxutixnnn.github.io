@@ -2,6 +2,8 @@
 
 **Decision date:** 2026-08-01
 
+> **Archived:** This selection record applies to the Astro implementation retired by the Vite fresh start on 2026-08-06. Current asset and output contracts live in [`src/assets/provenance.yml`](../src/assets/provenance.yml), [`scripts/check-asset-provenance.mjs`](../scripts/check-asset-provenance.mjs), and [`scripts/check-static-output.mjs`](../scripts/check-static-output.mjs).
+
 **Decision:** Use [`react-rnd@10.5.3`](https://www.npmjs.com/package/react-rnd/v/10.5.3) as the pinned, headless drag/resize baseline, while keeping the domain reducer, accessible shell, and contemporary visual material project-owned. Do not fork a Tahoe replica or put a liquid-refraction engine in the critical path.
 
 This is the bounded implementation-time check required before choosing the macOS 26 / Tahoe-inspired treatment. It supplements the broader historical research; it is not permission to copy Apple's assets or another project's trade dress.
