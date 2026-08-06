@@ -1,5 +1,5 @@
-import type { CoreAppId } from "@/apps/contract";
-import { appManifests } from "@/apps/manifests";
+import type { AppId } from "@/apps/contract";
+import { getAppWindowManifest } from "@/apps/manifests";
 import { clampRect, initialDesktopState } from "../domain/windows";
 import type { DesktopState, Rect, Viewport, WindowId, WindowState } from "../domain/windows";
 
@@ -10,8 +10,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function isCoreAppId(value: unknown): value is CoreAppId {
-  return typeof value === "string" && Object.hasOwn(appManifests, value);
+function isWindowAppId(value: unknown): value is AppId {
+  return typeof value === "string" && Boolean(getAppWindowManifest(value));
 }
 
 function isRect(value: unknown): value is Rect {
@@ -24,7 +24,7 @@ function isRect(value: unknown): value is Rect {
 }
 
 function parseWindow(value: unknown, viewport: Viewport): WindowState | undefined {
-  if (!isRecord(value) || !isCoreAppId(value.appId) || !isRect(value.rect)) return undefined;
+  if (!isRecord(value) || !isWindowAppId(value.appId) || !isRect(value.rect)) return undefined;
   if (typeof value.id !== "string" || !/^window-\d+$/.test(value.id)) return undefined;
   if (value.status !== "open" && value.status !== "minimized" && value.status !== "maximized")
     return undefined;

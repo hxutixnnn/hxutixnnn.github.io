@@ -1,8 +1,9 @@
 import { lazy, Suspense, useEffect, useMemo, useReducer, useRef, useState } from "react";
 import { appById } from "@/apps/catalog";
-import type { AppId, CoreAppId, CoreAppProps } from "@/apps/contract";
+import { EmbeddedApp } from "@/apps/EmbeddedApp";
+import type { AppId, CoreAppProps } from "@/apps/contract";
 import { openExternalTarget } from "@/apps/launch";
-import { appManifests } from "@/apps/manifests";
+import { appManifests, getAppWindowManifest } from "@/apps/manifests";
 import {
   desktopReducer,
   selectFocusedWindow,
@@ -19,7 +20,7 @@ import { WindowFrame } from "./WindowFrame";
 
 const lazyApps = Object.fromEntries(
   Object.entries(appManifests).map(([id, manifest]) => [id, lazy(manifest.load)]),
-) as Record<CoreAppId, React.LazyExoticComponent<React.ComponentType<CoreAppProps>>>;
+) as Record<string, React.LazyExoticComponent<React.ComponentType<CoreAppProps>>>;
 
 function viewportSize(): Viewport {
   return { width: window.innerWidth, height: Math.max(320, window.innerHeight - 160) };
@@ -29,13 +30,13 @@ function viewportMode(): "mobile" | "desktop" {
   return window.matchMedia("(max-width: 767px)").matches ? "mobile" : "desktop";
 }
 
-function appFromPath(): CoreAppId | null {
+function appFromPath(): AppId | null {
   const match = window.location.pathname.match(/^\/apps\/([a-z0-9-]+)\/?$/);
-  const app = match ? appById.get(match[1] as CoreAppId) : undefined;
-  return app?.target?.kind === "core" ? (app.id as CoreAppId) : null;
+  const app = match?.[1] ? appById.get(match[1]) : undefined;
+  return app?.target?.kind === "core" || app?.target?.kind === "embedded" ? app.id : null;
 }
 
-function initialState(initialAppId?: CoreAppId | null): DesktopState {
+function initialState(initialAppId?: AppId | null): DesktopState {
   const viewport = viewportSize();
   let state = { ...loadSession(viewport), viewportMode: viewportMode() };
   const selected = initialAppId ?? appFromPath();
@@ -50,7 +51,7 @@ function restoreSwitcherFocus(opener: HTMLElement | null) {
   });
 }
 
-export default function PortfolioShell({ initialAppId = null }: { initialAppId?: CoreAppId | null }) {
+export default function PortfolioShell({ initialAppId = null }: { initialAppId?: AppId | null }) {
   const [state, dispatch] = useReducer(desktopReducer, undefined, () => initialState(initialAppId));
   const [announcement, setAnnouncement] = useState("Tien OS ready");
   const [switcherOpen, setSwitcherOpen] = useState(false);
@@ -125,13 +126,13 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     window.dispatchEvent(new CustomEvent("tien:analytics", { detail: { event: action, appId } }));
   }
 
-  function updateRoute(appId: CoreAppId | null, replace = false) {
+  function updateRoute(appId: AppId | null, replace = false) {
     const path = appId ? `/apps/${appId}/` : "/";
     if (window.location.pathname === path) return;
     window.history[replace ? "replaceState" : "pushState"]({ appId }, "", path);
   }
 
-  function focusFrame(id: WindowId | null, fallbackApp?: CoreAppId) {
+  function focusFrame(id: WindowId | null, fallbackApp?: AppId) {
     requestAnimationFrame(() => {
       if (id) frameRefs.current.get(id)?.focus();
       else if (fallbackApp)
@@ -139,7 +140,7 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     });
   }
 
-  function bounceApp(appId: CoreAppId) {
+  function bounceApp(appId: AppId) {
     bounceSequence.current += 1;
     const token = `${appId}:${bounceSequence.current}`;
     setBounceToken(token);
@@ -147,11 +148,13 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
     bounceTimer.current = globalThis.setTimeout(() => setBounceToken(null), 1200);
   }
 
-  function openApp(appId: CoreAppId, replaceRoute = false) {
+  function openApp(appId: AppId, replaceRoute = false) {
+    const app = appById.get(appId);
+    if (app?.target?.kind !== "core" && app?.target?.kind !== "embedded") return;
     const existing = state.windows.find((window) => window.appId === appId);
     dispatch({ type: "open", appId, viewport: viewportSize() });
     updateRoute(appId, replaceRoute);
-    setAnnouncement(`${appById.get(appId)?.name} ${existing ? "focused" : "opened"}`);
+    setAnnouncement(`${app.name} ${existing ? "focused" : "opened"}`);
     if (!existing) {
       track(appId, "app_open");
       bounceApp(appId);
@@ -173,7 +176,7 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
 
   function launchApp(appId: AppId) {
     const app = appById.get(appId);
-    if (app?.target?.kind === "core") openApp(app.target.loaderKey);
+    if (app?.target?.kind === "core" || app?.target?.kind === "embedded") openApp(appId);
     else launchExternalApp(appId);
   }
 
@@ -402,13 +405,18 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
       <div className="os-main" id="tien-os-main">
         <main className="window-layer" aria-label="Open Tien OS windows">
           {visibleWindows.map((windowState) => {
-            const manifest = appManifests[windowState.appId];
-            const App = lazyApps[windowState.appId];
+            const app = appById.get(windowState.appId);
+            const manifest = getAppWindowManifest(windowState.appId);
+            if (!app || !manifest) return null;
+            const core = app.target?.kind === "core" ? app.target : null;
+            const embedded = app.target?.kind === "embedded" ? app.target : null;
+            const coreAppId = core?.loaderKey;
+            const App = coreAppId ? lazyApps[coreAppId] : null;
             return (
               <WindowFrame
                 key={windowState.id}
                 window={windowState}
-                title={manifest.title}
+                title={app.name}
                 viewport={viewportSize()}
                 mobile={mobile}
                 focused={state.focusedWindowId === windowState.id}
@@ -435,23 +443,28 @@ export default function PortfolioShell({ initialAppId = null }: { initialAppId?:
                   dispatch({ type: "resize", id: windowState.id, rect, viewport: viewportSize() })
                 }
               >
-                <Suspense
-                  fallback={
-                    <div className="app-loading" role="status">
-                      Opening {manifest.title}…
-                    </div>
-                  }
-                >
-                  <App
-                    appId={windowState.appId}
-                    announce={setAnnouncement}
-                    navigate={(url) => window.location.assign(url)}
-                    openExternal={(url) => {
-                      const opened = window.open(url, "_blank", "noopener,noreferrer");
-                      if (opened) opened.opener = null;
-                    }}
-                  />
-                </Suspense>
+                {App ? (
+                  <Suspense
+                    fallback={
+                      <div className="app-loading" role="status">
+                        Opening {app.name}…
+                      </div>
+                    }
+                  >
+                    <App
+                      appId={coreAppId!}
+                      announce={setAnnouncement}
+                      navigate={(url) => window.location.assign(url)}
+                      openApp={launchApp}
+                      openExternal={(url) => {
+                        const opened = window.open(url, "_blank", "noopener,noreferrer");
+                        if (opened) opened.opener = null;
+                      }}
+                    />
+                  </Suspense>
+                ) : embedded ? (
+                  <EmbeddedApp app={{ ...app, target: embedded }} />
+                ) : null}
               </WindowFrame>
             );
           })}

@@ -80,3 +80,55 @@ test("direct core route is useful and initializes the requested app", async ({ p
   await expect(page.locator('[data-app-id="til"]')).toBeVisible();
   await expect(page.getByRole("heading", { name: "Today I learned." })).toBeVisible();
 });
+
+test("direct embedded route keeps fallback HTML and hydrates the requested project", async ({
+  page,
+  request,
+}) => {
+  const response = await request.get("/apps/repo-jquery-website-input/");
+  const html = await response.text();
+  expect(html).toContain('class="app-detail-document static-fallback"');
+  expect(html).toContain("jquery-website-input");
+
+  await page.goto("/apps/repo-jquery-website-input/");
+
+  const project = page.locator('[data-app-id="repo-jquery-website-input"]');
+  await expect(project).toBeVisible();
+  await expect(project.getByTitle("jquery-website-input deployed project")).toHaveAttribute(
+    "src",
+    "https://hxutixnnn.github.io/jquery-website-input",
+  );
+  await expect(page.locator(".app-detail-document.static-fallback")).toBeHidden();
+});
+
+test("a retained deployed project opens in the generic embedded window", async ({ page }) => {
+  await page.getByRole("button", { name: "Open Projects" }).click();
+  const card = page.locator(".project-card").filter({ hasText: "jquery-website-input" });
+  await expect(card).toBeVisible();
+  await card.getByRole("link", { name: "Launch project" }).click();
+
+  const project = page.locator('[data-app-id="repo-jquery-website-input"]');
+  await expect(project).toBeVisible();
+  const frame = project.getByTitle("jquery-website-input deployed project");
+  await expect(frame).toHaveAttribute("src", "https://hxutixnnn.github.io/jquery-website-input");
+  await expect(frame).toHaveAttribute("sandbox", /allow-scripts/);
+  await expect(frame).not.toHaveAttribute("sandbox", /allow-same-origin/);
+  await expect(project.getByRole("link", { name: /Open jquery-website-input in a new tab/ })).toBeVisible();
+  await expect(page.getByText("harness-skills", { exact: true })).toHaveCount(0);
+});
+
+test("the embedded project window remains a single responsive mobile surface", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto("/");
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await page.getByRole("button", { name: "Projects", exact: true }).click();
+  const card = page.locator(".project-card").filter({ hasText: "jquery-website-input" });
+  await card.getByRole("link", { name: "Launch project" }).click();
+  const project = page.locator('[data-app-id="repo-jquery-website-input"]');
+  await expect(project).toHaveClass(/is-mobile/);
+  await expect(project.getByRole("button", { name: "Maximize jquery-website-input" })).toHaveCount(0);
+  await expect(project.locator("iframe")).toBeVisible();
+  const frameBox = await project.locator("iframe").boundingBox();
+  expect(frameBox?.width).toBeLessThanOrEqual(390);
+});

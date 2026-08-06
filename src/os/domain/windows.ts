@@ -1,5 +1,5 @@
-import { appManifests } from "@/apps/manifests";
-import type { CoreAppId } from "@/apps/contract";
+import { getAppWindowManifest } from "@/apps/manifests";
+import type { AppId } from "@/apps/contract";
 
 export type WindowId = `window-${number}`;
 export type Rect = { x: number; y: number; width: number; height: number };
@@ -9,7 +9,7 @@ export type WindowStatus = "open" | "minimized" | "maximized";
 
 export type WindowState = {
   id: WindowId;
-  appId: CoreAppId;
+  appId: AppId;
   status: WindowStatus;
   rect: Rect;
   restoreRect?: Rect;
@@ -20,14 +20,14 @@ export type DesktopState = {
   schemaVersion: 1;
   windows: readonly WindowState[];
   focusedWindowId: WindowId | null;
-  selectedAppId: CoreAppId | null;
+  selectedAppId: AppId | null;
   nextWindowId: number;
   nextZ: number;
   viewportMode: ViewportMode;
 };
 
 export type DesktopAction =
-  | { type: "open"; appId: CoreAppId; viewport: Viewport }
+  | { type: "open"; appId: AppId; viewport: Viewport }
   | { type: "close"; id: WindowId }
   | { type: "focus"; id: WindowId }
   | { type: "minimize"; id: WindowId }
@@ -37,7 +37,7 @@ export type DesktopAction =
   | { type: "move"; id: WindowId; x: number; y: number; viewport: Viewport }
   | { type: "resize"; id: WindowId; rect: Rect; viewport: Viewport }
   | { type: "viewportChanged"; mode: ViewportMode; viewport: Viewport }
-  | { type: "selectRoute"; appId: CoreAppId | null; viewport: Viewport };
+  | { type: "selectRoute"; appId: AppId | null; viewport: Viewport };
 
 export const initialDesktopState: DesktopState = {
   schemaVersion: 1,
@@ -58,8 +58,10 @@ function nextFocusable(windows: readonly WindowState[], excluding?: WindowId): W
     .sort((a, b) => b.z - a.z || b.id.localeCompare(a.id))[0];
 }
 
-export function clampRect(rect: Rect, viewport: Viewport, appId: CoreAppId): Rect {
-  const minimum = appManifests[appId].min;
+export function clampRect(rect: Rect, viewport: Viewport, appId: AppId): Rect {
+  const manifest = getAppWindowManifest(appId);
+  if (!manifest) return rect;
+  const minimum = manifest.min;
   const maxWidth = Math.max(1, viewport.width - DESKTOP_MARGIN * 2);
   const maxHeight = Math.max(1, viewport.height - DESKTOP_MARGIN * 2);
   const width = Math.min(Math.max(rect.width, Math.min(minimum.width, maxWidth)), maxWidth);
@@ -71,8 +73,10 @@ export function clampRect(rect: Rect, viewport: Viewport, appId: CoreAppId): Rec
   return { x, y, width, height };
 }
 
-function initialRect(appId: CoreAppId, viewport: Viewport, sequence: number): Rect {
-  const size = appManifests[appId].initial;
+function initialRect(appId: AppId, viewport: Viewport, sequence: number): Rect {
+  const manifest = getAppWindowManifest(appId);
+  if (!manifest) return { x: DESKTOP_MARGIN, y: DESKTOP_MARGIN, width: 1, height: 1 };
+  const size = manifest.initial;
   const cascade = ((sequence - 1) % 5) * 24;
   return clampRect(
     {
@@ -97,7 +101,8 @@ function focusWindow(state: DesktopState, id: WindowId): DesktopState {
   };
 }
 
-function openApp(state: DesktopState, appId: CoreAppId, viewport: Viewport): DesktopState {
+function openApp(state: DesktopState, appId: AppId, viewport: Viewport): DesktopState {
+  if (!getAppWindowManifest(appId)) return state;
   const existing = state.windows.find((window) => window.appId === appId);
   if (existing) {
     const restored =
@@ -256,7 +261,7 @@ export function desktopReducer(state: DesktopState, action: DesktopAction): Desk
   }
 }
 
-export function selectRunningAppIds(state: DesktopState): readonly CoreAppId[] {
+export function selectRunningAppIds(state: DesktopState): readonly AppId[] {
   return [...new Set(state.windows.map((window) => window.appId))];
 }
 

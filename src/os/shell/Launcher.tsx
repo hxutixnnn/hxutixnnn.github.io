@@ -25,8 +25,8 @@ export function Dock({
   onRestoreMinimized,
   onTrash,
 }: {
-  running: readonly CoreAppId[];
-  selected: CoreAppId | null;
+  running: readonly AppId[];
+  selected: AppId | null;
   minimized: readonly WindowState[];
   bounceToken: string | null;
   onOpen: (id: CoreAppId) => void;
@@ -137,8 +137,8 @@ export function MobileDockBar({
   onOpen,
   onShowSwitcher,
 }: {
-  running: readonly CoreAppId[];
-  selected: CoreAppId | null;
+  running: readonly AppId[];
+  selected: AppId | null;
   onOpen: (id: CoreAppId) => void;
   onShowSwitcher: () => void;
 }) {
@@ -189,7 +189,13 @@ export function MobileLauncher({ onLaunch }: { onLaunch: (id: AppId) => void }) 
             type="button"
             key={app.id}
             data-launcher-id={app.id}
-            aria-label={app.target?.kind === "external" ? `Open ${app.name} in a new tab` : app.name}
+            aria-label={
+              app.target?.kind === "external"
+                ? `Open ${app.name} in a new tab`
+                : app.target?.kind === "embedded"
+                  ? `Open ${app.name} in Tien OS`
+                  : app.name
+            }
             onClick={() => onLaunch(app.id)}
           >
             <AppIcon appId={app.id} />

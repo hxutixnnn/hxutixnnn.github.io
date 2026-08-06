@@ -24,6 +24,10 @@ Desktop interaction primitives come from the pinned, asset-free, MIT-licensed `@
 
 Controlled resize dimensions are mirrored only into `WindowFrame` component-local draft state while the pointer moves, committed once to the headless reducer on stop, and then cleared. The mobile path does not mount `react-rnd`. Tien OS owns visuals, routes, focus, persistence, semantics, and responsive policy. The full MIT notices and dependency copyrights are retained in [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md).
 
+## Reviewed project embedding boundary
+
+The compile-time repository mapping in `src/apps/catalog-mapping.mjs` admits only owned public entries with a valid HTTPS homepage. GitHub-only entries are omitted; their repository URLs remain source metadata for retained entries and are never launch targets. Retained project targets carry an exact HTTPS origin and render through the generic shell window with `allow-forms allow-scripts`, no same-origin privilege, a loading state, and a visible new-tab/source fallback for framing refusal or unavailability. Social targets remain protected new-tab links.
+
 ## Built-output and browser evidence
 
 - `scripts/check-static-output.mjs`: **47 HTML routes**, **148.7 KiB** first-party JavaScript gzip, **7.7 KiB** CSS gzip, and **159.4 KiB** banner. Limits are 160 KiB (raised from 100 KiB by the approved Base UI budget), 30 KiB, and 250 KiB respectively.

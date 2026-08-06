@@ -1659,6 +1659,86 @@
     margin-top: 12px;
     font-size: 0.85rem;
   }
+
+  .embedded-app {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+    gap: 16px;
+    padding: clamp(16px, 3vw, 30px);
+    color: var(--ink-soft);
+  }
+  .embedded-app__header {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .embedded-app__eyebrow {
+    color: #aee7ff;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+  .embedded-app h1 {
+    margin: 6px 0 8px;
+    color: #fff;
+    font-size: clamp(1.55rem, 4vw, 2.4rem);
+    letter-spacing: -0.05em;
+    line-height: 1;
+  }
+  .embedded-app__header p {
+    max-width: 58ch;
+    margin: 0;
+  }
+  .embedded-app__actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: end;
+    gap: 12px;
+    flex: 0 0 auto;
+    font-size: 0.85rem;
+  }
+  .embedded-app__frame {
+    position: relative;
+    min-height: 280px;
+    flex: 1;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 16px;
+    background: #fff;
+    box-shadow: 0 14px 35px rgba(0, 0, 0, 0.24);
+  }
+  .embedded-app__frame iframe {
+    display: block;
+    width: 100%;
+    height: min(68vh, 620px);
+    min-height: 280px;
+    border: 0;
+    background: #fff;
+  }
+  .embedded-app__status {
+    position: absolute;
+    z-index: 1;
+    top: 12px;
+    left: 12px;
+    margin: 0;
+    border-radius: 999px;
+    padding: 7px 11px;
+    background: rgba(7, 11, 31, 0.84);
+    color: #fff;
+    font-size: 0.78rem;
+  }
+  .embedded-app__hint,
+  .embedded-app__error {
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: 0.82rem;
+  }
+  .embedded-app__error {
+    color: #ffd4df;
+  }
   .post-list,
   .til-list,
   .resource-list {
@@ -2316,6 +2396,19 @@
     .window-document-link {
       width: 44px;
       height: 44px;
+    }
+    .embedded-app {
+      padding: 16px;
+    }
+    .embedded-app__header {
+      flex-direction: column;
+    }
+    .embedded-app__actions {
+      justify-content: start;
+    }
+    .embedded-app__frame,
+    .embedded-app__frame iframe {
+      min-height: 240px;
     }
     .window-control--maximize {
       display: none;

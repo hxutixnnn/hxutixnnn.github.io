@@ -3,7 +3,7 @@ import repositoryData from "./repositories.json";
 import socialProfileData from "./social-links.json";
 import { mapRepositoriesToApps, mapSocialProfilesToApps } from "./catalog-mapping.mjs";
 import { repositoryCatalogConfig } from "./catalog.config.mjs";
-import type { AppDescriptor, AppId, CoreAppId } from "./contract";
+import type { AppDescriptor, AppId, CoreAppId, EmbeddedTarget, ExternalTarget } from "./contract";
 import type { RepositoryInventoryItem, SocialProfile } from "./catalog-mapping.mjs";
 
 const generatedRepositoryApps = mapRepositoriesToApps(
@@ -28,12 +28,18 @@ export const coreCatalogue = appCatalogue.filter(
     app.target?.kind === "core",
 );
 
-export const externalCatalogue = appCatalogue.filter(
-  (app): app is AppDescriptor & { target: Extract<AppDescriptor["target"], { kind: "external" }> } =>
-    app.target?.kind === "external",
+export const embeddedCatalogue = appCatalogue.filter(
+  (app): app is AppDescriptor & { target: EmbeddedTarget } => app.target?.kind === "embedded",
 );
 
-export const projectCatalogue = externalCatalogue.filter((app) => app.category === "project");
+export const externalCatalogue = appCatalogue.filter(
+  (app): app is AppDescriptor & { target: ExternalTarget } => app.target?.kind === "external",
+);
+
+export const projectCatalogue = appCatalogue.filter(
+  (app): app is AppDescriptor & { category: "project"; target: EmbeddedTarget } =>
+    app.category === "project" && app.target?.kind === "embedded",
+);
 export const socialCatalogue = externalCatalogue.filter((app) => app.category === "social");
 
 export function getApp(id: string): AppDescriptor | undefined {

@@ -42,11 +42,11 @@ Google Analytics is disabled unless `PUBLIC_GOOGLE_ANALYTICS_ID` contains a meas
 - `src/os/domain/windows.ts` — headless window reducer
 - `react-rnd@10.5.3` — pinned, asset-free desktop drag/resize mechanics
 - `src/os/shell/` — accessible menu, launcher, desktop, mobile switcher, and window UI
-- `src/pages/` — real static routes, including every `/apps/<id>/`
+- `src/pages/` — real static routes with useful detail HTML for every `/apps/<id>/`; core and approved embedded-project routes hydrate the requested app in Tien OS
 - `src/assets/provenance.yml` — authoritative non-code asset register
 - `tests/` — reducer, component, static output, axe, and responsive browser coverage
 
-Substantial projects and social profiles remain external HTTPS destinations and open in a protected new tab. Tien OS never discovers repositories at runtime, imports remote modules, embeds unreviewed iframes, or turns social links into fake internal clients.
+Reviewed deployed project homepages open in a responsive, least-privilege embedded window with a safe new-tab/source fallback. Social profiles remain protected new-tab destinations. Tien OS never discovers repositories at runtime, imports remote modules, embeds unreviewed iframes, or turns social links into fake internal clients.
 
 ## Refreshing public repositories
 
@@ -57,7 +57,7 @@ pnpm sync:repositories
 pnpm validate:catalog
 ```
 
-The sync follows every API page, retains useful repository metadata, and writes `src/apps/repositories.json` in deterministic name order. The static catalogue maps each repository to its credential-free HTTPS homepage when available, otherwise to its exact GitHub URL. Forked, archived, and disabled public repositories remain represented; private or unrelated repositories are rejected. `hxutixnnn.github.io` is the sole mapping exclusion because the current repository is already represented by the Tien OS system surface. Review the generated JSON diff, including changed homepage values and resulting launch targets, before committing it. Repository display overrides belong in `src/apps/catalog.config.mjs`; social profiles are maintained once in `src/apps/social-links.json`.
+The sync follows every API page, retains useful repository metadata, and writes `src/apps/repositories.json` in deterministic name order. The static catalogue maps only public repositories with a valid credential-free HTTPS homepage to embedded project targets; GitHub-only entries are omitted rather than presented as projects. The repository URL remains supporting source metadata, never the project launch target. Forked, archived, and disabled entries are still considered when they have a reviewed deployment; private or unrelated repositories are rejected. `hxutixnnn.github.io` is the sole mapping exclusion because the current repository is already represented by the Tien OS system surface. Review the generated JSON diff, including changed homepage values and resulting launch targets, before committing it. Repository display overrides belong in `src/apps/catalog.config.mjs`; social profiles are maintained once in `src/apps/social-links.json`.
 
 ## Deployment boundary
 

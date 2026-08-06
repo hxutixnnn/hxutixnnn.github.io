@@ -1,4 +1,5 @@
-import type { AppWindowManifest, CoreAppId } from "./contract";
+import { appById } from "./catalog";
+import type { AppId, AppWindowManifest, CoreAppId, EmbeddedWindowManifest, WindowManifest } from "./contract";
 import { coreLoaders } from "./loaders";
 
 const base = {
@@ -61,3 +62,21 @@ export const appManifests = {
     load: coreLoaders.airconsole,
   },
 } satisfies Record<CoreAppId, AppWindowManifest>;
+
+export const embeddedAppManifest = {
+  id: "embedded",
+  title: "Project",
+  singleton: true,
+  mobile: "fullscreen",
+  resizable: true,
+  initial: { width: 860, height: 620 },
+  min: { width: 360, height: 280 },
+  commands: ["close", "minimize", "maximize", "document"],
+} satisfies EmbeddedWindowManifest;
+
+export function getAppWindowManifest(appId: AppId): WindowManifest | undefined {
+  const app = appById.get(appId);
+  if (app?.target?.kind === "core") return appManifests[app.target.loaderKey];
+  if (app?.target?.kind === "embedded") return embeddedAppManifest;
+  return undefined;
+}
