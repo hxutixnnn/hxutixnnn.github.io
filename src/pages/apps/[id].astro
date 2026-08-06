@@ -1,6 +1,6 @@
 ---
 import { appCatalogue } from "@/apps/catalog";
-import type { AppDescriptor, CoreAppId } from "@/apps/contract";
+import type { AppDescriptor } from "@/apps/contract";
 import StaticAppDetail from "@/components/StaticAppDetail.astro";
 import BaseLayout from "@/layouts/BaseLayout.astro";
 import PortfolioShell from "@/os/shell/PortfolioShell";
@@ -13,14 +13,14 @@ interface Props {
   app: AppDescriptor;
 }
 const { app } = Astro.props;
-const core = app.target?.kind === "core";
+const shell = app.target?.kind === "core" || app.target?.kind === "embedded";
 ---
 
 <BaseLayout
   title={`${app.name} — Tien OS`}
   description={app.summary}
-  pageClass={core ? "shell-page" : "app-detail-page"}
+  pageClass={shell ? "shell-page" : "app-detail-page"}
 >
-  <StaticAppDetail app={app} hideWhenHydrated={core} />
-  {core && <PortfolioShell initialAppId={app.id as CoreAppId} client:only="react" />}
+  <StaticAppDetail app={app} hideWhenHydrated={shell} />
+  {shell && <PortfolioShell initialAppId={app.id} client:only="react" />}
 </BaseLayout>

@@ -81,6 +81,26 @@ test("direct core route is useful and initializes the requested app", async ({ p
   await expect(page.getByRole("heading", { name: "Today I learned." })).toBeVisible();
 });
 
+test("direct embedded route keeps fallback HTML and hydrates the requested project", async ({
+  page,
+  request,
+}) => {
+  const response = await request.get("/apps/repo-jquery-website-input/");
+  const html = await response.text();
+  expect(html).toContain('class="app-detail-document static-fallback"');
+  expect(html).toContain("jquery-website-input");
+
+  await page.goto("/apps/repo-jquery-website-input/");
+
+  const project = page.locator('[data-app-id="repo-jquery-website-input"]');
+  await expect(project).toBeVisible();
+  await expect(project.getByTitle("jquery-website-input deployed project")).toHaveAttribute(
+    "src",
+    "https://hxutixnnn.github.io/jquery-website-input",
+  );
+  await expect(page.locator(".app-detail-document.static-fallback")).toBeHidden();
+});
+
 test("a retained deployed project opens in the generic embedded window", async ({ page }) => {
   await page.getByRole("button", { name: "Open Projects" }).click();
   const card = page.locator(".project-card").filter({ hasText: "jquery-website-input" });

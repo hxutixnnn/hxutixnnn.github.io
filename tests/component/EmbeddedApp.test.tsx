@@ -46,10 +46,15 @@ it("renders a responsive titled sandboxed frame with loading and safe fallbacks"
     "href",
     "https://github.com/hxutixnnn/demo-project",
   );
-  expect(screen.getByText(/refuse embedded viewing/)).toBeInTheDocument();
+  expect(screen.getByText(/cannot verify whether this cross-origin frame rendered/)).toBeInTheDocument();
 
   fireEvent.load(frame);
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  expect(screen.getByText(/blank or shows a blocked-page message/)).toBeInTheDocument();
+  expect(screen.getAllByRole("link", { name: /open it in a new tab/i })[0]).toHaveAttribute(
+    "href",
+    "https://demo.example.com/app",
+  );
 });
 
 it("explains framing failures and keeps the external fallback available", () => {

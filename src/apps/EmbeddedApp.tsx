@@ -3,7 +3,7 @@ import type { AppDescriptor, EmbeddedTarget } from "./contract";
 import { isSafeEmbeddedTarget } from "./launch";
 
 type EmbeddedAppDescriptor = AppDescriptor & { target: EmbeddedTarget };
-type FrameState = "loading" | "loaded" | "error";
+type FrameState = "loading" | "unverified" | "error";
 
 export function EmbeddedApp({ app }: { app: EmbeddedAppDescriptor }) {
   const target = app.target;
@@ -64,7 +64,7 @@ export function EmbeddedApp({ app }: { app: EmbeddedAppDescriptor }) {
               loading="eager"
               referrerPolicy="no-referrer"
               sandbox="allow-forms allow-scripts"
-              onLoad={() => finishFrame("loaded")}
+              onLoad={() => finishFrame("unverified")}
               onError={() => finishFrame("error")}
             />
           </div>
@@ -78,7 +78,8 @@ export function EmbeddedApp({ app }: { app: EmbeddedAppDescriptor }) {
             </p>
           ) : (
             <p className="embedded-app__hint">
-              Some deployed sites refuse embedded viewing. If this project does not render,{" "}
+              Tien OS cannot verify whether this cross-origin frame rendered. If it is blank or shows a
+              blocked-page message,{" "}
               <a href={target.url} target="_blank" rel="noopener noreferrer">
                 open it in a new tab
               </a>
