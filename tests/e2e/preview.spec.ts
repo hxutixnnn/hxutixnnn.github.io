@@ -101,7 +101,10 @@ test("preview fallbacks survive forced colors and reduced motion", async ({ brow
   });
   const page = await context.newPage();
   await page.goto("/preview/");
-  const material = await page.locator(".preview-material--glass").evaluate((element) => ({
+  await expect(page.locator("body")).toHaveAttribute("data-preview-theme", "dark");
+  const glassMaterial = page.locator(".preview-material--glass");
+  await glassMaterial.scrollIntoViewIfNeeded();
+  const material = await glassMaterial.evaluate((element) => ({
     background: getComputedStyle(element).backgroundColor,
     backdrop: getComputedStyle(element).backdropFilter,
   }));
