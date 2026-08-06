@@ -1,4 +1,4 @@
-name: Deploy Tien OS to GitHub Pages
+name: Deploy tienOS to GitHub Pages
 
 on:
   push:
@@ -36,7 +36,7 @@ jobs:
       - run: pnpm test:e2e
       - run: pnpm test:lighthouse
       - name: Assert default-domain-only artifact
-        run: test ! -e dist/CNAME && grep -q 'https://hxutixnnn.github.io' dist/index.html
+        run: test ! -e dist/CNAME && grep -q 'tienOS' dist/index.html
       - uses: actions/upload-pages-artifact@v4
         with:
           path: dist

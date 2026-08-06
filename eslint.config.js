@@ -8,9 +8,7 @@ const typescriptFiles = ["**/*.{ts,tsx,mts}"];
 export default tseslint.config(
   {
     ignores: [
-      ".astro/**",
       ".research-tmp/**",
-      "**/*.astro",
       "content/**",
       "coverage/**",
       "dist/**",

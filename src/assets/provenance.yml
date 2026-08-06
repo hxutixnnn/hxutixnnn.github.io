@@ -1,0 +1,16 @@
+version: 1
+assets:
+  - path: public/wallpapers/tienos-default.jpg
+    author: Kunal Patil
+    source: https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw
+    license: Unsplash License
+    copyright: Copyright Kunal Patil; used under the Unsplash License.
+    modified: Downloaded at 3840x2160 for the default tienOS wallpaper; no visual edits.
+    sha256: 86f9adf694d568da6c16be855fbfe3ceeaea5f297d4f284756401ac58b09e35c
+  - path: public/favicon.svg
+    author: tienOS contributors
+    source: Original project asset
+    license: MIT
+    copyright: Copyright 2026 Nguyễn Hữu Tiền
+    modified: Original system-symbol favicon using the approved ✦ mark.
+    sha256: f0487db5e918685b3b87b7604090429f92d0e05e5223b70ace80c82c313e792c

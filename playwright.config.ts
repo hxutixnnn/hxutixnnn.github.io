@@ -8,7 +8,7 @@ export default defineConfig({
   ...(process.env.CI ? { workers: 2 } : {}),
   reporter: process.env.CI ? [["line"], ["html", { open: "never" }]] : "line",
   use: {
-    baseURL: "http://127.0.0.1:4321",
+    baseURL: "http://127.0.0.1:4173",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
     video: "retain-on-failure",
@@ -20,8 +20,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm preview --host 127.0.0.1 --port 4321",
-    url: "http://127.0.0.1:4321",
+    command: "pnpm preview --host 127.0.0.1 --port 4173",
+    url: "http://127.0.0.1:4173",
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
   },
