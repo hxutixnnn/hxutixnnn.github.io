@@ -1,31 +1,28 @@
-import { useEffect, useState } from "react";
+import { useEffect, useId, useState, type RefObject } from "react";
 import { Popover } from "@base-ui/react/popover";
 import { Slider } from "@base-ui/react/slider";
 import { Switch } from "@base-ui/react/switch";
-import { loadSettings, saveSettings } from "../store/persistence";
+import { defaultOsSettings, loadSettings, saveSettings } from "../store/persistence";
 import type { OsSettings } from "../store/persistence";
 import { ControlCenterIcon } from "./StatusIcons";
 
 function ToggleRow({
+  id,
   label,
   checked,
   onChange,
 }: {
+  id: string;
   label: string;
   checked: boolean;
   onChange: (next: boolean) => void;
 }) {
   return (
     <div className="cc-row">
-      <span className="cc-row__label" id={`cc-${label.toLowerCase().replace(/\s+/g, "-")}`}>
+      <span className="cc-row__label" id={id}>
         {label}
       </span>
-      <Switch.Root
-        className="cc-switch"
-        checked={checked}
-        onCheckedChange={onChange}
-        aria-labelledby={`cc-${label.toLowerCase().replace(/\s+/g, "-")}`}
-      >
+      <Switch.Root className="cc-switch" checked={checked} onCheckedChange={onChange} aria-labelledby={id}>
         <Switch.Thumb className="cc-switch__thumb" />
       </Switch.Root>
     </div>
@@ -69,20 +66,40 @@ function LevelSlider({
 export function ControlCenter({
   mobile,
   announce,
+  persistSettings = true,
+  settingsScope,
 }: {
   mobile: boolean;
   announce: (message: string) => void;
+  persistSettings?: boolean;
+  settingsScope?: RefObject<HTMLElement | null> | undefined;
 }) {
-  const [settings, setSettings] = useState<OsSettings>(() => loadSettings());
+  const idPrefix = useId();
+  const [settings, setSettings] = useState<OsSettings>(() =>
+    settingsScope ? defaultOsSettings : loadSettings(),
+  );
 
   useEffect(() => {
-    const root = document.documentElement;
+    const root = settingsScope ? settingsScope.current : document.documentElement;
+    if (!root) return undefined;
+
     root.style.setProperty("--os-brightness", String(settings.brightness));
     root.style.setProperty("--os-volume", String(settings.volume));
-    root.dataset.appearance = settings.appearance;
-    root.dataset.focus = settings.focus ? "on" : "off";
-    saveSettings(settings);
-  }, [settings]);
+    root.setAttribute("data-appearance", settings.appearance);
+    root.setAttribute("data-focus", settings.focus ? "on" : "off");
+    if (persistSettings) saveSettings(settings);
+
+    if (settingsScope) {
+      return () => {
+        root.style.removeProperty("--os-brightness");
+        root.style.removeProperty("--os-volume");
+        root.removeAttribute("data-appearance");
+        root.removeAttribute("data-focus");
+      };
+    }
+
+    return undefined;
+  }, [persistSettings, settings, settingsScope]);
 
   if (mobile) return null;
 
@@ -99,23 +116,36 @@ export function ControlCenter({
       >
         <ControlCenterIcon />
       </Popover.Trigger>
-      <Popover.Portal>
+      <Popover.Portal container={settingsScope}>
         <Popover.Positioner className="cc-positioner" side="bottom" align="end" sideOffset={6}>
           <Popover.Popup className="cc-panel glass-surface" aria-label="Control Center">
             <div className="cc-grid">
-              <ToggleRow label="Wi-Fi" checked={settings.wifi} onChange={(wifi) => update({ wifi })} />
               <ToggleRow
+                id={`${idPrefix}-wifi`}
+                label="Wi-Fi"
+                checked={settings.wifi}
+                onChange={(wifi) => update({ wifi })}
+              />
+              <ToggleRow
+                id={`${idPrefix}-bluetooth`}
                 label="Bluetooth"
                 checked={settings.bluetooth}
                 onChange={(bluetooth) => update({ bluetooth })}
               />
               <ToggleRow
+                id={`${idPrefix}-airdrop`}
                 label="AirDrop"
                 checked={settings.airdrop}
                 onChange={(airdrop) => update({ airdrop })}
               />
-              <ToggleRow label="Focus" checked={settings.focus} onChange={(focus) => update({ focus })} />
               <ToggleRow
+                id={`${idPrefix}-focus`}
+                label="Focus"
+                checked={settings.focus}
+                onChange={(focus) => update({ focus })}
+              />
+              <ToggleRow
+                id={`${idPrefix}-appearance`}
                 label="Appearance"
                 checked={settings.appearance === "light"}
                 onChange={(light) => update({ appearance: light ? "light" : "dark" })}

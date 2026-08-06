@@ -1,5 +1,9 @@
 # Change Log
 
+## Unreleased
+
+- Add `/preview/`, a non-indexed UI-component review gallery with a static HTML baseline and isolated interactive component labs.
+
 ## 2026-08-01
 
 - Replace the legacy Gatsby theme with the static Astro/React Tien OS portfolio.

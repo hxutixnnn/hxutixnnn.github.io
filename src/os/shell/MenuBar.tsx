@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, type RefObject } from "react";
 import { Menu } from "@base-ui/react/menu";
 import { SystemMark } from "./AppIcon";
 import { ControlCenter } from "./ControlCenter";
@@ -69,6 +69,8 @@ export function MenuBar({
   documentUrl,
   onOpenSpotlight,
   announce,
+  persistSettings = true,
+  settingsScope,
 }: {
   activeTitle: string;
   hasActiveWindow: boolean;
@@ -80,6 +82,8 @@ export function MenuBar({
   documentUrl: string;
   onOpenSpotlight: () => void;
   announce: (message: string) => void;
+  persistSettings?: boolean;
+  settingsScope?: RefObject<HTMLElement | null>;
 }) {
   const topLevel = useRef<Array<HTMLButtonElement | null>>([]);
   const [openMenu, setOpenMenu] = useState<0 | 1 | null>(null);
@@ -161,7 +165,12 @@ export function MenuBar({
             <BatteryIcon />
           </span>
           <time>{time}</time>
-          <ControlCenter mobile={false} announce={announce} />
+          <ControlCenter
+            mobile={false}
+            announce={announce}
+            persistSettings={persistSettings}
+            settingsScope={settingsScope}
+          />
           <button
             type="button"
             className="menu-bar__icon-button"

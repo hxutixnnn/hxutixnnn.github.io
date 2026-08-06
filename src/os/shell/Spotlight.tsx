@@ -30,6 +30,7 @@ function rank(title: string, summary: string, query: string): number {
 
 export function Spotlight({
   open,
+  initialQuery = "",
   onOpenChange,
   onOpenApp,
   onOpenExternal,
@@ -37,13 +38,14 @@ export function Spotlight({
   onAnnounce,
 }: {
   open: boolean;
+  initialQuery?: string;
   onOpenChange: (open: boolean) => void;
   onOpenApp: (appId: AppId) => void;
   onOpenExternal: (appId: AppId) => void;
   onNavigate: (url: string) => void;
   onAnnounce: (message: string) => void;
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [active, setActive] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
