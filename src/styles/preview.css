@@ -7,7 +7,7 @@
 }
 
 @layer preview {
-  .preview-page {
+  .preview-page-shell {
     --preview-canvas: #0b1020;
     --preview-panel: rgba(24, 31, 53, 0.76);
     --preview-panel-strong: rgba(19, 25, 44, 0.94);
@@ -35,7 +35,7 @@
     font-family: var(--font);
   }
 
-  .preview-page--light {
+  .preview-page-shell[data-preview-theme="light"] {
     --preview-canvas: #eef2f8;
     --preview-panel: rgba(255, 255, 255, 0.78);
     --preview-panel-strong: rgba(250, 252, 255, 0.95);
@@ -57,22 +57,22 @@
       linear-gradient(148deg, #f9fbff, var(--preview-canvas) 45%, #e8edf5);
   }
 
-  .preview-page a {
+  .preview-page-shell a {
     color: var(--preview-accent);
     text-decoration-thickness: 1px;
     text-underline-offset: 0.2em;
   }
 
-  .preview-page button,
-  .preview-page input {
+  .preview-page-shell button,
+  .preview-page-shell input {
     font: inherit;
   }
 
-  .preview-page button {
+  .preview-page-shell button {
     color: inherit;
   }
 
-  .preview-page :focus-visible {
+  .preview-page-shell :focus-visible {
     outline: 3px solid var(--preview-focus);
     outline-offset: 3px;
   }
@@ -1566,26 +1566,26 @@
   }
 
   @media (forced-colors: active) {
-    .preview-page,
-    .preview-live-checkpoint,
-    .preview-page .preview-token-swatches,
-    .preview-page .preview-toc {
+    .preview-page-shell,
+    .preview-page-shell .preview-token-swatches,
+    .preview-page-shell .preview-toc {
       background: Canvas;
       color: CanvasText;
     }
 
-    .preview-page .preview-header,
-    .preview-page .preview-card,
-    .preview-page .preview-material,
-    .preview-page .preview-state,
-    .preview-page .preview-appearance-card,
-    .preview-page .preview-token,
-    .preview-page .preview-type-specimen,
-    .preview-page .preview-icon-sample,
-    .preview-page .preview-status-sample,
-    .preview-page .preview-system-status,
-    .preview-page .preview-window-demo,
-    .preview-live-checkpoint .preview-card {
+    .preview-page-shell .preview-header,
+    .preview-page-shell .preview-card,
+    .preview-page-shell .preview-material,
+    .preview-page-shell .preview-state,
+    .preview-page-shell .preview-appearance-card,
+    .preview-page-shell .preview-token,
+    .preview-page-shell .preview-type-specimen,
+    .preview-page-shell .preview-icon-sample,
+    .preview-page-shell .preview-status-sample,
+    .preview-page-shell .preview-system-status,
+    .preview-page-shell .preview-window-demo,
+    .preview-page-shell .preview-popover,
+    .preview-page-shell .preview-dialog {
       border: 1px solid CanvasText;
       background: Canvas;
       box-shadow: none;
@@ -1593,38 +1593,45 @@
       color: CanvasText;
     }
 
-    .preview-page .preview-system-stage,
-    .preview-page .preview-window-stage {
+    .preview-page-shell .preview-system-stage,
+    .preview-page-shell .preview-live-system__stage,
+    .preview-page-shell .preview-window-stage {
       border: 1px solid CanvasText;
       background: Canvas;
+      background-image: none;
     }
 
-    .preview-page .preview-appearance-card::before,
-    .preview-page .preview-appearance-card::after,
-    .preview-page .preview-system-stage::after,
-    .preview-page .preview-spinner {
+    .preview-page-shell .preview-dialog-backdrop {
+      background: transparent;
+      backdrop-filter: none;
+    }
+
+    .preview-page-shell .preview-appearance-card::before,
+    .preview-page-shell .preview-appearance-card::after,
+    .preview-page-shell .preview-system-stage::after,
+    .preview-page-shell .preview-spinner {
       display: none;
     }
 
-    .preview-page .preview-button,
-    .preview-page .preview-icon-button,
-    .preview-page .preview-field input,
-    .preview-page .preview-search-field__input,
-    .preview-page .preview-segmented,
-    .preview-page .preview-tabs,
-    .preview-page .preview-switch,
-    .preview-page .preview-slider__track,
-    .preview-page .preview-window-variant,
-    .preview-page .preview-window-variant__body {
+    .preview-page-shell .preview-button,
+    .preview-page-shell .preview-icon-button,
+    .preview-page-shell .preview-field input,
+    .preview-page-shell .preview-search-field__input,
+    .preview-page-shell .preview-segmented,
+    .preview-page-shell .preview-tabs,
+    .preview-page-shell .preview-switch,
+    .preview-page-shell .preview-slider__track,
+    .preview-page-shell .preview-window-variant,
+    .preview-page-shell .preview-window-variant__body {
       border: 1px solid CanvasText;
       background: Canvas;
       color: CanvasText;
       box-shadow: none;
     }
 
-    .preview-page .preview-traffic-light,
-    .preview-page .preview-status-dot,
-    .preview-page .preview-token > span {
+    .preview-page-shell .preview-traffic-light,
+    .preview-page-shell .preview-status-dot,
+    .preview-page-shell .preview-token > span {
       forced-color-adjust: none;
       background: CanvasText;
     }

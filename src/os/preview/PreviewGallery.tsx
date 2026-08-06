@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Dialog } from "@base-ui/react/dialog";
 import { Popover } from "@base-ui/react/popover";
 import { Slider } from "@base-ui/react/slider";
@@ -22,6 +22,7 @@ import {
   WifiIcon,
 } from "@/os/shell/StatusIcons";
 import { WindowFrame } from "@/os/shell/WindowFrame";
+import { PreviewSegmentedControl, PreviewTabs } from "@/os/preview/PreviewSelectionControls";
 import "@/styles/preview.css";
 
 const previewApps = appCatalogue.slice(0, 13);
@@ -364,7 +365,7 @@ function PreviewControls() {
   const [switchEnabled, setSwitchEnabled] = useState(true);
   const [sliderValue, setSliderValue] = useState(0.68);
   const [segment, setSegment] = useState("All");
-  const [tab, setTab] = useState("Overview");
+  const [tab, setTab] = useState("overview");
   const [query, setQuery] = useState("");
   const [noticeVisible, setNoticeVisible] = useState(true);
   const filteredItems = useMemo(
@@ -470,45 +471,31 @@ function PreviewControls() {
 
         <article className="preview-card preview-card--wide">
           <SampleLabel>Segments and tabs</SampleLabel>
-          <div className="preview-segmented" role="group" aria-label="Filter sample">
-            {["All", "Core", "Social"].map((item) => (
-              <button
-                type="button"
-                key={item}
-                aria-pressed={segment === item}
-                className={segment === item ? "is-active" : ""}
-                onClick={() => setSegment(item)}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-          <div className="preview-tabs" role="tablist" aria-label="Preview content tabs">
-            {["Overview", "Details", "Notes"].map((item) => (
-              <button
-                type="button"
-                key={item}
-                role="tab"
-                aria-selected={tab === item}
-                aria-controls={`preview-tabpanel-${item.toLowerCase()}`}
-                id={`preview-tab-${item.toLowerCase()}`}
-                className={tab === item ? "is-active" : ""}
-                onClick={() => setTab(item)}
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-          <div
-            className="preview-tabpanel"
-            role="tabpanel"
-            id={`preview-tabpanel-${tab.toLowerCase()}`}
-            aria-labelledby={`preview-tab-${tab.toLowerCase()}`}
-          >
-            {tab === "Overview" && "A compact, calm control surface."}
-            {tab === "Details" && "Every action keeps its native role and label."}
-            {tab === "Notes" && "Focus rings, contrast, and reduced motion are part of the system."}
-          </div>
+          <PreviewSegmentedControl
+            label="Filter sample"
+            options={[
+              { id: "All", label: "All" },
+              { id: "Core", label: "Core" },
+              { id: "Social", label: "Social" },
+            ]}
+            value={segment}
+            onChange={setSegment}
+          />
+          <PreviewTabs
+            idPrefix="preview-content"
+            label="Preview content tabs"
+            options={[
+              { id: "overview", label: "Overview", panel: "A compact, calm control surface." },
+              { id: "details", label: "Details", panel: "Every action keeps its native role and label." },
+              {
+                id: "notes",
+                label: "Notes",
+                panel: "Focus rings, contrast, and reduced motion are part of the system.",
+              },
+            ]}
+            value={tab}
+            onChange={setTab}
+          />
         </article>
       </div>
 
@@ -565,6 +552,13 @@ function PreviewControls() {
 
 export default function PreviewGallery() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    document.body.dataset.previewTheme = theme;
+    return () => {
+      delete document.body.dataset.previewTheme;
+    };
+  }, [theme]);
 
   return (
     <div className={`preview-page preview-page--${theme}`} data-preview-theme={theme}>

@@ -10,8 +10,26 @@ it("keeps the live control lab interactive", async () => {
   const focus = screen.getByRole("switch", { name: "Live focus mode" });
   await user.click(focus);
   expect(focus).toHaveAttribute("aria-checked", "false");
-  await user.click(screen.getByRole("tab", { name: "Core" }));
-  expect(screen.getByRole("tab", { name: "Core" })).toHaveAttribute("aria-selected", "true");
+  const coreSegment = screen.getByRole("button", { name: "Core" });
+  await user.click(coreSegment);
+  expect(coreSegment).toHaveAttribute("aria-pressed", "true");
+
+  const overviewTab = screen.getByRole("tab", { name: "Overview" });
+  overviewTab.focus();
+  await user.keyboard("{ArrowRight}");
+  const detailsTab = screen.getByRole("tab", { name: "Details" });
+  expect(detailsTab).toHaveFocus();
+  expect(detailsTab).toHaveAttribute("aria-selected", "true");
+  expect(detailsTab).toHaveAttribute("tabindex", "0");
+  expect(screen.getByRole("tabpanel", { name: "Details" })).toHaveTextContent(
+    "Keyboard and pointer input share the same state.",
+  );
+
+  await user.keyboard("{End}");
+  expect(screen.getByRole("tab", { name: "Notes" })).toHaveFocus();
+  await user.keyboard("{Home}");
+  expect(overviewTab).toHaveFocus();
+
   await user.type(screen.getByRole("searchbox", { name: "Filter shell samples" }), "window");
   expect(screen.getByText("Window chrome")).toBeInTheDocument();
 });

@@ -8,13 +8,37 @@ test("preview route is directly addressable, static, and interactive", async ({ 
   await expect(page.getByRole("heading", { name: "Design tokens and typography" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Interaction lab" })).toBeVisible();
 
+  const liveInkToken = await page
+    .locator(".preview-live-checkpoint")
+    .evaluate((element) => getComputedStyle(element).getPropertyValue("--preview-ink").trim());
+  expect(liveInkToken).toBe("#f5f7ff");
+
+  const gallery = page.locator(".preview-page");
+  await gallery.getByRole("button", { name: "Switch to light preview appearance" }).click();
+  await expect(page.locator("body")).toHaveAttribute("data-preview-theme", "light");
+
+  const galleryControls = gallery.locator("#controls");
+  await galleryControls.getByRole("button", { name: "Core" }).click();
+  await expect(galleryControls.getByRole("button", { name: "Core" })).toHaveAttribute("aria-pressed", "true");
+  const galleryOverviewTab = galleryControls.getByRole("tab", { name: "Overview" });
+  await galleryOverviewTab.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(galleryControls.getByRole("tab", { name: "Details" })).toBeFocused();
+  await expect(galleryControls.getByRole("tabpanel", { name: "Details" })).toBeVisible();
+  await galleryControls.getByRole("searchbox", { name: "Filter components" }).fill("window");
+  await expect(galleryControls.getByText("Window chrome")).toBeVisible();
+
   const controls = page.locator(".preview-live-controls");
   const focusMode = controls.getByRole("switch", { name: "Live focus mode" });
   await expect(focusMode).toHaveAttribute("aria-checked", "true");
   await focusMode.click();
   await expect(focusMode).toHaveAttribute("aria-checked", "false");
-  await controls.getByRole("tab", { name: "Core" }).click();
-  await expect(controls.getByRole("tab", { name: "Core" })).toHaveAttribute("aria-selected", "true");
+  await controls.getByRole("button", { name: "Core" }).click();
+  await expect(controls.getByRole("button", { name: "Core" })).toHaveAttribute("aria-pressed", "true");
+  await controls.getByRole("tab", { name: "Overview" }).focus();
+  await page.keyboard.press("End");
+  await expect(controls.getByRole("tab", { name: "Notes" })).toBeFocused();
+  await expect(controls.getByRole("tabpanel", { name: "Notes" })).toBeVisible();
   await controls.getByRole("searchbox", { name: "Filter shell samples" }).fill("window");
   await expect(controls.getByText("Window chrome")).toBeVisible();
 
@@ -82,6 +106,16 @@ test("preview fallbacks survive forced colors and reduced motion", async ({ brow
     backdrop: getComputedStyle(element).backdropFilter,
   }));
   expect(material.backdrop).toBe("none");
+  const liveStageBackground = await page
+    .locator(".preview-live-system__stage")
+    .evaluate((element) => getComputedStyle(element).backgroundImage);
+  expect(liveStageBackground).toBe("none");
+  await page.locator(".preview-live-system").getByRole("button", { name: "Open dialog" }).click();
+  const dialogBackdrop = await page
+    .locator(".preview-dialog-backdrop")
+    .evaluate((element) => getComputedStyle(element).backdropFilter);
+  expect(dialogBackdrop).toBe("none");
+  await page.keyboard.press("Escape");
   const animation = await page
     .locator(".preview-spinner")
     .evaluate((element) => getComputedStyle(element).animationDuration);

@@ -9,6 +9,7 @@ import { Dock } from "@/os/shell/Launcher";
 import { MenuBar } from "@/os/shell/MenuBar";
 import { Spotlight } from "@/os/shell/Spotlight";
 import { WindowFrame } from "@/os/shell/WindowFrame";
+import { PreviewSegmentedControl, PreviewTabs } from "@/os/preview/PreviewSelectionControls";
 
 const viewport: Viewport = { width: 540, height: 336 };
 const initialWindow: WindowState = {
@@ -24,7 +25,8 @@ const matches = ["Glass materials", "Window chrome", "Spotlight", "Dock"];
 function InteractiveControls() {
   const [enabled, setEnabled] = useState(true);
   const [level, setLevel] = useState(0.68);
-  const [tab, setTab] = useState("All");
+  const [segment, setSegment] = useState("All");
+  const [tab, setTab] = useState("overview");
   const [query, setQuery] = useState("");
   const results = useMemo(
     () => matches.filter((item) => item.toLowerCase().includes(query.toLowerCase())),
@@ -36,7 +38,7 @@ function InteractiveControls() {
       <p className="preview-sample-label">LIVE INTERACTION LAB</p>
       <h3>Try the component contracts</h3>
       <p className="preview-live-controls__copy">
-        These controls are hydrated here while the gallery above stays useful in static HTML.
+        These controls stay interactive while the complete gallery remains useful in static HTML.
       </p>
       <div className="preview-live-controls__row">
         <Switch.Root
@@ -72,20 +74,27 @@ function InteractiveControls() {
           </Slider.Control>
         </Slider.Root>
       </div>
-      <div className="preview-segmented" role="tablist" aria-label="Live segments">
-        {["All", "Core", "Social"].map((item) => (
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === item}
-            key={item}
-            className={tab === item ? "is-active" : ""}
-            onClick={() => setTab(item)}
-          >
-            {item}
-          </button>
-        ))}
-      </div>
+      <PreviewSegmentedControl
+        label="Live segments"
+        options={[
+          { id: "All", label: "All" },
+          { id: "Core", label: "Core" },
+          { id: "Social", label: "Social" },
+        ]}
+        value={segment}
+        onChange={setSegment}
+      />
+      <PreviewTabs
+        idPrefix="live-content"
+        label="Live content tabs"
+        options={[
+          { id: "overview", label: "Overview", panel: "A compact interactive control set." },
+          { id: "details", label: "Details", panel: "Keyboard and pointer input share the same state." },
+          { id: "notes", label: "Notes", panel: "Tabs use roving focus and linked panels." },
+        ]}
+        value={tab}
+        onChange={setTab}
+      />
       <label className="preview-field preview-live-search">
         <span>Filter shell samples</span>
         <input
@@ -101,7 +110,7 @@ function InteractiveControls() {
             <span className="preview-list__dot" aria-hidden="true" />
             <span>
               <strong>{item}</strong>
-              <small>{tab} component</small>
+              <small>{segment} component</small>
             </span>
           </li>
         ))}
