@@ -85,16 +85,16 @@ export function ControlCenter({
 
     root.style.setProperty("--os-brightness", String(settings.brightness));
     root.style.setProperty("--os-volume", String(settings.volume));
-    root.dataset.appearance = settings.appearance;
-    root.dataset.focus = settings.focus ? "on" : "off";
+    root.setAttribute("data-appearance", settings.appearance);
+    root.setAttribute("data-focus", settings.focus ? "on" : "off");
     if (persistSettings) saveSettings(settings);
 
     if (settingsScope) {
       return () => {
         root.style.removeProperty("--os-brightness");
         root.style.removeProperty("--os-volume");
-        delete root.dataset.appearance;
-        delete root.dataset.focus;
+        root.removeAttribute("data-appearance");
+        root.removeAttribute("data-focus");
       };
     }
   }, [persistSettings, settings, settingsScope]);

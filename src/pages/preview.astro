@@ -69,7 +69,9 @@ import PreviewInteractions from "@/os/preview/PreviewInteractions";
     });
 
     const tabs = Array.from(
-      controls?.querySelectorAll<HTMLButtonElement>('[role="tablist"][aria-label="Preview content tabs"] [role="tab"]') ?? [],
+      controls?.querySelectorAll<HTMLButtonElement>(
+        '[role="tablist"][aria-label="Preview content tabs"] [role="tab"]',
+      ) ?? [],
     );
     const selectTab = (tab: HTMLButtonElement) => {
       tabs.forEach((candidate) => {
@@ -99,7 +101,9 @@ import PreviewInteractions from "@/os/preview/PreviewInteractions";
       });
     });
 
-    const filter = controls?.querySelector<HTMLInputElement>('input[type="search"][placeholder="Search components"]');
+    const filter = controls?.querySelector<HTMLInputElement>(
+      'input[type="search"][placeholder="Search components"]',
+    );
     const filterList = controls?.querySelector<HTMLElement>(".preview-subgrid--feedback .preview-list");
     const filterItems = Array.from(filterList?.querySelectorAll<HTMLElement>("li") ?? []);
     const emptyMessage = document.createElement("p");
