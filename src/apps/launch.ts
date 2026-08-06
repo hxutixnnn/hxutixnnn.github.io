@@ -27,6 +27,13 @@ export function isSafeEmbeddedTarget(target: EmbeddedTarget): boolean {
   return target.kind === "embedded" && hasExactHttpsOrigin(target, "embedded");
 }
 
+export function getEmbeddedFrameSource(targets: readonly EmbeddedTarget[]): string {
+  const origins = new Set(
+    targets.filter(isSafeEmbeddedTarget).map((target) => new URL(target.allowedOrigin).origin),
+  );
+  return origins.size > 0 ? [...origins].sort().join(" ") : "'none'";
+}
+
 export function openExternalTarget(
   target: ExternalTarget,
   openWindow: (url?: string | URL, target?: string, features?: string) => Window | null = window.open.bind(

@@ -1,5 +1,5 @@
 import { expect, it, vi } from "vitest";
-import { isSafeEmbeddedTarget, openExternalTarget } from "@/apps/launch";
+import { getEmbeddedFrameSource, isSafeEmbeddedTarget, openExternalTarget } from "@/apps/launch";
 import type { EmbeddedTarget, ExternalTarget } from "@/apps/contract";
 
 const target: ExternalTarget = {
@@ -30,6 +30,22 @@ it("accepts only exact-origin HTTPS embedded targets without same-origin privile
     false,
   );
   expect(isSafeEmbeddedTarget({ ...embedded, allowedOrigin: "https://other.example.com" })).toBe(false);
+});
+
+it("builds frame-src from unique reviewed exact origins", () => {
+  expect(
+    getEmbeddedFrameSource([
+      embedded,
+      { ...embedded, url: "https://example.com/other" },
+      {
+        ...embedded,
+        url: "https://second.example/demo",
+        allowedOrigin: "https://second.example",
+      },
+      { ...embedded, url: "https://unreviewed.example/demo" },
+    ]),
+  ).toBe("https://example.com https://second.example");
+  expect(getEmbeddedFrameSource([])).toBe("'none'");
 });
 
 it("does not launch a destination outside its allowed origin", () => {
