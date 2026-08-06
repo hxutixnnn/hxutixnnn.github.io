@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "vite",
     "start": "vite",
-    "build": "vite build && pnpm check:output",
+    "build": "pnpm validate:assets && vite build && pnpm check:output",
     "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
