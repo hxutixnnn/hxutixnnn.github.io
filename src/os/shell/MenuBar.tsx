@@ -69,6 +69,7 @@ export function MenuBar({
   documentUrl,
   onOpenSpotlight,
   announce,
+  persistSettings = true,
 }: {
   activeTitle: string;
   hasActiveWindow: boolean;
@@ -80,6 +81,7 @@ export function MenuBar({
   documentUrl: string;
   onOpenSpotlight: () => void;
   announce: (message: string) => void;
+  persistSettings?: boolean;
 }) {
   const topLevel = useRef<Array<HTMLButtonElement | null>>([]);
   const [openMenu, setOpenMenu] = useState<0 | 1 | null>(null);
@@ -161,7 +163,7 @@ export function MenuBar({
             <BatteryIcon />
           </span>
           <time>{time}</time>
-          <ControlCenter mobile={false} announce={announce} />
+          <ControlCenter mobile={false} announce={announce} persistSettings={persistSettings} />
           <button
             type="button"
             className="menu-bar__icon-button"

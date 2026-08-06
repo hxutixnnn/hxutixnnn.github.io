@@ -1,0 +1,31 @@
+---
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import PreviewGallery from "@/os/preview/PreviewGallery";
+import PreviewInteractions from "@/os/preview/PreviewInteractions";
+---
+
+<BaseLayout
+  title="UI Components — Tien OS preview"
+  description="A static, interactive visual checkpoint for the Tien OS UI component system."
+  noindex
+  pageClass="preview-page-shell"
+>
+  <PreviewGallery />
+  <section class="preview-live-checkpoint" aria-labelledby="live-checkpoint-title">
+    <header class="preview-section__heading">
+      <span class="preview-section__index">07</span>
+      <div>
+        <h2 id="live-checkpoint-title">Interaction lab</h2>
+        <p>
+          Static HTML is the review baseline. These three compact islands make the important behaviors real
+          without coupling the preview to the production session.
+        </p>
+      </div>
+    </header>
+    <div class="preview-live-grid">
+      <PreviewInteractions mode="controls" client:load />
+      <PreviewInteractions mode="system" client:load />
+      <PreviewInteractions mode="window" client:load />
+    </div>
+  </section>
+</BaseLayout>

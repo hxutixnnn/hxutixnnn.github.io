@@ -69,9 +69,11 @@ function LevelSlider({
 export function ControlCenter({
   mobile,
   announce,
+  persistSettings = true,
 }: {
   mobile: boolean;
   announce: (message: string) => void;
+  persistSettings?: boolean;
 }) {
   const [settings, setSettings] = useState<OsSettings>(() => loadSettings());
 
@@ -81,8 +83,8 @@ export function ControlCenter({
     root.style.setProperty("--os-volume", String(settings.volume));
     root.dataset.appearance = settings.appearance;
     root.dataset.focus = settings.focus ? "on" : "off";
-    saveSettings(settings);
-  }, [settings]);
+    if (persistSettings) saveSettings(settings);
+  }, [persistSettings, settings]);
 
   if (mobile) return null;
 
