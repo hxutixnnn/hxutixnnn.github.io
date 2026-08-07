@@ -23,8 +23,11 @@ Use semantic tokens for shared color, spacing, radius, typography, motion, and s
 ### Surfaces and color
 
 Use semantic text, border, separator, accent, window, sidebar, content, control, and scrim tokens.
+Light and dark values are selected by the root `data-theme` attribute; components must not own or duplicate appearance state.
 Do not use color as the only indication of selection or status.
 The system provides stronger contrast, opaque reduced-transparency surfaces, and forced-color mappings.
+
+The inline bootstrap in [`index.html`](../index.html) validates the persisted appearance value and resolves Auto before styles or the desktop can paint. Runtime state and live system-preference tracking belong to [`src/stores/appearance.ts`](../src/stores/appearance.ts). This pre-paint step is part of the splash readiness contract and must remain synchronized with the store's storage key and fallback behavior.
 
 ### Typography
 
@@ -103,6 +106,6 @@ Any new component must be reviewed in its default state and under these preferen
 
 ## Intentional web product decisions
 
-The desktop canvas is dark and scroll-locked because it models a bounded operating-system workspace.
+The desktop canvas follows the resolved Light, Dark, or Auto appearance and is scroll-locked because it models a bounded operating-system workspace.
 Desktop labels remain non-selectable by the captain's product decision; content that users may need to copy must explicitly restore selection.
 The sparkle system mark is the tienOS identity and replaces platform-vendor marks.

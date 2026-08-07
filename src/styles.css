@@ -2,7 +2,7 @@
 @import "./design-system.css";
 
 :root {
-  color-scheme: dark;
+  color-scheme: light dark;
   font-size: 13px;
   font-family:
     Inter,
@@ -48,6 +48,20 @@ body,
 body {
   min-width: 320px;
   background: #07121d;
+}
+
+:root[data-theme="light"] body {
+  background: #dbeafe;
+}
+
+.tienos-desktop {
+  background: #07121d;
+  color: white;
+}
+
+:root[data-theme="light"] .tienos-desktop {
+  background: #dbeafe;
+  color: #0f172a;
 }
 
 button,

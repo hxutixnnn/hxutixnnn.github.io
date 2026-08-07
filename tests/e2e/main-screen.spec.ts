@@ -35,6 +35,7 @@ async function expectConventionalRoundedGeometry(element: Locator) {
 }
 
 test("applies design-system tokens to component styles", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
 
@@ -139,6 +140,7 @@ test("uses conventional rounded geometry without shape masks", async ({ page }) 
 });
 
 test("keeps keyboard focus visible in forced colors", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
   await page.emulateMedia({ forcedColors: "active" });
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
@@ -175,6 +177,7 @@ test("keeps keyboard focus visible in forced colors", async ({ page }) => {
 });
 
 test("uses opaque menu surfaces with reduced transparency", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
   const session = await page.context().newCDPSession(page);
   await session.send("Emulation.setEmulatedMedia", {
     features: [{ name: "prefers-reduced-transparency", value: "reduce" }],
@@ -583,4 +586,64 @@ test("keeps the default menu corners on a small viewport", async ({ page }) => {
     "border-radius",
     "10px",
   );
+});
+
+test.describe("appearance modes", () => {
+  test("persists Light and Dark while Auto follows live system changes", async ({ page }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/");
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+
+    await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+    await page.getByRole("menuitem", { name: "System Settings…" }).click();
+    await page.getByRole("button", { name: "Appearance" }).click();
+    const modes = page.getByRole("group", { name: "Appearance mode" });
+
+    await modes.getByRole("button", { name: "Light" }).click();
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await page.reload();
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "light");
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+
+    await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+    await page.getByRole("menuitem", { name: "System Settings…" }).click();
+    await page.getByRole("button", { name: "Appearance" }).click();
+    await page.getByRole("group", { name: "Appearance mode" }).getByRole("button", { name: "Auto" }).click();
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+    await page.emulateMedia({ colorScheme: "light" });
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+
+    await page.getByRole("group", { name: "Appearance mode" }).getByRole("button", { name: "Dark" }).click();
+    await page.emulateMedia({ colorScheme: "light" });
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+  });
+
+  test("bootstraps a persisted theme before the first desktop paint and rejects malformed storage", async ({
+    page,
+  }) => {
+    await page.addInitScript(() => {
+      if (localStorage.getItem("tienos-appearance") === null) {
+        localStorage.setItem("tienos-appearance", JSON.stringify("light"));
+      }
+    });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(page.getByRole("status", { name: "Starting tienOS" })).toHaveCSS(
+      "background-color",
+      "rgb(248, 250, 252)",
+    );
+    await expect(page.locator("main[aria-label='tienOS desktop']")).toHaveCSS(
+      "background-color",
+      "rgb(219, 234, 254)",
+    );
+
+    await page.evaluate(() => localStorage.setItem("tienos-appearance", "{broken"));
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+  });
 });

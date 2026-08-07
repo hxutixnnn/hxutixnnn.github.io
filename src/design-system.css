@@ -43,6 +43,24 @@
   --tienos-focus-ring: 0 0 0 2px var(--tienos-color-focus), 0 0 0 4px rgb(10 132 255 / 0.3);
 }
 
+:root[data-theme="light"] {
+  --tienos-color-accent: #1769d2;
+  --tienos-color-accent-hover: #0f5fc5;
+  --tienos-color-hover: rgb(15 23 42 / 0.07);
+  --tienos-color-text-primary: rgb(15 23 42 / 0.92);
+  --tienos-color-text-secondary: rgb(15 23 42 / 0.65);
+  --tienos-color-text-tertiary: rgb(15 23 42 / 0.48);
+  --tienos-color-separator: rgb(15 23 42 / 0.12);
+  --tienos-color-border: rgb(15 23 42 / 0.2);
+  --tienos-color-menu: rgb(245 248 252 / 0.84);
+  --tienos-color-window: rgb(242 244 248 / 0.97);
+  --tienos-color-sidebar: rgb(226 231 239 / 0.9);
+  --tienos-color-content: rgb(255 255 255 / 0.72);
+  --tienos-color-control: rgb(15 23 42 / 0.08);
+  --tienos-color-scrim: rgb(15 23 42 / 0.2);
+  --tienos-shadow-window: 0 42px 120px rgb(15 23 42 / 0.35);
+}
+
 @media (prefers-contrast: more) {
   :root {
     --tienos-color-text-secondary: rgb(255 255 255 / 0.78);
