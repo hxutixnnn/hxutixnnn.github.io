@@ -307,13 +307,13 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                           <button
                             key={category.label}
                             data-inset-focus=""
-                            className="settings-nav-item flex min-h-[33.5px] w-full items-center gap-2.5 rounded-[10px] border-0 bg-transparent p-[4px_8px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] data-[selected]:bg-[var(--tienos-color-accent)] data-[selected]:text-white data-[selected]:hover:bg-[var(--tienos-color-accent-hover)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] contrast-more:data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] max-[700px]:justify-center max-[700px]:p-1 max-[700px]:[&>span:last-child]:hidden"
+                            className="settings-nav-item flex min-h-[33.5px] w-full items-center gap-2.5 rounded-[10px] border-0 bg-transparent p-[4px_8px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] data-[selected]:bg-[var(--tienos-color-accent)] data-[selected]:text-white data-[selected]:hover:bg-[var(--tienos-color-accent-hover)] data-[selected]:focus-visible:outline-2 data-[selected]:focus-visible:-outline-offset-2 data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] contrast-more:data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] max-[700px]:justify-center max-[700px]:p-1 max-[700px]:[&>span:last-child]:hidden"
                             aria-label={category.label}
                             data-selected={selected === category.label || undefined}
                             onClick={() => setSelected(category.label)}
                           >
                             <span
-                              className={`settings-icon grid size-5 shrink-0 place-items-center rounded-[7px] border border-white/20 text-[11px] text-white shadow-sm ${category.colorClass}`}
+                              className={`settings-icon grid size-5 shrink-0 place-items-center rounded-[7px] border border-white/20 text-[11px] text-white shadow-[inset_0_1px_rgb(255_255_255/0.2),0_1px_2px_rgb(0_0_0/0.4)] ${category.colorClass}`}
                             >
                               <FontAwesomeIcon name={category.icon} />
                             </span>
@@ -330,7 +330,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
 
         <div className="flex min-h-0 min-w-0 flex-col p-[8px_20px_0] max-[700px]:p-[12px_10px_0]">
           <div
-            className="settings-history -ml-3 mb-[9px] flex h-[35px] shrink-0 self-start overflow-hidden rounded-[22px] border border-[var(--tienos-color-border)] [&_button]:grid [&_button]:h-full [&_button]:w-9 [&_button]:place-items-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[var(--tienos-color-text-tertiary)] [&>span]:h-6 [&>span]:w-px [&>span]:bg-[var(--tienos-color-separator)]"
+            className="settings-history -ml-3 mb-[9px] flex h-[35px] shrink-0 self-start overflow-hidden rounded-[22px] border border-[var(--tienos-color-border)] [&_button]:grid [&_button]:h-full [&_button]:w-[36px] [&_button]:place-items-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[12px] [&_button]:text-[var(--tienos-color-text-tertiary)] [&>span]:h-6 [&>span]:w-px [&>span]:bg-[var(--tienos-color-separator)] max-[700px]:h-[36px] max-[700px]:[&_button]:w-[38px]"
             aria-label="Navigation history"
           >
             <button aria-label="Back" disabled>
@@ -349,9 +349,9 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
             viewportRef={detailsViewportRef}
           >
             {selected !== "Appearance" && (
-              <header className="settings-hero rounded-[14px] border border-white/[.015] bg-[var(--tienos-color-content)] p-[23px_32px_20px] text-center max-[700px]:p-[24px_14px] [&_h2]:m-0 [&_h2]:text-[23px] [&_h2]:leading-none [&_p]:mx-auto [&_p]:mt-px [&_p]:mb-0 [&_p]:max-w-[600px] [&_p]:text-[var(--tienos-color-text-secondary)] [&_p]:leading-[var(--tienos-leading-body)]">
+              <header className="settings-hero rounded-[14px] border border-white/[.015] bg-[var(--tienos-color-content)] p-[23px_32px_19px] text-center max-[700px]:p-[24px_14px] [&_h2]:m-0 [&_h2]:text-[23px] [&_h2]:leading-none [&_h2]:tracking-[-0.03em] [&_p]:mx-auto [&_p]:mt-px [&_p]:mb-0 [&_p]:max-w-[600px] [&_p]:text-[var(--tienos-color-text-secondary)] [&_p]:leading-[var(--tienos-leading-body)]">
                 <span
-                  className={`settings-hero-icon mx-auto mb-1 grid size-[54px] place-items-center rounded-[18px] border border-white/20 text-[28px] text-white ${selectedCategory.colorClass}`}
+                  className={`settings-hero-icon mx-auto mb-1 grid size-[54px] place-items-center rounded-[18px] border border-white/20 text-[28px] text-white shadow-[inset_0_1px_rgb(255_255_255/0.2),0_1px_2px_rgb(0_0_0/0.4)] ${selectedCategory.colorClass}`}
                 >
                   <FontAwesomeIcon name={selectedCategory.icon} />
                 </span>
@@ -538,7 +538,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                         className="settings-row relative flex h-[42px] w-full items-center gap-3 border-0 bg-transparent p-[8px_18px] text-left text-[var(--tienos-color-text-primary)] after:absolute after:right-[18px] after:bottom-0 after:left-[50px] after:h-px after:bg-[var(--tienos-color-separator)] after:content-[''] last:after:hidden hover:bg-[var(--tienos-color-hover)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] [@media(forced-colors:active)]:focus-visible:-outline-offset-2 max-[700px]:p-[8px_12px]"
                         key={label}
                       >
-                        <span className="settings-row-icon grid size-[22px] place-items-center rounded-md border border-white/20 bg-[#292a2c] text-xs text-white">
+                        <span className="settings-row-icon grid size-[22px] place-items-center rounded-md border border-white/20 bg-[#292a2c] text-xs text-white shadow-[inset_0_1px_rgb(255_255_255/0.2),0_1px_2px_rgb(0_0_0/0.4)]">
                           <FontAwesomeIcon name={icon} />
                         </span>
                         <span>{label}</span>
@@ -554,7 +554,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
             ) : (
               <div className="mt-3.5 grid min-h-60 content-center place-items-center gap-3.5 rounded-[15px] bg-[var(--tienos-color-content)] text-[var(--tienos-color-text-secondary)]">
                 <span
-                  className={`settings-icon grid size-5 shrink-0 place-items-center rounded-[7px] border border-white/20 text-[11px] text-white shadow-sm ${selectedCategory.colorClass}`}
+                  className={`settings-icon grid size-5 shrink-0 place-items-center rounded-[7px] border border-white/20 text-[11px] text-white shadow-[inset_0_1px_rgb(255_255_255/0.2),0_1px_2px_rgb(0_0_0/0.4)] ${selectedCategory.colorClass}`}
                 >
                   <FontAwesomeIcon name={selectedCategory.icon} />
                 </span>

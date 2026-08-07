@@ -198,6 +198,33 @@ test("preserves migrated System Settings selection and separators", async ({ pag
   await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  const selectedNavigation = page.locator(".settings-nav-item[data-selected]");
+  await selectedNavigation.focus();
+  await expect(selectedNavigation).toHaveCSS("outline-style", "solid");
+  await expect(selectedNavigation).toHaveCSS("outline-width", "2px");
+  await expect(selectedNavigation).toHaveCSS("outline-offset", "-2px");
+  await expect(selectedNavigation).toHaveCSS("outline-color", "rgb(255, 255, 255)");
+
+  const iconShadows = await Promise.all(
+    [
+      page.locator(".settings-icon").first(),
+      page.locator(".settings-hero-icon"),
+      page.locator(".settings-row-icon").first(),
+    ].map((icon) => icon.evaluate((element) => getComputedStyle(element).boxShadow)),
+  );
+  for (const shadow of iconShadows) {
+    expect(shadow).toContain("inset");
+    expect(shadow).toContain("rgba(255, 255, 255, 0.2)");
+    expect(shadow).toContain("rgba(0, 0, 0, 0.4)");
+  }
+
+  const hero = page.locator(".settings-hero");
+  await expect(hero).toHaveCSS("padding-bottom", "19px");
+  expect(
+    await hero.locator("h2").evaluate((element) => parseFloat(getComputedStyle(element).letterSpacing)),
+  ).toBeCloseTo(-0.69);
+
   await page.getByRole("button", { name: "Appearance" }).click();
 
   const darkWidget = page.getByRole("button", { name: "Dark", exact: true }).last();
@@ -420,6 +447,10 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
   await expect(wallpaper).toHaveCSS("filter", "saturate(1.08)");
   await expect(wallpaper).not.toHaveCSS("transform", "none");
   await expect(vignette).toHaveCSS("background-image", /linear-gradient.*radial-gradient/);
+  await expect(page.getByRole("navigation", { name: "tienOS menu bar" })).toHaveCSS(
+    "text-shadow",
+    "rgba(0, 0, 0, 0.4) 0px 1px 3px",
+  );
 
   await context.close();
 });
@@ -613,6 +644,10 @@ test("fits and fixes an open System Settings window on compact screens", async (
   await page.setViewportSize({ width: 320, height: 320 });
   await expect(settingsWindow).toHaveCSS("border-radius", "18px");
   await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("border-radius", "11px");
+  const history = page.locator(".settings-history");
+  await expect(history).toHaveCSS("height", "36px");
+  await expect(history.getByRole("button", { name: "Back" })).toHaveCSS("width", "38px");
+  await expect(history.getByRole("button", { name: "Back" })).toHaveCSS("font-size", "12px");
 
   await expect
     .poll(async () => {
