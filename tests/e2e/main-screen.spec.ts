@@ -698,7 +698,7 @@ test.describe("appearance modes", () => {
       .poll(() =>
         page.evaluate(() =>
           (
-            window as Window & {
+            window as unknown as Window & {
               tienosThemeApplications: Array<{ theme?: string; bodyPresent: boolean }>;
             }
           ).tienosThemeApplications.at(0),
