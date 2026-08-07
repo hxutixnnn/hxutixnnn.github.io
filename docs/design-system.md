@@ -6,7 +6,7 @@ When this document and a one-off visual choice conflict, prefer platform convent
 ## Foundations
 
 The source of truth for executable tokens is [`src/design-system.css`](../src/design-system.css).
-Components consume semantic tokens rather than copying raw color, spacing, radius, typography, motion, or shadow values.
+Use semantic tokens for shared color, spacing, radius, typography, motion, and shadow foundations; keep component-specific values local until they are promoted to a shared token.
 
 ### Spacing
 
@@ -28,7 +28,7 @@ The system provides stronger contrast, opaque reduced-transparency surfaces, and
 
 ### Typography
 
-tienOS uses the platform system-font stack.
+tienOS prefers `Inter`, followed by the platform system-font stack.
 Use weight, placement, and spacing before adding sizes.
 Primary content starts at 13px, settings content at 14px, secondary content at 12px, captions at 11px, and page titles at 23px.
 
