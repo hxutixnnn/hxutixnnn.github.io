@@ -30,7 +30,7 @@ The system provides stronger contrast, opaque reduced-transparency surfaces, and
 
 tienOS prefers `Inter`, followed by the platform system-font stack.
 Use weight, placement, and spacing before adding sizes.
-Primary content starts at 13px, settings content at 14px, secondary content at 12px, captions at 11px, and page titles at 23px.
+Primary and settings content starts at 13px, secondary content at 12px, captions at 11px, and page titles at 23px.
 
 ### Shape
 
@@ -38,7 +38,7 @@ Corners are contextual rather than globally uniform:
 
 - Menus: 14px
 - Menu selection nested inside a menu: 10px
-- Settings window: 26px
+- Settings window: 24px
 - Settings content groups: 14px
 - Standalone compact controls: 10px
 

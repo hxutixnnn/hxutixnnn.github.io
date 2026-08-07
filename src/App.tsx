@@ -1,9 +1,6 @@
-import { lazy, Suspense, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import { MenuBar } from "./components/MenuBar";
-
-const SystemSettings = lazy(() =>
-  import("./components/SystemSettings").then(({ SystemSettings }) => ({ default: SystemSettings })),
-);
+import { SystemSettings } from "./components/SystemSettings";
 
 type AppProps = {
   desktopAssetsReady?: Promise<void>;
@@ -11,7 +8,7 @@ type AppProps = {
 };
 
 export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(true);
 
   useLayoutEffect(() => {
     if (!onDesktopReady) return;
@@ -39,9 +36,7 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
       {settingsOpen && (
         <>
           <div className="settings-backdrop" aria-hidden="true" />
-          <Suspense fallback={null}>
-            <SystemSettings onClose={() => setSettingsOpen(false)} />
-          </Suspense>
+          <SystemSettings onClose={() => setSettingsOpen(false)} />
         </>
       )}
     </main>
