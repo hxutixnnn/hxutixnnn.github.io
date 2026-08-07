@@ -69,7 +69,8 @@ Preserve a meaningful accessible window name.
 
 Use one icon, one title, and optional secondary text.
 Rows remain plain and use one native-style selection highlight rather than individual cards.
-Sidebar content scrolls independently when required.
+Settings sidebars use an inset rounded material panel that remains visually separate from the primary content.
+Sidebar navigation and detail content scroll independently when required; their scrollbars stay hidden at rest and appear for active scrolling, focus, hover, or dragging.
 
 ### Content groups
 

@@ -244,6 +244,65 @@ test("matches the System Settings reference geometry", async ({ page }) => {
   expect(roundedBounds(firstGroupBounds)).toMatchObject({ x: 340, y: 324, width: 459, height: 128 });
 });
 
+test("uses independently accessible Base UI scroll areas with transient scrollbars", async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 520 });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+  await page.getByRole("menuitem", { name: "System Settings…" }).click();
+
+  const sidebar = page.locator(".settings-sidebar[data-floating-panel]");
+  await expect(sidebar.locator(":scope > .settings-sidebar-panel")).toBeVisible();
+
+  const details = page.locator('.settings-scroll-viewport[aria-label="Settings details"]');
+  const categories = page.locator('.settings-scroll-viewport[aria-label="Settings categories"]');
+  const detailScrollbar = details.locator("..").locator(".settings-scrollbar");
+  await expect(details).toHaveAttribute("tabindex", "0");
+  await expect(categories).toHaveAttribute("tabindex", "0");
+  await expect(detailScrollbar).toHaveCSS("opacity", "0");
+
+  await details.hover();
+  await page.mouse.wheel(0, 240);
+  await expect.poll(() => details.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+  await expect(detailScrollbar).toHaveAttribute("data-scrolling", "");
+  await expect(detailScrollbar).toHaveCSS("opacity", "1");
+  await expect(detailScrollbar).not.toHaveAttribute("data-scrolling", "", { timeout: 1500 });
+  await expect(detailScrollbar).toHaveCSS("opacity", "0");
+
+  await detailScrollbar.hover();
+  await expect(detailScrollbar).toHaveCSS("opacity", "1");
+  const thumb = detailScrollbar.locator(".settings-scroll-thumb");
+  const thumbBounds = await thumb.boundingBox();
+  await page.mouse.move(thumbBounds!.x + thumbBounds!.width / 2, thumbBounds!.y + 4);
+  await page.mouse.down();
+  await page.mouse.move(thumbBounds!.x + thumbBounds!.width / 2, thumbBounds!.y + 24);
+  await expect(detailScrollbar).toHaveCSS("opacity", "1");
+  await page.mouse.up();
+  await details.hover({ position: { x: 20, y: 20 } });
+  await expect(detailScrollbar).toHaveCSS("opacity", "0");
+
+  await details.focus();
+  await expect(detailScrollbar).toHaveCSS("opacity", "1");
+  await page.keyboard.press("Home");
+  await page.keyboard.press("ArrowDown");
+  await expect.poll(() => details.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+
+  await page.getByRole("button", { name: "Appearance" }).click();
+  await expect.poll(() => details.evaluate((node) => node.scrollTop)).toBe(0);
+  await page.getByRole("combobox", { name: "Text highlight color" }).selectOption("Purple");
+  await page.getByRole("combobox", { name: "Folder color" }).selectOption("Blue");
+  await page.getByRole("combobox", { name: "Sidebar icon size" }).selectOption("Large");
+  await expect(page.getByRole("combobox", { name: "Text highlight color" })).toHaveValue("Purple");
+  await expect(page.getByRole("combobox", { name: "Folder color" })).toHaveValue("Blue");
+  await expect(page.getByRole("combobox", { name: "Sidebar icon size" })).toHaveValue("Large");
+
+  const detailTop = await details.evaluate((node) => node.scrollTop);
+  await categories.hover();
+  await page.mouse.wheel(0, 300);
+  await expect.poll(() => categories.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+  expect(await details.evaluate((node) => node.scrollTop)).toBe(detailTop);
+});
+
 test("drags and resizes the System Settings window with react-rnd", async ({ page }) => {
   await page.setViewportSize({ width: 1100, height: 900 });
   await page.goto("/");
