@@ -21,7 +21,6 @@
         background: #050505;
         color: #fff;
         opacity: 1;
-        animation: tienos-boot-dismiss 160ms ease 420ms forwards;
         transition: opacity 160ms ease;
       }
       #tienos-boot[data-complete] {
@@ -77,20 +76,8 @@
           transform: scaleX(1);
         }
       }
-      @keyframes tienos-boot-dismiss {
-        from {
-          opacity: 1;
-          visibility: visible;
-        }
-        to {
-          opacity: 0;
-          visibility: hidden;
-        }
-      }
       @media (prefers-reduced-motion: reduce) {
         #tienos-boot {
-          animation-delay: 120ms;
-          animation-duration: 80ms;
           transition-duration: 80ms;
         }
         .tienos-boot-progress {
@@ -98,6 +85,88 @@
         }
       }
     </style>
+    <noscript>
+      <style>
+        #tienos-boot {
+          animation: tienos-boot-dismiss 160ms ease 420ms forwards;
+        }
+        @keyframes tienos-boot-dismiss {
+          to {
+            opacity: 0;
+            visibility: hidden;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          #tienos-boot {
+            animation-delay: 120ms;
+            animation-duration: 80ms;
+          }
+        }
+      </style>
+    </noscript>
+    <script>
+      (() => {
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const bootDuration = reducedMotion ? 120 : 420;
+        const fadeDuration = reducedMotion ? 80 : 160;
+        let finished = false;
+        let resolveReleased;
+        const released = new Promise((resolve) => {
+          resolveReleased = resolve;
+        });
+        const setDesktopInert = () => {
+          const root = document.getElementById("root");
+          if (!root) return;
+          root.setAttribute("inert", "");
+          rootObserver.disconnect();
+        };
+        const rootObserver = new MutationObserver(setDesktopInert);
+        rootObserver.observe(document.documentElement, { childList: true, subtree: true });
+        setDesktopInert();
+
+        const releaseDesktop = () => {
+          rootObserver.disconnect();
+          document.getElementById("root")?.removeAttribute("inert");
+          resolveReleased();
+        };
+
+        const dismiss = (respectBootDuration) => {
+          if (finished) return;
+          finished = true;
+          window.clearTimeout(startupTimeout);
+          window.removeEventListener("error", handleError, true);
+          window.removeEventListener("unhandledrejection", release);
+
+          const delay = respectBootDuration ? Math.max(0, bootDuration - performance.now()) : 0;
+          window.setTimeout(() => {
+            const bootScreen = document.getElementById("tienos-boot");
+            if (!bootScreen) {
+              releaseDesktop();
+              return;
+            }
+            bootScreen.setAttribute("data-complete", "");
+            window.setTimeout(() => {
+              bootScreen.remove();
+              releaseDesktop();
+            }, fadeDuration);
+          }, delay);
+        };
+        const release = () => dismiss(false);
+        const handleError = (event) => {
+          if (event.target === window || event.target instanceof HTMLScriptElement) release();
+        };
+        const startupTimeout = window.setTimeout(release, 8000);
+
+        window.addEventListener("error", handleError, true);
+        window.addEventListener("unhandledrejection", release);
+        window.tienosBoot = {
+          failed: release,
+          isFinished: () => finished,
+          released,
+          ready: () => dismiss(true),
+        };
+      })();
+    </script>
     <title>tienOS</title>
   </head>
   <body>
