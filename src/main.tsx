@@ -46,7 +46,9 @@ function waitForIconPaint() {
             resolve();
             return;
           }
-        } catch {}
+        } catch {
+          // Geometry can be unavailable until the external sprite finishes painting.
+        }
       }
       window.requestAnimationFrame(checkGeometry);
     };
