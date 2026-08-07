@@ -19,8 +19,8 @@ const bootScreen = document.getElementById("tienos-boot");
 
 if (bootScreen) {
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const bootDuration = reducedMotion ? 180 : 1050;
-  const fadeDuration = reducedMotion ? 80 : 240;
+  const bootDuration = reducedMotion ? 120 : 420;
+  const fadeDuration = reducedMotion ? 80 : 160;
 
   window.setTimeout(() => {
     bootScreen.setAttribute("data-complete", "");

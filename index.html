@@ -21,8 +21,8 @@
         background: #050505;
         color: #fff;
         opacity: 1;
-        animation: tienos-boot-dismiss 240ms ease 1.05s forwards;
-        transition: opacity 240ms ease;
+        animation: tienos-boot-dismiss 160ms ease 420ms forwards;
+        transition: opacity 160ms ease;
       }
       #tienos-boot[data-complete] {
         pointer-events: none;
@@ -55,7 +55,7 @@
         background: #fff;
         transform: scaleX(0);
         transform-origin: left;
-        animation: tienos-boot-progress 1.05s cubic-bezier(0.22, 0.72, 0.2, 1) forwards;
+        animation: tienos-boot-progress 420ms cubic-bezier(0.22, 0.72, 0.2, 1) forwards;
       }
       @keyframes tienos-boot-progress {
         0% {
@@ -83,12 +83,12 @@
       }
       @media (prefers-reduced-motion: reduce) {
         #tienos-boot {
-          animation-delay: 180ms;
+          animation-delay: 120ms;
           animation-duration: 80ms;
           transition-duration: 80ms;
         }
         .tienos-boot-progress {
-          animation-duration: 180ms;
+          animation-duration: 120ms;
         }
       }
     </style>

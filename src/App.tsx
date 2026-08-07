@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { MenuBar } from "./components/MenuBar";
-import { SystemSettings } from "./components/SystemSettings";
+
+const SystemSettings = lazy(() =>
+  import("./components/SystemSettings").then(({ SystemSettings }) => ({ default: SystemSettings })),
+);
 
 export function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -16,7 +19,9 @@ export function App() {
       {settingsOpen && (
         <>
           <div className="settings-backdrop" aria-hidden="true" />
-          <SystemSettings onClose={() => setSettingsOpen(false)} />
+          <Suspense fallback={null}>
+            <SystemSettings onClose={() => setSettingsOpen(false)} />
+          </Suspense>
         </>
       )}
     </main>
