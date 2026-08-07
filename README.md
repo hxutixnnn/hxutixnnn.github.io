@@ -33,6 +33,6 @@ UI foundations, semantic tokens, component rules, and accessibility behavior are
 
 ## Loading contract
 
-The splash covers the desktop until its production styles are applied, the wallpaper is decoded, and an initial Font Awesome icon has rendered geometry. An eight-second failure escape remains active throughout startup and asset readiness so errors or stalled requests reveal the useful static desktop fallback; no-script and reduced-motion paths must remain usable.
+The splash covers an inert desktop until its production styles are applied, the wallpaper is decoded, and an initial Font Awesome icon has rendered geometry. An eight-second failure escape remains active throughout startup and asset readiness so errors or stalled requests reveal an interactive static desktop fallback; no-script and reduced-motion paths must remain usable.
 
 Future paint-critical assets must participate in this readiness gate, while non-critical assets must load progressively without delaying the first desktop frame. Browser coverage for this contract runs against the built `dist/` output through `vite preview`.

@@ -114,11 +114,25 @@
         const released = new Promise((resolve) => {
           resolveReleased = resolve;
         });
+        const setDesktopInert = () => {
+          const root = document.getElementById("root");
+          if (!root) return;
+          root.setAttribute("inert", "");
+          rootObserver.disconnect();
+        };
+        const rootObserver = new MutationObserver(setDesktopInert);
+        rootObserver.observe(document.documentElement, { childList: true, subtree: true });
+        setDesktopInert();
+
+        const releaseDesktop = () => {
+          rootObserver.disconnect();
+          document.getElementById("root")?.removeAttribute("inert");
+          resolveReleased();
+        };
 
         const dismiss = (respectBootDuration) => {
           if (finished) return;
           finished = true;
-          resolveReleased();
           window.clearTimeout(startupTimeout);
           window.removeEventListener("error", handleError, true);
           window.removeEventListener("unhandledrejection", release);
@@ -126,9 +140,15 @@
           const delay = respectBootDuration ? Math.max(0, bootDuration - performance.now()) : 0;
           window.setTimeout(() => {
             const bootScreen = document.getElementById("tienos-boot");
-            if (!bootScreen) return;
+            if (!bootScreen) {
+              releaseDesktop();
+              return;
+            }
             bootScreen.setAttribute("data-complete", "");
-            window.setTimeout(() => bootScreen.remove(), fadeDuration);
+            window.setTimeout(() => {
+              bootScreen.remove();
+              releaseDesktop();
+            }, fadeDuration);
           }, delay);
         };
         const release = () => dismiss(false);

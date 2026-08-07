@@ -209,6 +209,9 @@ test("keeps the splash over the desktop until paint-critical assets are ready", 
 
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
   await expect(bootScreen).toBeVisible();
+  await expect(page.locator("#root")).toHaveAttribute("inert", "");
+  await page.keyboard.press("Tab");
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
   await page.evaluate(() => {
     const observedWindow = window as typeof window & { iconPaintedAtDismissal?: boolean };
     const boot = document.getElementById("tienos-boot");
@@ -226,6 +229,7 @@ test("keeps the splash over the desktop until paint-critical assets are ready", 
   releaseSprite();
   await navigation;
   await expect(bootScreen).toBeHidden();
+  await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
   await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
   await expect(page.locator(".tienos-wallpaper")).not.toHaveCSS("background-image", "none");
   expect(
@@ -234,6 +238,8 @@ test("keeps the splash over the desktop until paint-critical assets are ready", 
     ),
   ).toBe(true);
   await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="sparkle"]'), "sparkle");
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("menuitem", { name: "Open tienOS menu" })).toBeFocused();
 });
 
 test("releases the static desktop when a critical asset stalls", async ({ page }) => {
@@ -245,8 +251,14 @@ test("releases the static desktop when a critical asset stalls", async ({ page }
 
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
   await expect(bootScreen).toBeVisible();
+  await expect(page.locator("#root")).toHaveAttribute("inert", "");
+  await page.keyboard.press("Tab");
+  expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
   await expect(bootScreen).toBeHidden({ timeout: 10_000 });
+  await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("menuitem", { name: "Open tienOS menu" })).toBeFocused();
 });
 
 test("reveals the static desktop when the application module fails", async ({ page }) => {
@@ -255,6 +267,7 @@ test("reveals the static desktop when the application module fails", async ({ pa
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
 });
 
