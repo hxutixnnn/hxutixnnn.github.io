@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { ScrollArea } from "@base-ui/react/scroll-area";
-import { Rnd } from "react-rnd";
+import { Rnd, type RndResizeCallback } from "react-rnd";
 import { FontAwesomeIcon, type FontAwesomeIconName } from "./FontAwesomeIcon";
 import { useAppearanceStore, type AppearanceMode } from "../stores/appearance";
 
@@ -152,6 +152,38 @@ function clampFrame(frame: SettingsFrame, viewport: Viewport, menuBottom = 0): S
   };
 }
 
+function frameFromResize(
+  direction: Parameters<RndResizeCallback>[1],
+  element: HTMLElement,
+  position: Parameters<RndResizeCallback>[4],
+  viewport: Viewport,
+  menuBottom: number,
+): SettingsFrame {
+  const top = direction.toLowerCase().startsWith("top")
+    ? Math.max(position.y, Math.ceil(menuBottom))
+    : position.y;
+  const bottom = position.y + element.offsetHeight;
+
+  return clampFrame(
+    {
+      x: position.x,
+      y: top,
+      width: element.offsetWidth,
+      height: direction.toLowerCase().startsWith("top") ? Math.max(0, bottom - top) : element.offsetHeight,
+    },
+    viewport,
+    menuBottom,
+  );
+}
+
+function applyFrameDuringResize(element: HTMLElement, frame: SettingsFrame) {
+  const bounds = element.getBoundingClientRect();
+  const transform = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+  element.style.width = `${frame.width}px`;
+  element.style.height = `${frame.height}px`;
+  element.style.transform = `translate(${transform.e + frame.x - bounds.x}px, ${transform.f + frame.y - bounds.y}px)`;
+}
+
 export function SystemSettings({ onClose }: SystemSettingsProps) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("General");
@@ -213,6 +245,21 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
   const minimumHeight = compact
     ? Math.min(frame.height, availableHeight)
     : Math.min(desktopMinimum.height, availableHeight);
+  const updateFrameFromResize: RndResizeCallback = (_, direction, element, __, position) => {
+    const nextFrame = frameFromResize(direction, element, position, viewport, menuBottom);
+    applyFrameDuringResize(element, nextFrame);
+    setFrame(nextFrame);
+  };
+  const commitFrameFromResize: RndResizeCallback = (_, __, element) => {
+    const bounds = element.getBoundingClientRect();
+    setFrame(
+      clampFrame(
+        { x: bounds.x, y: bounds.y, width: element.offsetWidth, height: element.offsetHeight },
+        viewport,
+        menuBottom,
+      ),
+    );
+  };
 
   return (
     <Rnd
@@ -238,20 +285,8 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
           clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom),
         )
       }
-      onResizeStop={(_, __, element, ___, position) =>
-        setFrame(
-          clampFrame(
-            {
-              x: position.x,
-              y: position.y,
-              width: element.offsetWidth,
-              height: element.offsetHeight,
-            },
-            viewport,
-            menuBottom,
-          ),
-        )
-      }
+      onResize={updateFrameFromResize}
+      onResizeStop={commitFrameFromResize}
     >
       <section
         className="settings-window relative grid h-full w-full grid-cols-[30.8%_69.2%] overflow-hidden rounded-[var(--tienos-radius-window)] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-window)] text-[var(--tienos-color-text-primary)] shadow-[var(--tienos-shadow-window),inset_0_1px_rgb(255_255_255/0.05)] backdrop-blur-[28px] backdrop-saturate-[1.15] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none max-[700px]:grid-cols-[112px_1fr] max-[700px]:rounded-[18px]"

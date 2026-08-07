@@ -786,6 +786,27 @@ test("drags and resizes the System Settings window with react-rnd", async ({ pag
   const resized = await settingsWindow.boundingBox();
   expect(Math.round(resized!.width - dragged!.width)).toBe(40);
   expect(Math.round(resized!.height - dragged!.height)).toBe(30);
+
+  const northHandle = page.locator('.settings-rnd div[style*="cursor: row-resize"][style*="top: -5px"]');
+  const northHandleBounds = await northHandle.boundingBox();
+  await page.mouse.move(
+    northHandleBounds!.x + northHandleBounds!.width / 2,
+    northHandleBounds!.y + northHandleBounds!.height / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(northHandleBounds!.x + northHandleBounds!.width / 2, -100, { steps: 6 });
+  const resizingAtBoundary = await settingsWindow.boundingBox();
+  expect(resizingAtBoundary!.y).toBeGreaterThanOrEqual(menuBar!.y + menuBar!.height);
+  expect(Math.round(resizingAtBoundary!.y + resizingAtBoundary!.height)).toBe(
+    Math.round(resized!.y + resized!.height),
+  );
+  await page.mouse.up();
+
+  const resizedFromTop = await settingsWindow.boundingBox();
+  expect(resizedFromTop!.y).toBeGreaterThanOrEqual(menuBar!.y + menuBar!.height);
+  expect(Math.round(resizedFromTop!.y + resizedFromTop!.height)).toBe(
+    Math.round(resized!.y + resized!.height),
+  );
 });
 
 test("fits and fixes an open System Settings window on compact screens", async ({ page }) => {
