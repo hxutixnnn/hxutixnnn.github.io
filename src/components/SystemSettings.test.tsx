@@ -58,13 +58,15 @@ describe("SystemSettings", () => {
 
     await user.click(screen.getByRole("button", { name: "Appearance" }));
     expect(screen.getByRole("heading", { name: "Appearance" })).toBeVisible();
-    const dark = within(screen.getByRole("group", { name: "Appearance mode" })).getByRole("button", {
+    const dark = within(screen.getByRole("radiogroup", { name: "Appearance mode" })).getByRole("radio", {
       name: "Dark",
-      pressed: false,
+      checked: false,
     });
     await user.click(dark);
-    expect(dark).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("group", { name: "Accent color" })).toBeVisible();
+    expect(dark).toBeChecked();
+    expect(screen.getByRole("radiogroup", { name: "Accent color" })).toBeVisible();
+    await user.keyboard("{ArrowLeft}");
+    expect(screen.getByRole("radio", { name: "Light" })).toBeChecked();
     const highlight = screen.getByRole("combobox", { name: "Text highlight color" });
     await user.click(highlight);
     await user.click(screen.getByRole("option", { name: "Purple" }));
@@ -80,7 +82,12 @@ describe("SystemSettings", () => {
     await user.click(iconSize);
     await user.click(screen.getByRole("option", { name: "Large" }));
     expect(iconSize).toHaveTextContent("Large");
-    expect(screen.getByRole("switch", { name: "Tint window background with wallpaper color" })).toBeChecked();
+    const wallpaperTint = screen.getByRole("switch", {
+      name: "Tint window background with wallpaper color",
+    });
+    expect(wallpaperTint).toBeChecked();
+    await user.click(wallpaperTint);
+    expect(wallpaperTint).not.toBeChecked();
   });
 
   it("resets the details viewport when the selected category changes", async () => {

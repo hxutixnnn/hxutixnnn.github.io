@@ -399,7 +399,7 @@ test("preserves migrated System Settings selection and separators", async ({ pag
     await expect(select).toHaveCSS("color", settingsColor);
   }
 
-  const darkWidget = page.getByRole("button", { name: "Dark", exact: true }).last();
+  const darkWidget = page.getByRole("radio", { name: "Dark", exact: true }).last();
   await darkWidget.click();
   await expect(darkWidget).toHaveCSS("font-weight", "700");
   await expect(darkWidget).toHaveCSS("color", "rgba(255, 255, 255, 0.9)");
@@ -835,6 +835,87 @@ test("uses independently accessible Base UI scroll areas with transient scrollba
   expect(await details.evaluate((node) => node.scrollTop)).toBe(detailTop);
 });
 
+test("supports adopted Appearance controls across input and accessibility modes", async ({ browser }) => {
+  const context = await browser.newContext({
+    hasTouch: true,
+    reducedMotion: "reduce",
+    colorScheme: "dark",
+  });
+  const page = await context.newPage();
+  const session = await context.newCDPSession(page);
+  await session.send("Emulation.setEmulatedMedia", {
+    features: [
+      { name: "prefers-reduced-motion", value: "reduce" },
+      { name: "prefers-reduced-transparency", value: "reduce" },
+      { name: "prefers-contrast", value: "more" },
+      { name: "forced-colors", value: "active" },
+    ],
+  });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  await page.getByRole("button", { name: "Appearance" }).click();
+
+  const groups = {
+    appearance: page.getByRole("radiogroup", { name: "Appearance mode" }),
+    glass: page.getByRole("radiogroup", { name: "Liquid Glass style" }),
+    accent: page.getByRole("radiogroup", { name: "Accent color" }),
+    widgets: page.getByRole("radiogroup", { name: "Icon and widget style" }),
+  };
+  for (const group of Object.values(groups)) await expect(group).toBeVisible();
+
+  const darkMode = groups.appearance.getByRole("radio", { name: "Dark" });
+  await darkMode.click();
+  await expect(darkMode).toBeChecked();
+  await expect(darkMode).toHaveAttribute("aria-checked", "true");
+  await darkMode.press("ArrowLeft");
+  await expect(groups.appearance.getByRole("radio", { name: "Light" })).toBeChecked();
+
+  const tintedGlass = groups.glass.getByRole("radio", { name: "Tinted" });
+  await tintedGlass.tap();
+  await expect(tintedGlass).toBeChecked();
+  await tintedGlass.press("ArrowLeft");
+  const clearGlass = groups.glass.getByRole("radio", { name: "Clear" });
+  await expect(clearGlass).toBeChecked();
+  await expect(clearGlass).toHaveCSS("outline-style", "solid");
+
+  const purpleAccent = groups.accent.getByRole("radio", { name: "Purple" });
+  await purpleAccent.click();
+  await expect(purpleAccent).toBeChecked();
+  await purpleAccent.press("ArrowRight");
+  await expect(groups.accent.getByRole("radio", { name: "Pink" })).toBeChecked();
+
+  const clearWidgets = groups.widgets.getByRole("radio", { name: "Clear" });
+  await clearWidgets.click();
+  await expect(clearWidgets).toBeChecked();
+  await clearWidgets.press("ArrowRight");
+  await expect(groups.widgets.getByRole("radio", { name: "Tinted" })).toBeChecked();
+
+  const highlight = page.getByRole("combobox", { name: "Text highlight color" });
+  await highlight.tap();
+  await expect(page.getByRole("option", { name: "Purple" })).toBeVisible();
+  await page.getByRole("heading", { name: "Theme" }).tap();
+  await expect(page.getByRole("option", { name: "Purple" })).toBeHidden();
+
+  await highlight.tap();
+  const selectPopup = page.getByRole("listbox");
+  await expect(selectPopup).toHaveCSS("backdrop-filter", "none");
+  await page.keyboard.press("Escape");
+  await expect(highlight).toBeFocused();
+  await highlight.tap();
+  await page.getByRole("option", { name: "Purple" }).tap();
+  await expect(highlight).toContainText("Purple");
+
+  const wallpaperTint = page.getByRole("switch", {
+    name: "Tint window background with wallpaper color",
+  });
+  await expect(wallpaperTint).toBeChecked();
+  await wallpaperTint.tap();
+  await expect(wallpaperTint).not.toBeChecked();
+  await expect(wallpaperTint).toHaveAttribute("aria-checked", "false");
+
+  await context.close();
+});
+
 test("uses a visible high-contrast scrollbar palette in Light mode", async ({ page }) => {
   const session = await page.context().newCDPSession(page);
   await session.send("Emulation.setEmulatedMedia", {
@@ -1195,9 +1276,9 @@ test.describe("appearance modes", () => {
     await expect(settingsMenuItem.locator("kbd")).toHaveCSS("color", "rgb(255, 255, 255)");
     await settingsMenuItem.click();
     await page.getByRole("button", { name: "Appearance" }).click();
-    const modes = page.getByRole("group", { name: "Appearance mode" });
+    const modes = page.getByRole("radiogroup", { name: "Appearance mode" });
 
-    await modes.getByRole("button", { name: "Light" }).click();
+    await modes.getByRole("radio", { name: "Light" }).click();
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
@@ -1208,12 +1289,18 @@ test.describe("appearance modes", () => {
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
     await page.getByRole("menuitem", { name: "System Settings…" }).click();
     await page.getByRole("button", { name: "Appearance" }).click();
-    await page.getByRole("group", { name: "Appearance mode" }).getByRole("button", { name: "Auto" }).click();
+    await page
+      .getByRole("radiogroup", { name: "Appearance mode" })
+      .getByRole("radio", { name: "Auto" })
+      .click();
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
     await page.emulateMedia({ colorScheme: "light" });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
 
-    await page.getByRole("group", { name: "Appearance mode" }).getByRole("button", { name: "Dark" }).click();
+    await page
+      .getByRole("radiogroup", { name: "Appearance mode" })
+      .getByRole("radio", { name: "Dark" })
+      .click();
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
     await page.emulateMedia({ colorScheme: "light" });
