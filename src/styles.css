@@ -477,9 +477,10 @@ button {
   transition: opacity 180ms ease-out;
 }
 
-.settings-scrollbar[data-scrolling],
-.settings-scrollbar:focus-visible,
-.settings-scrollbar:active {
+.settings-scrollbar[data-has-overflow-y][data-scrolling],
+.settings-scrollbar[data-has-overflow-y][data-hovering],
+.settings-base-scroll-area:focus-within > .settings-scrollbar[data-has-overflow-y],
+.settings-scrollbar[data-has-overflow-y]:active {
   opacity: 1;
 }
 
@@ -671,10 +672,16 @@ button {
 .appearance-setting-row + .appearance-setting-row {
   border-top: 1px solid var(--tienos-color-separator);
 }
-.appearance-setting-row button {
+.appearance-setting-row button,
+.appearance-setting-row select {
   border: 0;
   background: transparent;
   color: inherit;
+}
+.appearance-setting-row select {
+  border-radius: 7px;
+  padding: 5px 22px 5px 8px;
+  background-color: rgb(255 255 255 / 0.08);
 }
 .appearance-colors {
   display: flex;

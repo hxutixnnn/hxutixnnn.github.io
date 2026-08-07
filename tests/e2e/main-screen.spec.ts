@@ -267,12 +267,23 @@ test("uses independently accessible Base UI scroll areas with transient scrollba
   await expect(detailScrollbar).toHaveAttribute("data-scrolling", "");
   await expect(detailScrollbar).toHaveCSS("opacity", "1");
   await expect(detailScrollbar).not.toHaveAttribute("data-scrolling", "", { timeout: 1500 });
+  await page.mouse.move(0, 0);
   await expect(detailScrollbar).toHaveCSS("opacity", "0");
 
   await details.focus();
+  await expect(detailScrollbar).toHaveCSS("opacity", "1");
   await page.keyboard.press("Home");
   await page.keyboard.press("ArrowDown");
   await expect.poll(() => details.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
+
+  await page.getByRole("button", { name: "Appearance" }).click();
+  await expect.poll(() => details.evaluate((node) => node.scrollTop)).toBe(0);
+  await page.getByRole("combobox", { name: "Text highlight color" }).selectOption("Purple");
+  await page.getByRole("combobox", { name: "Folder color" }).selectOption("Blue");
+  await page.getByRole("combobox", { name: "Sidebar icon size" }).selectOption("Large");
+  await expect(page.getByRole("combobox", { name: "Text highlight color" })).toHaveValue("Purple");
+  await expect(page.getByRole("combobox", { name: "Folder color" })).toHaveValue("Blue");
+  await expect(page.getByRole("combobox", { name: "Sidebar icon size" })).toHaveValue("Large");
 
   const detailTop = await details.evaluate((node) => node.scrollTop);
   await categories.hover();

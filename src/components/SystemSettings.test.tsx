@@ -66,9 +66,26 @@ describe("SystemSettings", () => {
     await user.click(dark);
     expect(dark).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("group", { name: "Accent color" })).toBeVisible();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Text highlight color" }), "Purple");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Folder color" }), "Blue");
+    await user.selectOptions(screen.getByRole("combobox", { name: "Sidebar icon size" }), "Large");
+    expect(screen.getByRole("combobox", { name: "Text highlight color" })).toHaveValue("Purple");
+    expect(screen.getByRole("combobox", { name: "Folder color" })).toHaveValue("Blue");
+    expect(screen.getByRole("combobox", { name: "Sidebar icon size" })).toHaveValue("Large");
     expect(
       screen.getByRole("checkbox", { name: "Tint window background with wallpaper color" }),
     ).toBeChecked();
+  });
+
+  it("resets the details viewport when the selected category changes", async () => {
+    const user = userEvent.setup();
+    render(<SystemSettings onClose={vi.fn()} />);
+
+    const details = screen.getByLabelText("Settings details");
+    details.scrollTop = 180;
+
+    await user.click(screen.getByRole("button", { name: "Appearance" }));
+    expect(details.scrollTop).toBe(0);
   });
 
   it("renders local Font Awesome icons in representative settings slots", () => {

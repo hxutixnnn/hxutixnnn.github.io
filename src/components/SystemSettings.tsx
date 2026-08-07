@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { ScrollArea } from "@base-ui/react/scroll-area";
 import { Rnd } from "react-rnd";
 import { FontAwesomeIcon, type FontAwesomeIconName } from "./FontAwesomeIcon";
@@ -73,12 +73,20 @@ type SettingsScrollAreaProps = {
   children: ReactNode;
   className: string;
   label: string;
+  viewportRef?: RefObject<HTMLDivElement | null>;
 };
 
-function SettingsScrollArea({ children, className, label }: SettingsScrollAreaProps) {
+function SettingsScrollArea({ children, className, label, viewportRef }: SettingsScrollAreaProps) {
   return (
     <ScrollArea.Root className={`settings-base-scroll-area ${className}`}>
-      <ScrollArea.Viewport className="settings-scroll-viewport" aria-label={label} tabIndex={0}>
+      <ScrollArea.Viewport
+        ref={(element) => {
+          if (viewportRef) viewportRef.current = element;
+        }}
+        className="settings-scroll-viewport"
+        aria-label={label}
+        tabIndex={0}
+      >
         <ScrollArea.Content className="settings-scroll-content">{children}</ScrollArea.Content>
       </ScrollArea.Viewport>
       <ScrollArea.Scrollbar className="settings-scrollbar" orientation="vertical" keepMounted>
@@ -135,12 +143,16 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
   const [appearanceMode, setAppearanceMode] = useState("Auto");
   const [glassStyle, setGlassStyle] = useState("Clear");
   const [accentColor, setAccentColor] = useState("Multicolor");
+  const [textHighlightColor, setTextHighlightColor] = useState("Automatic");
   const [widgetStyle, setWidgetStyle] = useState("Default");
+  const [folderColor, setFolderColor] = useState("Automatic");
+  const [sidebarIconSize, setSidebarIconSize] = useState("Medium");
   const [wallpaperTint, setWallpaperTint] = useState(true);
   const [viewport, setViewport] = useState(readViewport);
   const compact = viewport.width <= compactBreakpoint;
   const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport) : desktopFrame(viewport)));
   const compactRef = useRef(compact);
+  const detailsViewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const updateViewport = () => {
@@ -162,6 +174,9 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
     window.addEventListener("resize", updateViewport);
     return () => window.removeEventListener("resize", updateViewport);
   }, []);
+  useEffect(() => {
+    if (detailsViewportRef.current) detailsViewportRef.current.scrollTop = 0;
+  }, [selected]);
   const filteredCategoryGroups = useMemo(
     () =>
       [categories.slice(0, 7), categories.slice(7)].map((group) =>
@@ -281,7 +296,11 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
             </button>
           </div>
 
-          <SettingsScrollArea className="settings-scroll-area" label="Settings details">
+          <SettingsScrollArea
+            className="settings-scroll-area"
+            label="Settings details"
+            viewportRef={detailsViewportRef}
+          >
             {selected !== "Appearance" && (
               <header className="settings-hero">
                 <span className="settings-hero-icon" style={{ background: selectedCategory.color }}>
@@ -360,10 +379,20 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                       ))}
                     </div>
                   </div>
-                  <div className="appearance-setting-row">
+                  <label className="appearance-setting-row">
                     <span>Text highlight color</span>
-                    <button>Automatic</button>
-                  </div>
+                    <select
+                      aria-label="Text highlight color"
+                      value={textHighlightColor}
+                      onChange={(event) => setTextHighlightColor(event.target.value)}
+                    >
+                      {["Automatic", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green"].map(
+                        (color) => (
+                          <option key={color}>{color}</option>
+                        ),
+                      )}
+                    </select>
+                  </label>
                 </section>
                 <section className="appearance-panel" aria-label="Icon and widget style">
                   <div className="appearance-setting-row appearance-widget-row">
@@ -381,17 +410,35 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                       ))}
                     </div>
                   </div>
-                  <div className="appearance-setting-row">
+                  <label className="appearance-setting-row">
                     <span>Folder color</span>
-                    <button>Automatic</button>
-                  </div>
+                    <select
+                      aria-label="Folder color"
+                      value={folderColor}
+                      onChange={(event) => setFolderColor(event.target.value)}
+                    >
+                      {["Automatic", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green"].map(
+                        (color) => (
+                          <option key={color}>{color}</option>
+                        ),
+                      )}
+                    </select>
+                  </label>
                 </section>
                 <h3>Windows</h3>
                 <section className="appearance-panel" aria-label="Windows">
-                  <div className="appearance-setting-row">
+                  <label className="appearance-setting-row">
                     <span>Sidebar icon size</span>
-                    <button>Medium</button>
-                  </div>
+                    <select
+                      aria-label="Sidebar icon size"
+                      value={sidebarIconSize}
+                      onChange={(event) => setSidebarIconSize(event.target.value)}
+                    >
+                      {["Small", "Medium", "Large"].map((size) => (
+                        <option key={size}>{size}</option>
+                      ))}
+                    </select>
+                  </label>
                   <label className="appearance-setting-row">
                     <span>Tint window background with wallpaper color</span>
                     <input
