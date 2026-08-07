@@ -73,18 +73,38 @@ test("applies design-system tokens to component styles", async ({ page }) => {
   await expect(menuItem).toHaveCSS("transition-property", "background-color");
   await expect(menuItem).toHaveCSS("transition-duration", "0.777s");
   await expect(menuItem).toHaveCSS("transition-timing-function", "ease");
-  expect(
-    await popup.evaluate((element) => {
-      element.setAttribute("data-ending-style", "");
-      const styles = getComputedStyle(element);
-      const transition = {
-        duration: styles.transitionDuration,
-        timing: styles.transitionTimingFunction,
+  const popupState = await popup.evaluate((element) => {
+    element.setAttribute("data-ending-style", "");
+    const styles = getComputedStyle(element);
+    const transition = {
+      duration: styles.transitionDuration,
+      timing: styles.transitionTimingFunction,
+    };
+    element.removeAttribute("data-ending-style");
+    element.style.transition = "none";
+    const transforms = ["data-starting-style", "data-ending-style"].map((attribute) => {
+      element.setAttribute(attribute, "");
+      const stateStyles = getComputedStyle(element);
+      const matrix = new DOMMatrixReadOnly(stateStyles.transform);
+      const state = {
+        matrix: { a: matrix.a, d: matrix.d, f: matrix.f },
+        scale: stateStyles.scale,
+        translate: stateStyles.translate,
       };
-      element.removeAttribute("data-ending-style");
-      return transition;
-    }),
-  ).toEqual({ duration: "0.777s, 0.888s", timing: "ease, ease" });
+      element.removeAttribute(attribute);
+      return state;
+    });
+    element.style.removeProperty("transition");
+    return { transition, transforms };
+  });
+  expect(popupState.transition).toEqual({ duration: "0.777s, 0.888s", timing: "ease, ease" });
+  for (const state of popupState.transforms) {
+    expect(state.scale).toBe("none");
+    expect(state.translate).toBe("none");
+    expect(state.matrix.a).toBeCloseTo(0.96);
+    expect(state.matrix.d).toBeCloseTo(0.96);
+    expect(state.matrix.f).toBeCloseTo(-3.84);
+  }
 
   await menuItem.click();
   await page.locator(":root").evaluate((root) => {
@@ -454,6 +474,7 @@ test("reveals the static desktop when the application module fails", async ({ pa
 });
 
 test("renders the tienOS main screen and system menu", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
 
   await expect(page).toHaveTitle("tienOS");
@@ -461,6 +482,13 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
   await expect(bootScreen).toBeVisible();
   await expect(bootScreen).toBeHidden();
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
+  const wallpaperState = await page.locator(".tienos-wallpaper").evaluate((element) => {
+    const styles = getComputedStyle(element);
+    const matrix = new DOMMatrixReadOnly(styles.transform);
+    return { scale: styles.scale, transformScale: matrix.a };
+  });
+  expect(wallpaperState.scale).toBe("none");
+  expect(wallpaperState.transformScale).toBeCloseTo(1.02);
   await expect(page.locator("html")).toHaveCSS("overflow-x", "hidden");
   await expect(page.locator("html")).toHaveCSS("overflow-y", "hidden");
   await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
@@ -482,7 +510,7 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
 });
 
 test("reveals the static desktop without JavaScript", async ({ browser }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false });
+  const context = await browser.newContext({ javaScriptEnabled: false, reducedMotion: "reduce" });
   const page = await context.newPage();
 
   await page.goto("/");
@@ -496,6 +524,13 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
   const vignette = page.locator(".tienos-vignette");
   await expect(wallpaper).toHaveCSS("filter", "saturate(1.08)");
   await expect(wallpaper).not.toHaveCSS("transform", "none");
+  const wallpaperState = await wallpaper.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    const matrix = new DOMMatrixReadOnly(styles.transform);
+    return { scale: styles.scale, transformScale: matrix.a };
+  });
+  expect(wallpaperState.scale).toBe("none");
+  expect(wallpaperState.transformScale).toBeCloseTo(1.02);
   await expect(vignette).toHaveCSS("background-image", /linear-gradient.*radial-gradient/);
   await expect(page.getByRole("navigation", { name: "tienOS menu bar" })).toHaveCSS(
     "text-shadow",
