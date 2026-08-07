@@ -1,0 +1,85 @@
+:root {
+  --tienos-space-1: 4px;
+  --tienos-space-2: 8px;
+  --tienos-space-3: 12px;
+  --tienos-space-4: 16px;
+  --tienos-space-5: 24px;
+  --tienos-space-6: 32px;
+  --tienos-space-7: 48px;
+
+  --tienos-type-caption: 11px;
+  --tienos-type-secondary: 12px;
+  --tienos-type-body: 13px;
+  --tienos-type-window: 14px;
+  --tienos-type-title: 23px;
+  --tienos-leading-tight: 1;
+  --tienos-leading-body: 1.35;
+
+  --tienos-color-accent: #2863d7;
+  --tienos-color-accent-hover: #326edc;
+  --tienos-color-focus: #0a84ff;
+  --tienos-color-focus-on-accent: #fff;
+  --tienos-color-hover: rgb(255 255 255 / 0.06);
+  --tienos-color-text-primary: rgb(255 255 255 / 0.9);
+  --tienos-color-text-secondary: rgb(255 255 255 / 0.55);
+  --tienos-color-text-tertiary: rgb(255 255 255 / 0.38);
+  --tienos-color-separator: rgb(255 255 255 / 0.1);
+  --tienos-color-border: rgb(255 255 255 / 0.2);
+  --tienos-color-menu: rgb(20 27 36 / 0.78);
+  --tienos-color-window: rgb(29 29 31 / 0.97);
+  --tienos-color-sidebar: rgb(24 24 25 / 0.86);
+  --tienos-color-content: rgb(255 255 255 / 0.04);
+  --tienos-color-control: rgb(255 255 255 / 0.11);
+  --tienos-color-scrim: rgb(0 0 0 / 0.34);
+
+  --tienos-radius-menu: 14px;
+  --tienos-radius-menu-item: 10px;
+  --tienos-radius-window: 26px;
+  --tienos-radius-content: 14px;
+  --tienos-radius-control: 10px;
+
+  --tienos-motion-fast: 120ms;
+  --tienos-motion-standard: 200ms;
+  --tienos-shadow-window: 0 42px 120px rgb(0 0 0 / 0.58);
+  --tienos-focus-ring: 0 0 0 2px var(--tienos-color-focus), 0 0 0 4px rgb(10 132 255 / 0.3);
+}
+
+@media (prefers-contrast: more) {
+  :root {
+    --tienos-color-text-secondary: rgb(255 255 255 / 0.78);
+    --tienos-color-text-tertiary: rgb(255 255 255 / 0.62);
+    --tienos-color-separator: rgb(255 255 255 / 0.3);
+    --tienos-color-border: rgb(255 255 255 / 0.48);
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --tienos-color-menu: #141b24;
+    --tienos-color-window: #1d1d1f;
+    --tienos-color-sidebar: #181819;
+    --tienos-color-content: #28282a;
+    --tienos-color-control: #363638;
+    --tienos-color-scrim: rgb(0 0 0 / 0.58);
+  }
+}
+
+@media (forced-colors: active) {
+  :root {
+    --tienos-color-accent: Highlight;
+    --tienos-color-accent-hover: Highlight;
+    --tienos-color-focus: Highlight;
+    --tienos-color-focus-on-accent: HighlightText;
+    --tienos-color-hover: Canvas;
+    --tienos-color-text-primary: CanvasText;
+    --tienos-color-text-secondary: CanvasText;
+    --tienos-color-text-tertiary: GrayText;
+    --tienos-color-separator: CanvasText;
+    --tienos-color-border: CanvasText;
+    --tienos-color-menu: Canvas;
+    --tienos-color-window: Canvas;
+    --tienos-color-sidebar: Canvas;
+    --tienos-color-content: Canvas;
+    --tienos-color-control: Canvas;
+  }
+}

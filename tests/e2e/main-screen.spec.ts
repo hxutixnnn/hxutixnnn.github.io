@@ -1,5 +1,140 @@
 import { expect, test } from "@playwright/test";
 
+test("applies design-system tokens to component styles", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  const tokens = await page.locator(":root").evaluate((root) => {
+    const styles = getComputedStyle(root);
+    return {
+      space1: styles.getPropertyValue("--tienos-space-1").trim(),
+      accent: styles.getPropertyValue("--tienos-color-accent").trim(),
+      accentHover: styles.getPropertyValue("--tienos-color-accent-hover").trim(),
+      focusOnAccent: styles.getPropertyValue("--tienos-color-focus-on-accent").trim(),
+      menuRadius: styles.getPropertyValue("--tienos-radius-menu").trim(),
+      windowRadius: styles.getPropertyValue("--tienos-radius-window").trim(),
+    };
+  });
+
+  expect(tokens).toEqual({
+    space1: "4px",
+    accent: "#2863d7",
+    accentHover: "#326edc",
+    focusOnAccent: "#fff",
+    menuRadius: "14px",
+    windowRadius: "26px",
+  });
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("menuitem", { name: "Open tienOS menu" })).not.toHaveCSS("box-shadow", "none");
+
+  await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+  const popup = page.locator(".tienos-menu-popup").first();
+  const menuItem = page.getByRole("menuitem", { name: "System Settings…" });
+  await page.locator(":root").evaluate((root) => {
+    const styles = (root as HTMLElement).style;
+    styles.setProperty("--tienos-motion-fast", "777ms");
+    styles.setProperty("--tienos-motion-standard", "888ms");
+  });
+  await expect(menuItem).toHaveCSS("transition-duration", "0.777s");
+  expect(
+    await popup.evaluate((element) => {
+      element.setAttribute("data-ending-style", "");
+      const duration = getComputedStyle(element).transitionDuration;
+      element.removeAttribute("data-ending-style");
+      return duration;
+    }),
+  ).toBe("0.777s, 0.888s");
+
+  await menuItem.click();
+  await page.locator(":root").evaluate((root) => {
+    (root as HTMLElement).style.setProperty("--tienos-color-accent-hover", "rgb(1 2 3)");
+  });
+  const selectedNavItem = page.locator(".settings-nav-item[data-selected]");
+  await selectedNavItem.hover();
+  await expect(selectedNavItem).toHaveCSS("background-color", "rgb(1, 2, 3)");
+});
+
+test("keeps keyboard focus visible in forced colors", async ({ page }) => {
+  await page.emulateMedia({ forcedColors: "active" });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  await page.keyboard.press("Tab");
+  const trigger = page.getByRole("menuitem", { name: "Open tienOS menu" });
+  await expect(trigger).toHaveCSS("outline-style", "solid");
+  await expect(trigger).toHaveCSS("outline-width", "2px");
+
+  await trigger.click();
+  await page.getByRole("menuitem", { name: "System Settings…" }).click();
+  const settingsRow = page.locator(".settings-row").first();
+  await page.keyboard.press("Tab");
+  await settingsRow.focus();
+  await expect(settingsRow).toBeFocused();
+  await expect(settingsRow).toHaveCSS("outline-style", "solid");
+  await expect(settingsRow).toHaveCSS("outline-width", "2px");
+  await expect(settingsRow).toHaveCSS("outline-offset", "-2px");
+
+  const selectedNavItem = page.locator(".settings-nav-item[data-selected]");
+  await page.keyboard.press("Tab");
+  await selectedNavItem.focus();
+  const forcedColors = await selectedNavItem.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    const rootStyles = getComputedStyle(document.documentElement);
+    return {
+      background: styles.backgroundColor,
+      focus: styles.outlineColor,
+      focusToken: rootStyles.getPropertyValue("--tienos-color-focus-on-accent").trim(),
+    };
+  });
+  expect(forcedColors.focusToken).toBe("HighlightText");
+  expect(forcedColors.focus).not.toBe(forcedColors.background);
+});
+
+test("uses opaque menu surfaces with reduced transparency", async ({ page }) => {
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setEmulatedMedia", {
+    features: [{ name: "prefers-reduced-transparency", value: "reduce" }],
+  });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+  const popup = page.locator(".tienos-menu-popup").first();
+  await expect(popup).toHaveCSS("background-color", "rgb(20, 27, 36)");
+  await expect(popup).toHaveCSS("backdrop-filter", "none");
+});
+
+test("adds visible row boundaries with increased contrast", async ({ page }) => {
+  await page.emulateMedia({ contrast: "more" });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+  const menuItem = page.getByRole("menuitem", { name: "System Settings…" });
+  await expect(menuItem).not.toHaveCSS("box-shadow", "none");
+  await menuItem.click();
+  const settingsRow = page.locator(".settings-row").first();
+  await expect(settingsRow).not.toHaveCSS("box-shadow", "none");
+  await expect(settingsRow).toHaveCSS("outline-style", "none");
+
+  await page.keyboard.press("Tab");
+  await settingsRow.focus();
+  await expect(settingsRow).toBeFocused();
+  await expect(settingsRow).toHaveCSS("outline-style", "solid");
+  await expect(settingsRow).toHaveCSS("outline-width", "2px");
+  await expect(settingsRow).toHaveCSS("outline-offset", "-2px");
+
+  const selectedNavItem = page.locator(".settings-nav-item[data-selected]");
+  await page.keyboard.press("Tab");
+  await selectedNavItem.focus();
+  await expect(selectedNavItem).toHaveCSS("outline-color", "rgb(255, 255, 255)");
+  const selectedColors = await selectedNavItem.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    return { background: styles.backgroundColor, focus: styles.outlineColor };
+  });
+  expect(selectedColors.focus).not.toBe(selectedColors.background);
+});
+
 test("renders the tienOS main screen and system menu", async ({ page }) => {
   await page.goto("/");
 
