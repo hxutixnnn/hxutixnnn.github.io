@@ -135,10 +135,10 @@ export function MenuBar({ onAction }: MenuBarProps) {
         </Menu.Root>
       </Menubar>
       <div className="flex items-center gap-2 px-2 text-[13px] font-medium text-white/75">
-        <span aria-label="Wi-Fi connected">
+        <span role="img" aria-label="Wi-Fi connected">
           <FontAwesomeIcon name="wifi" className="tienos-status-icon" />
         </span>
-        <span aria-label="Battery full">
+        <span role="img" aria-label="Battery full">
           <FontAwesomeIcon name="battery-full" className="tienos-status-icon" />
         </span>
         <time className="whitespace-nowrap" dateTime={now.toISOString()}>

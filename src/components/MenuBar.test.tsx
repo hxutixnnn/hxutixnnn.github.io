@@ -18,8 +18,20 @@ describe("MenuBar", () => {
       "href",
       "/fontawesome/fontawesome-pro-solid.svg#fa-sparkle",
     );
-    expect(document.querySelector('[data-fa-icon="chevron-right"]')).toBeInTheDocument();
-    expect(document.querySelector('[data-fa-icon="wifi"]')).toBeInTheDocument();
+    expect(document.querySelector('[data-fa-icon="chevron-right"] use')).toHaveAttribute(
+      "href",
+      "/fontawesome/fontawesome-pro-solid.svg#fa-chevron-right",
+    );
+    expect(document.querySelector('[data-fa-icon="wifi"] use')).toHaveAttribute(
+      "href",
+      "/fontawesome/fontawesome-pro-solid.svg#fa-wifi",
+    );
+    expect(document.querySelector('[data-fa-icon="battery-full"] use')).toHaveAttribute(
+      "href",
+      "/fontawesome/fontawesome-pro-solid.svg#fa-battery-full",
+    );
+    expect(screen.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
+    expect(screen.getByRole("img", { name: "Battery full" })).toBeVisible();
     expect(document.body.textContent).not.toMatch(/[✦⌁▰›‹]/u);
   });
 

@@ -1,4 +1,21 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Locator } from "@playwright/test";
+
+const spriteUrl = "/fontawesome/fontawesome-pro-solid.svg";
+
+async function expectFontAwesomeIconToPaint(icon: Locator, name: string) {
+  await expect(icon).toHaveAttribute("data-fa-icon", name);
+  await expect(icon.locator("use")).toHaveAttribute("href", `${spriteUrl}#fa-${name}`);
+  await expect
+    .poll(() =>
+      icon.evaluate((element) => {
+        const use = element.querySelector("use");
+        if (!use || typeof (use as SVGGraphicsElement).getBBox !== "function") return false;
+        const bounds = (use as SVGGraphicsElement).getBBox();
+        return bounds.width > 0 && bounds.height > 0;
+      }),
+    )
+    .toBe(true);
+}
 
 test("applies design-system tokens to component styles", async ({ page }) => {
   await page.goto("/");
@@ -154,8 +171,10 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
     "10px",
   );
   await expect(page.getByText("About This OS", { exact: true })).toBeVisible();
-  await expect(page.locator('[data-fa-icon="sparkle"]')).toBeVisible();
-  await expect(page.locator('[data-fa-icon="chevron-right"]')).toBeVisible();
+  await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Battery full" })).toBeVisible();
+  await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="sparkle"]'), "sparkle");
+  await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="chevron-right"]'), "chevron-right");
 });
 
 test("reveals the static desktop without JavaScript", async ({ browser }) => {
@@ -167,6 +186,8 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
   await expect(bootScreen).toBeVisible();
   await expect(bootScreen).toBeHidden();
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "Battery full" })).toBeVisible();
 
   await context.close();
 });
@@ -180,10 +201,19 @@ test("opens System Settings from the system menu", async ({ page }) => {
   await expect(page.getByRole("region", { name: "System Settings" })).toBeVisible();
   await expect(page.getByRole("menuitem", { name: "System Settings…" })).toBeHidden();
   await expect(page.getByRole("heading", { name: "General" })).toBeVisible();
-  await expect(page.locator('.settings-search [data-fa-icon="magnifying-glass"]')).toBeVisible();
-  await expect(page.locator('.settings-hero [data-fa-icon="gear"]')).toBeVisible();
-  await expect(page.locator('.settings-row [data-fa-icon="shield-check"]')).toBeVisible();
-  await expect(page.locator('.settings-row [data-fa-icon="chevron-right"]').first()).toBeVisible();
+  await expectFontAwesomeIconToPaint(
+    page.locator('.settings-search [data-fa-icon="magnifying-glass"]'),
+    "magnifying-glass",
+  );
+  await expectFontAwesomeIconToPaint(page.locator('.settings-hero [data-fa-icon="gear"]'), "gear");
+  await expectFontAwesomeIconToPaint(
+    page.locator('.settings-row [data-fa-icon="shield-check"]'),
+    "shield-check",
+  );
+  await expectFontAwesomeIconToPaint(
+    page.locator('.settings-row [data-fa-icon="chevron-right"]').first(),
+    "chevron-right",
+  );
   expect(
     await page
       .locator(
