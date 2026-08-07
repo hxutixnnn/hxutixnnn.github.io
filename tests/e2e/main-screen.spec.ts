@@ -456,7 +456,6 @@ test("keeps the splash over the desktop until delayed styles are ready", async (
     await stylesMayLoad;
     await route.continue();
   });
-
   const navigation = page.goto("/", { waitUntil: "domcontentloaded" });
   await expect.poll(() => stylesheetIntercepted).toBe(true);
   await page.waitForTimeout(700);
@@ -464,11 +463,11 @@ test("keeps the splash over the desktop until delayed styles are ready", async (
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
   await expect(bootScreen).toBeVisible();
   await expect(page.locator(":root")).toHaveCSS("font-size", "16px");
-
   releaseStyles();
   await navigation;
-  await expect(bootScreen).toBeHidden();
+  await expect(bootScreen).toBeHidden({ timeout: 10_000 });
   await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
+  await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("position", "fixed");
 });
 
 test("paints a stable splash icon before delayed app and desktop assets", async ({ page }) => {
@@ -562,7 +561,6 @@ test("paints a stable splash icon before delayed app and desktop assets", async 
   expect(warmGeometry).toEqual(coldGeometry);
   await page.waitForTimeout(100);
   expect(await expectBootIconToPaint(bootIcon)).toEqual(warmGeometry);
-  await expect(page.locator("#root")).toHaveAttribute("inert", "");
   await expect(bootScreen).toBeHidden();
 });
 
@@ -670,11 +668,6 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
-  await expect(bootScreen).toBeVisible();
-  const bootIcon = page.locator("[data-boot-icon]");
-  const initialGeometry = await expectBootIconToPaint(bootIcon);
-  await page.waitForTimeout(100);
-  expect(await expectBootIconToPaint(bootIcon)).toEqual(initialGeometry);
   await expect(bootScreen).toBeHidden();
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();

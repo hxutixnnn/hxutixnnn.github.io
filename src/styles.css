@@ -6,6 +6,7 @@
 @layer base {
   /* Global document contract: utilities cannot target the pre-React document/root consistently. */
   :root {
+    --tienos-app-styles-ready: 1;
     color-scheme: light dark;
     font-size: 13px;
     font-family:

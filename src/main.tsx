@@ -30,6 +30,22 @@ async function loadIconSprite() {
   await response.arrayBuffer();
 }
 
+function waitForApplicationStyles() {
+  return new Promise<void>((resolve) => {
+    const check = () => {
+      if (
+        getComputedStyle(document.documentElement).getPropertyValue("--tienos-app-styles-ready").trim() ===
+        "1"
+      ) {
+        resolve();
+        return;
+      }
+      if (!bootController?.isFinished()) window.requestAnimationFrame(check);
+    };
+    check();
+  });
+}
+
 function waitForIconPaint() {
   return new Promise<void>((resolve) => {
     const checkGeometry = () => {
@@ -56,7 +72,7 @@ function waitForIconPaint() {
   });
 }
 
-const assetReadiness = Promise.all([loadWallpaper(), loadIconSprite()])
+const assetReadiness = Promise.all([waitForApplicationStyles(), loadWallpaper(), loadIconSprite()])
   .then(waitForIconPaint)
   .catch(() => bootController?.failed());
 const desktopAssetsReady = bootController
