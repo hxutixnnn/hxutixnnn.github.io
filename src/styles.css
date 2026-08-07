@@ -2,7 +2,7 @@
 @import "./design-system.css";
 
 :root {
-  color-scheme: dark;
+  color-scheme: light dark;
   font-size: 13px;
   font-family:
     Inter,
@@ -50,6 +50,20 @@ body {
   background: #07121d;
 }
 
+:root[data-theme="light"] body {
+  background: #dbeafe;
+}
+
+.tienos-desktop {
+  background: #07121d;
+  color: white;
+}
+
+:root[data-theme="light"] .tienos-desktop {
+  background: #dbeafe;
+  color: #0f172a;
+}
+
 button,
 kbd {
   font: inherit;
@@ -91,6 +105,7 @@ button {
 
 .tienos-menubar {
   background: transparent;
+  color: var(--tienos-color-text-on-wallpaper);
   text-shadow: 0 1px 3px rgb(0 0 0 / 0.4);
 }
 
@@ -100,7 +115,7 @@ button {
 
 .tienos-submenu-chevron {
   margin-left: auto;
-  color: rgb(255 255 255 / 0.5);
+  color: var(--tienos-color-text-secondary);
   font-size: 10px;
 }
 
@@ -144,6 +159,7 @@ button {
 
 .tienos-menu-item {
   border-radius: var(--tienos-radius-menu-item);
+  color: var(--tienos-color-text-primary);
   cursor: default;
   transition: background-color var(--tienos-motion-fast) ease;
 }
@@ -151,12 +167,23 @@ button {
 .tienos-menu-item[data-highlighted],
 .tienos-menu-item:hover:not([data-disabled]) {
   background: var(--tienos-color-accent);
-  color: white;
+  color: var(--tienos-color-text-on-accent);
   outline: none;
 }
 
+.tienos-menu-item[data-highlighted] .tienos-menu-shortcut,
+.tienos-menu-item[data-highlighted] .tienos-submenu-chevron,
+.tienos-menu-item:hover:not([data-disabled]) .tienos-menu-shortcut,
+.tienos-menu-item:hover:not([data-disabled]) .tienos-submenu-chevron {
+  color: var(--tienos-color-text-on-accent);
+}
+
 .tienos-menu-item[data-disabled] {
-  color: rgb(255 255 255 / 0.42);
+  color: var(--tienos-color-text-tertiary);
+}
+
+.tienos-menu-shortcut {
+  color: var(--tienos-color-text-tertiary);
 }
 
 .tienos-menu-separator {
@@ -188,6 +215,7 @@ button {
   border: 1px solid var(--tienos-color-border);
   border-radius: var(--tienos-radius-window);
   background: var(--tienos-color-window);
+  color: var(--tienos-color-text-primary);
   box-shadow:
     var(--tienos-shadow-window),
     inset 0 1px rgb(255 255 255 / 0.05);
@@ -207,7 +235,7 @@ button {
   min-height: 0;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 0.13);
+  border: 1px solid var(--tienos-color-border);
   border-radius: calc(var(--tienos-radius-window) - 8px);
   background: color-mix(in srgb, var(--tienos-color-sidebar) 84%, transparent);
   box-shadow:
@@ -246,11 +274,11 @@ button {
   height: 28px;
   align-items: center;
   gap: 7px;
-  border: 1px solid rgb(255 255 255 / 0.035);
+  border: 1px solid var(--tienos-color-border);
   border-radius: 11px;
   background: var(--tienos-color-control);
   padding: 0 10px;
-  color: rgb(255 255 255 / 0.55);
+  color: var(--tienos-color-text-secondary);
 }
 
 .settings-search-icon {
@@ -261,12 +289,12 @@ button {
   width: 100%;
   border: 0;
   background: transparent;
-  color: white;
+  color: var(--tienos-color-text-primary);
   font: inherit;
 }
 
 .settings-search input::placeholder {
-  color: rgb(255 255 255 / 0.52);
+  color: var(--tienos-color-text-secondary);
 }
 
 .settings-account {
@@ -293,7 +321,7 @@ button {
 }
 .settings-account span {
   margin-top: 2px;
-  color: rgb(255 255 255 / 0.5);
+  color: var(--tienos-color-text-secondary);
   font-size: 12px;
 }
 
@@ -306,7 +334,7 @@ button {
   border: 0;
   background: transparent;
   padding: 0 7px;
-  color: rgb(255 255 255 / 0.9);
+  color: var(--tienos-color-text-primary);
   text-align: left;
 }
 
@@ -343,7 +371,7 @@ button {
   border-radius: 10px;
   background: transparent;
   padding: 4px 8px;
-  color: rgb(255 255 255 / 0.9);
+  color: var(--tienos-color-text-primary);
   text-align: left;
 }
 
@@ -403,7 +431,7 @@ button {
   align-items: center;
   align-self: flex-start;
   overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 0.13);
+  border: 1px solid var(--tienos-color-border);
   border-radius: 22px;
   margin-bottom: 9px;
   margin-left: -12px;
@@ -416,14 +444,14 @@ button {
   place-items: center;
   border: 0;
   background: transparent;
-  color: rgb(255 255 255 / 0.38);
+  color: var(--tienos-color-text-tertiary);
   font-size: 12px;
 }
 
 .settings-history span {
   width: 1px;
   height: 24px;
-  background: rgb(255 255 255 / 0.12);
+  background: var(--tienos-color-separator);
 }
 
 .settings-base-scroll-area {
@@ -465,7 +493,7 @@ button {
   bottom: 5px;
   width: 8px;
   border-radius: 999px;
-  background: rgb(0 0 0 / 0.12);
+  background: var(--tienos-color-scrollbar-track);
   opacity: 0;
   transition: opacity 180ms ease-out;
 }
@@ -482,7 +510,7 @@ button {
   min-height: 24px;
   border: 2px solid transparent;
   border-radius: inherit;
-  background: rgb(255 255 255 / 0.5);
+  background: var(--tienos-color-scrollbar-thumb);
   background-clip: padding-box;
 }
 
@@ -764,8 +792,8 @@ button {
   gap: 14px;
   border-radius: 15px;
   margin-top: 14px;
-  background: rgb(255 255 255 / 0.04);
-  color: rgb(255 255 255 / 0.56);
+  background: var(--tienos-color-content);
+  color: var(--tienos-color-text-secondary);
 }
 
 @media (max-width: 700px) {

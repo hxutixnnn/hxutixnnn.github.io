@@ -10,6 +10,21 @@
     />
     <link rel="canonical" href="https://hxutixnnn.github.io/" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <script>
+      (() => {
+        let mode = "auto";
+        try {
+          const saved = JSON.parse(localStorage.getItem("tienos-appearance") || "null");
+          if (saved === "light" || saved === "dark" || saved === "auto") mode = saved;
+        } catch {}
+        const theme =
+          mode === "auto" ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light") : mode;
+        document.documentElement.dataset.appearance = mode;
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        document.querySelector('meta[name="theme-color"]').content = theme === "dark" ? "#07121d" : "#dbeafe";
+      })();
+    </script>
     <style>
       #tienos-boot {
         position: fixed;
@@ -22,6 +37,16 @@
         color: #fff;
         opacity: 1;
         transition: opacity 160ms ease;
+      }
+      :root[data-theme="light"] #tienos-boot {
+        background: #f8fafc;
+        color: #0f172a;
+      }
+      :root[data-theme="light"] .tienos-boot-track {
+        background: rgb(15 23 42 / 0.2);
+      }
+      :root[data-theme="light"] .tienos-boot-progress {
+        background: #0f172a;
       }
       #tienos-boot[data-complete] {
         pointer-events: none;
@@ -181,7 +206,7 @@
       </div>
     </div>
     <div id="root">
-      <main aria-label="tienOS desktop" class="relative min-h-screen overflow-hidden bg-slate-950 text-white">
+      <main aria-label="tienOS desktop" class="tienos-desktop relative min-h-screen overflow-hidden">
         <div class="tienos-wallpaper" aria-hidden="true"></div>
         <div class="tienos-vignette" aria-hidden="true"></div>
         <h1 class="sr-only">tienOS desktop</h1>

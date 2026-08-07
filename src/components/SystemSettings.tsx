@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } 
 import { ScrollArea } from "@base-ui/react/scroll-area";
 import { Rnd } from "react-rnd";
 import { FontAwesomeIcon, type FontAwesomeIconName } from "./FontAwesomeIcon";
+import { useAppearanceStore, type AppearanceMode } from "../stores/appearance";
 
 type SystemSettingsProps = {
   onClose: () => void;
@@ -140,7 +141,8 @@ function clampFrame(frame: SettingsFrame, viewport: Viewport): SettingsFrame {
 export function SystemSettings({ onClose }: SystemSettingsProps) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("General");
-  const [appearanceMode, setAppearanceMode] = useState("Auto");
+  const appearanceMode = useAppearanceStore((state) => state.mode);
+  const setAppearanceMode = useAppearanceStore((state) => state.setMode);
   const [glassStyle, setGlassStyle] = useState("Clear");
   const [accentColor, setAccentColor] = useState("Multicolor");
   const [textHighlightColor, setTextHighlightColor] = useState("Automatic");
@@ -321,15 +323,15 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                 <h2>Appearance</h2>
                 <section className="appearance-panel appearance-overview" aria-label="Appearance style">
                   <div className="appearance-choice-row" role="group" aria-label="Appearance mode">
-                    {["Auto", "Light", "Dark"].map((mode) => (
+                    {(["auto", "light", "dark"] satisfies AppearanceMode[]).map((mode) => (
                       <button
                         key={mode}
-                        className={`appearance-preview appearance-preview-${mode.toLowerCase()}`}
+                        className={`appearance-preview appearance-preview-${mode}`}
                         aria-pressed={appearanceMode === mode}
                         onClick={() => setAppearanceMode(mode)}
                       >
                         <span aria-hidden="true" />
-                        {mode}
+                        {mode[0].toUpperCase() + mode.slice(1)}
                       </button>
                     ))}
                   </div>
