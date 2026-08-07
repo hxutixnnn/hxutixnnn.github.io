@@ -72,15 +72,29 @@ function waitForIconPaint() {
   });
 }
 
-const assetReadiness = Promise.all([waitForApplicationStyles(), loadWallpaper(), loadIconSprite()])
+const applicationStylesReady = waitForApplicationStyles();
+const assetReadiness = Promise.all([applicationStylesReady, loadWallpaper(), loadIconSprite()])
   .then(waitForIconPaint)
   .catch(() => bootController?.failed());
 const desktopAssetsReady = bootController
   ? Promise.race([assetReadiness, bootController.released])
   : assetReadiness;
 
-createRoot(root).render(
-  <StrictMode>
-    <App desktopAssetsReady={desktopAssetsReady} onDesktopReady={bootController?.ready} />
-  </StrictMode>,
-);
+async function mountApplication() {
+  const stylesReady = bootController
+    ? await Promise.race([
+        applicationStylesReady.then(() => true),
+        bootController.released.then(() => false),
+      ])
+    : await applicationStylesReady.then(() => true);
+
+  if (!stylesReady || bootController?.isFinished()) return;
+
+  createRoot(root).render(
+    <StrictMode>
+      <App desktopAssetsReady={desktopAssetsReady} onDesktopReady={bootController?.ready} />
+    </StrictMode>,
+  );
+}
+
+void mountApplication();

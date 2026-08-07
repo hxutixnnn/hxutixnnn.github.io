@@ -53,6 +53,86 @@ async function expectBootIconToPaint(icon: Locator) {
   return geometry.icon;
 }
 
+async function recordDismissalFrames(page: import("@playwright/test").Page) {
+  await page.addInitScript(() => {
+    const observedWindow = window as typeof window & {
+      dismissalFrames?: Array<{
+        fontFamily: string;
+        desktop: { width: number; height: number } | null;
+        menuPosition: string | null;
+        settings: { width: number; height: number } | null;
+      }>;
+    };
+    observedWindow.dismissalFrames = [];
+    document.addEventListener("DOMContentLoaded", () => {
+      const boot = document.getElementById("tienos-boot");
+      if (!boot) return;
+      new MutationObserver((_, observer) => {
+        if (!boot.hasAttribute("data-complete")) return;
+        observer.disconnect();
+        let framesRemaining = 4;
+        const sample = () => {
+          const desktop = document.querySelector<HTMLElement>('main[aria-label="tienOS desktop"]');
+          const menu = document.querySelector<HTMLElement>("[data-menu-bar-surface]");
+          const settings = document.querySelector<HTMLElement>('[aria-label="System Settings"]');
+          const desktopBounds = desktop?.getBoundingClientRect();
+          const settingsBounds = settings?.getBoundingClientRect();
+          observedWindow.dismissalFrames?.push({
+            fontFamily: getComputedStyle(document.body).fontFamily,
+            desktop: desktopBounds
+              ? { width: desktopBounds.width, height: desktopBounds.height }
+              : null,
+            menuPosition: menu ? getComputedStyle(menu).position : null,
+            settings: settingsBounds
+              ? { width: settingsBounds.width, height: settingsBounds.height }
+              : null,
+          });
+          framesRemaining -= 1;
+          if (framesRemaining > 0) requestAnimationFrame(sample);
+        };
+        requestAnimationFrame(sample);
+      }).observe(boot, { attributes: true, attributeFilter: ["data-complete"] });
+    });
+  });
+}
+
+async function expectStyledDismissalFrames(
+  page: import("@playwright/test").Page,
+  options: { settings: boolean },
+) {
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as typeof window & { dismissalFrames?: unknown[] }).dismissalFrames?.length ?? 0,
+      ),
+    )
+    .toBe(4);
+  const frames = await page.evaluate(
+    () =>
+      (window as typeof window & {
+        dismissalFrames?: Array<{
+          fontFamily: string;
+          desktop: { width: number; height: number } | null;
+          menuPosition: string | null;
+          settings: { width: number; height: number } | null;
+        }>;
+      }).dismissalFrames ?? [],
+  );
+  for (const frame of frames) {
+    expect(frame.fontFamily).not.toMatch(/(^|,\s*)(serif|"?Times New Roman"?|Times)(,|$)/i);
+    expect(frame.desktop?.width).toBeGreaterThanOrEqual(320);
+    expect(frame.desktop?.height).toBeGreaterThanOrEqual(568);
+    expect(frame.menuPosition).toBe("fixed");
+    if (options.settings) {
+      expect(frame.settings?.width).toBeGreaterThan(0);
+      expect(frame.settings?.height).toBeGreaterThan(0);
+    } else {
+      expect(frame.settings).toBeNull();
+    }
+  }
+}
+
 async function expectConventionalRoundedGeometry(element: Locator) {
   await expect(element).toBeVisible();
   const geometry = await element.evaluate((node) => {
@@ -445,6 +525,7 @@ test("adds visible row boundaries with increased contrast", async ({ page }) => 
 });
 
 test("keeps the splash over the desktop until delayed styles are ready", async ({ page }) => {
+  await recordDismissalFrames(page);
   let releaseStyles!: () => void;
   const stylesMayLoad = new Promise<void>((resolve) => {
     releaseStyles = resolve;
@@ -468,9 +549,15 @@ test("keeps the splash over the desktop until delayed styles are ready", async (
   await expect(bootScreen).toBeHidden({ timeout: 10_000 });
   await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
   await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("position", "fixed");
+  await expectStyledDismissalFrames(page, { settings: true });
+
+  await page.reload();
+  await expect(bootScreen).toBeHidden();
+  await expectStyledDismissalFrames(page, { settings: true });
 });
 
 test("paints a stable splash icon before delayed app and desktop assets", async ({ page }) => {
+  await recordDismissalFrames(page);
   await page.setViewportSize({ width: 320, height: 568 });
   await page.emulateMedia({ reducedMotion: "reduce", colorScheme: "dark" });
 
@@ -547,6 +634,7 @@ test("paints a stable splash icon before delayed app and desktop assets", async 
     ),
   ).toBe(true);
   await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="sparkle"]'), "sparkle");
+  await expectStyledDismissalFrames(page, { settings: true });
   await page.keyboard.press("Tab");
   await expect(page.getByRole("menuitem", { name: "Open tienOS menu" })).toBeFocused();
 
@@ -562,11 +650,14 @@ test("paints a stable splash icon before delayed app and desktop assets", async 
   await page.waitForTimeout(100);
   expect(await expectBootIconToPaint(bootIcon)).toEqual(warmGeometry);
   await expect(bootScreen).toBeHidden();
+  await expectStyledDismissalFrames(page, { settings: true });
 });
 
-test("releases the static desktop when a critical asset stalls", async ({ page }) => {
-  await page.route("**/wallpapers/tienos-default.jpg", async () => {
-    await new Promise(() => {});
+test("releases the static desktop when application styles fail", async ({ page }) => {
+  await recordDismissalFrames(page);
+  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("light")));
+  await page.route(/\/assets\/.*\.css$/, async (route) => {
+    await route.abort("failed");
   });
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -579,11 +670,16 @@ test("releases the static desktop when a critical asset stalls", async ({ page }
   await expect(bootScreen).toBeHidden({ timeout: 10_000 });
   await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
-  await page.keyboard.press("Tab");
-  await expect(page.getByRole("menuitem", { name: "Open tienOS menu" })).toBeFocused();
+  await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "tienOS menu bar" })).toHaveCSS(
+    "color",
+    "rgba(255, 255, 255, 0.9)",
+  );
+  await expectStyledDismissalFrames(page, { settings: false });
 });
 
 test("reveals the static desktop when the application module fails", async ({ page }) => {
+  await recordDismissalFrames(page);
   await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("light")));
   let rejectApplication!: () => void;
   const applicationRejected = new Promise<void>((resolve) => {
@@ -621,6 +717,7 @@ test("reveals the static desktop when the application module fails", async ({ pa
     "color",
     "rgba(255, 255, 255, 0.9)",
   );
+  await expectStyledDismissalFrames(page, { settings: false });
 });
 
 test("renders the tienOS main screen and system menu", async ({ page }) => {
@@ -672,6 +769,9 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Battery full" })).toBeVisible();
+  const noScriptFont = await page.locator("body").evaluate((element) => getComputedStyle(element).fontFamily);
+  expect(noScriptFont).not.toMatch(/(^|,\s*)(serif|"?Times New Roman"?|Times)(,|$)/i);
+  await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("position", "fixed");
   const wallpaper = page.locator(".tienos-wallpaper");
   const vignette = page.locator(".tienos-vignette");
   await expect(wallpaper).toHaveCSS("filter", "saturate(1.08)");
