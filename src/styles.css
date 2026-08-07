@@ -479,7 +479,7 @@ button {
 
 .settings-scrollbar[data-has-overflow-y][data-scrolling],
 .settings-scrollbar[data-has-overflow-y]:hover,
-.settings-base-scroll-area:has(:focus-visible) > .settings-scrollbar[data-has-overflow-y],
+.settings-base-scroll-area:has(:focus) > .settings-scrollbar[data-has-overflow-y],
 .settings-scrollbar[data-has-overflow-y]:active {
   opacity: 1;
 }
