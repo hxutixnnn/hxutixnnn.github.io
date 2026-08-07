@@ -1,7 +1,22 @@
-import { expect, test, type CDPSession, type Locator } from "@playwright/test";
+import { expect, test, type CDPSession, type Locator, type Page } from "@playwright/test";
 import sharp from "sharp";
 
 const spriteUrl = "/fontawesome/fontawesome-pro-solid.svg";
+
+type DismissalFrame = {
+  viewport: { width: number; height: number };
+  fontFamily: string;
+  desktop: { x: number; y: number; width: number; height: number; position: string } | null;
+  menu: { x: number; y: number; width: number; height: number; position: string } | null;
+  settings: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    position: string;
+    containerPosition: string | null;
+  } | null;
+};
 
 async function expectFontAwesomeIconToPaint(icon: Locator, name: string) {
   await expect(icon).toHaveAttribute("data-fa-icon", name);
@@ -53,15 +68,10 @@ async function expectBootIconToPaint(icon: Locator) {
   return geometry.icon;
 }
 
-async function recordDismissalFrames(page: import("@playwright/test").Page) {
+async function recordDismissalFrames(page: Page) {
   await page.addInitScript(() => {
     const observedWindow = window as typeof window & {
-      dismissalFrames?: Array<{
-        fontFamily: string;
-        desktop: { width: number; height: number } | null;
-        menuPosition: string | null;
-        settings: { width: number; height: number } | null;
-      }>;
+      dismissalFrames?: DismissalFrame[];
     };
     observedWindow.dismissalFrames = [];
     document.addEventListener("DOMContentLoaded", () => {
@@ -76,15 +86,40 @@ async function recordDismissalFrames(page: import("@playwright/test").Page) {
           const menu = document.querySelector<HTMLElement>("[data-menu-bar-surface]");
           const settings = document.querySelector<HTMLElement>('[aria-label="System Settings"]');
           const desktopBounds = desktop?.getBoundingClientRect();
+          const menuBounds = menu?.getBoundingClientRect();
           const settingsBounds = settings?.getBoundingClientRect();
           observedWindow.dismissalFrames?.push({
+            viewport: { width: innerWidth, height: innerHeight },
             fontFamily: getComputedStyle(document.body).fontFamily,
             desktop: desktopBounds
-              ? { width: desktopBounds.width, height: desktopBounds.height }
+              ? {
+                  x: desktopBounds.x,
+                  y: desktopBounds.y,
+                  width: desktopBounds.width,
+                  height: desktopBounds.height,
+                  position: getComputedStyle(desktop!).position,
+                }
               : null,
-            menuPosition: menu ? getComputedStyle(menu).position : null,
+            menu: menuBounds
+              ? {
+                  x: menuBounds.x,
+                  y: menuBounds.y,
+                  width: menuBounds.width,
+                  height: menuBounds.height,
+                  position: getComputedStyle(menu!).position,
+                }
+              : null,
             settings: settingsBounds
-              ? { width: settingsBounds.width, height: settingsBounds.height }
+              ? {
+                  x: settingsBounds.x,
+                  y: settingsBounds.y,
+                  width: settingsBounds.width,
+                  height: settingsBounds.height,
+                  position: getComputedStyle(settings!).position,
+                  containerPosition: settings?.parentElement
+                    ? getComputedStyle(settings.parentElement).position
+                    : null,
+                }
               : null,
           });
           framesRemaining -= 1;
@@ -97,7 +132,7 @@ async function recordDismissalFrames(page: import("@playwright/test").Page) {
 }
 
 async function expectStyledDismissalFrames(
-  page: import("@playwright/test").Page,
+  page: Page,
   options: { settings: boolean },
 ) {
   await expect
@@ -111,25 +146,43 @@ async function expectStyledDismissalFrames(
   const frames = await page.evaluate(
     () =>
       (window as typeof window & {
-        dismissalFrames?: Array<{
-          fontFamily: string;
-          desktop: { width: number; height: number } | null;
-          menuPosition: string | null;
-          settings: { width: number; height: number } | null;
-        }>;
+        dismissalFrames?: DismissalFrame[];
       }).dismissalFrames ?? [],
   );
-  for (const frame of frames) {
-    expect(frame.fontFamily).not.toMatch(/(^|,\s*)(serif|"?Times New Roman"?|Times)(,|$)/i);
-    expect(frame.desktop?.width).toBeGreaterThanOrEqual(320);
-    expect(frame.desktop?.height).toBeGreaterThanOrEqual(568);
-    expect(frame.menuPosition).toBe("fixed");
-    if (options.settings) {
-      expect(frame.settings?.width).toBeGreaterThan(0);
-      expect(frame.settings?.height).toBeGreaterThan(0);
-    } else {
-      expect(frame.settings).toBeNull();
-    }
+  for (const frame of frames) expectDismissalFrameGeometry(frame, options);
+}
+
+function expectDismissalFrameGeometry(frame: DismissalFrame, options: { settings: boolean }) {
+  expect(frame.fontFamily).not.toMatch(/(^|,\s*)(serif|"?Times New Roman"?|Times)(,|$)/i);
+  expect(frame.desktop).toMatchObject({
+    x: 0,
+    y: 0,
+    width: frame.viewport.width,
+    position: "relative",
+  });
+  expect(frame.desktop?.height).toBeGreaterThanOrEqual(frame.viewport.height);
+  expect(frame.menu).toMatchObject({
+    x: 0,
+    y: 0,
+    width: frame.viewport.width,
+    position: "fixed",
+  });
+  expect(frame.menu?.height).toBeGreaterThanOrEqual(28);
+  if (options.settings) {
+    expect(frame.settings?.position).toBe("relative");
+    expect(frame.settings?.containerPosition).toBe("absolute");
+    expect(frame.settings?.x).toBeGreaterThanOrEqual(8);
+    expect(frame.settings?.y).toBeGreaterThanOrEqual(frame.menu?.height ?? 28);
+    expect(frame.settings?.width).toBeGreaterThanOrEqual(Math.min(280, frame.viewport.width * 0.6));
+    expect(frame.settings?.height).toBeGreaterThanOrEqual(Math.min(400, frame.viewport.height * 0.6));
+    expect((frame.settings?.x ?? 0) + (frame.settings?.width ?? 0)).toBeLessThanOrEqual(
+      frame.viewport.width - 8,
+    );
+    expect((frame.settings?.y ?? 0) + (frame.settings?.height ?? 0)).toBeLessThanOrEqual(
+      frame.viewport.height - 8,
+    );
+  } else {
+    expect(frame.settings).toBeNull();
   }
 }
 
@@ -759,13 +812,62 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
 test("reveals the static desktop without JavaScript", async ({ browser }) => {
   const context = await browser.newContext({
     javaScriptEnabled: false,
-    reducedMotion: "no-preference",
+    reducedMotion: "reduce",
   });
   const page = await context.newPage();
+  const session = await context.newCDPSession(page);
+  const renderedFrames: Array<{ image: Buffer; state: (DismissalFrame & { bootOpacity: number }) | null }> = [];
+  session.on("Page.screencastFrame", ({ data, sessionId }) => {
+    void (async () => {
+      const result = await session.send("Runtime.evaluate", {
+        expression: `(() => {
+          const bounds = (element) => {
+            if (!element) return null;
+            const box = element.getBoundingClientRect();
+            return { x: box.x, y: box.y, width: box.width, height: box.height, position: getComputedStyle(element).position };
+          };
+          const desktop = document.querySelector('main[aria-label="tienOS desktop"]');
+          const menu = document.querySelector('[data-menu-bar-surface]');
+          const settings = document.querySelector('[aria-label="System Settings"]');
+          const settingsBounds = bounds(settings);
+          const boot = document.getElementById('tienos-boot');
+          if (!document.body || !desktop || !menu) return null;
+          return {
+            viewport: { width: innerWidth, height: innerHeight },
+            fontFamily: getComputedStyle(document.body).fontFamily,
+            desktop: bounds(desktop),
+            menu: bounds(menu),
+            settings: settingsBounds ? { ...settingsBounds, containerPosition: settings.parentElement ? getComputedStyle(settings.parentElement).position : null } : null,
+            bootOpacity: boot ? Number(getComputedStyle(boot).opacity) : 0
+          };
+        })()`,
+        returnByValue: true,
+      });
+      renderedFrames.push({
+        image: Buffer.from(data, "base64"),
+        state: (result.result.value as (DismissalFrame & { bootOpacity: number }) | null) ?? null,
+      });
+      await session.send("Page.screencastFrameAck", { sessionId });
+    })();
+  });
+  await session.send("Page.startScreencast", { format: "png", everyNthFrame: 1 });
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
   await expect(bootScreen).toBeHidden();
+  await page.waitForTimeout(100);
+  await session.send("Page.stopScreencast");
+  const exposedFrames = renderedFrames.filter(
+    (frame): frame is { image: Buffer; state: DismissalFrame & { bootOpacity: number } } =>
+      Boolean(frame.state && frame.state.bootOpacity < 0.99),
+  );
+  expect(exposedFrames.length).toBeGreaterThanOrEqual(1);
+  for (const frame of exposedFrames) {
+    const metadata = await sharp(frame.image).metadata();
+    expect(metadata.width).toBe(frame.state.viewport.width);
+    expect(metadata.height).toBe(frame.state.viewport.height);
+    expectDismissalFrameGeometry(frame.state, { settings: false });
+  }
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Battery full" })).toBeVisible();
