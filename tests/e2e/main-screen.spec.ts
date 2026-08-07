@@ -861,7 +861,7 @@ test("fits and fixes an open System Settings window on compact screens", async (
         }
       );
     })
-    .toEqual({ x: 8, y: 30, width: 304, height: 282 });
+    .toEqual({ x: 8, y: 46, width: 304, height: 266 });
 
   const compactBounds = await settingsWindow.boundingBox();
   const compactDragHandle = await page.locator(".settings-history").boundingBox();
@@ -920,6 +920,27 @@ test("resizes the Settings sidebar with mouse, keyboard, touch, and responsive b
   expect(sidebar!.width / shell!.width).toBeGreaterThanOrEqual(0.36);
   expect(sidebar!.width / shell!.width).toBeLessThanOrEqual(0.43);
   await expect(page.locator(".settings-nav-item").first()).toHaveCSS("min-height", "33.5px");
+});
+
+test("keeps compact splitter bounds valid across intermediate phone widths", async ({ page }) => {
+  for (const width of [431, 500, 563]) {
+    await page.setViewportSize({ width, height: 700 });
+    await page.goto("/");
+    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+    const splitter = page.getByRole("separator", { name: "Resize Settings sidebar" });
+    const minimum = Number(await splitter.getAttribute("aria-valuemin"));
+    const maximum = Number(await splitter.getAttribute("aria-valuemax"));
+    const current = Number(await splitter.getAttribute("aria-valuenow"));
+    const shell = await page.locator(".settings-window").boundingBox();
+    const sidebar = await page.locator(".settings-sidebar").boundingBox();
+
+    expect(minimum).toBeLessThanOrEqual(maximum);
+    expect(current).toBeGreaterThanOrEqual(minimum);
+    expect(current).toBeLessThanOrEqual(maximum);
+    expect(sidebar!.width / shell!.width).toBeGreaterThanOrEqual(0.39);
+    expect(sidebar!.width / shell!.width).toBeLessThanOrEqual(0.41);
+  }
 });
 
 test("supports touch window drag, resize, boundary clamping, and inner scrolling", async ({ browser }) => {

@@ -62,6 +62,9 @@ const generalGroups: GeneralSetting[][] = [
 ];
 
 const compactBreakpoint = 700;
+const iphoneBreakpoint = 430;
+const iphoneWindowTop = 46;
+const splitterWidth = 8;
 const desktopMinimum = { width: 680, height: 520 };
 const touchResizeHandleStyle: CSSProperties = { touchAction: "none", userSelect: "none" };
 const resizeHandleStyles = {
@@ -132,7 +135,8 @@ function SettingsScrollArea({
 }
 
 function compactFrame(viewport: Viewport, menuBottom: number): SettingsFrame {
-  const top = Math.ceil(menuBottom);
+  const measuredTop = Math.ceil(menuBottom);
+  const top = viewport.width <= iphoneBreakpoint ? Math.max(iphoneWindowTop, measuredTop) : measuredTop;
   return {
     x: 8,
     y: top,
@@ -222,7 +226,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
   const [viewport, setViewport] = useState(readViewport);
   const compact = viewport.width <= compactBreakpoint;
   const [menuBottom, setMenuBottom] = useState(0);
-  const [sidebarPercent, setSidebarPercent] = useState(() => (viewport.width <= 430 ? 40 : 30.8));
+  const [sidebarPercent, setSidebarPercent] = useState(() => (compact ? 40 : 30.8));
   const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport, 0) : desktopFrame(viewport)));
   const windowRef = useRef<HTMLElement>(null);
   const compactRef = useRef(compact);
@@ -239,7 +243,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
 
       setViewport(nextViewport);
       setMenuBottom(nextMenuBottom);
-      if (modeChanged) setSidebarPercent(nextViewport.width <= 430 ? 40 : 30.8);
+      if (modeChanged) setSidebarPercent(nextCompact ? 40 : 30.8);
       setFrame((currentFrame) => {
         if (nextCompact) return compactFrame(nextViewport, nextMenuBottom);
         const nextFrame = modeChanged ? desktopFrame(nextViewport) : currentFrame;
@@ -269,13 +273,17 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
   const selectedCategory = categories.find(({ label }) => label === selected) ?? categories[0];
   const splitBounds = useMemo(() => {
     const width = Math.max(1, frame.width);
-    const minimumSidebar = viewport.width <= 430 ? 112 : 180;
-    const minimumDetails = viewport.width <= 430 ? 170 : 360;
+    const availableWidth = Math.max(0, width - splitterWidth);
+    const requestedSidebar = compact ? 112 : 180;
+    const requestedDetails = compact ? 170 : 360;
+    const scale = Math.min(1, availableWidth / (requestedSidebar + requestedDetails));
+    const minimumSidebar = requestedSidebar * scale;
+    const minimumDetails = requestedDetails * scale;
     return {
       minimum: (minimumSidebar / width) * 100,
-      maximum: ((width - minimumDetails - 8) / width) * 100,
+      maximum: ((availableWidth - minimumDetails) / width) * 100,
     };
-  }, [frame.width, viewport.width]);
+  }, [compact, frame.width]);
   const clampSplit = useCallback(
     (value: number) => clamp(value, splitBounds.minimum, splitBounds.maximum),
     [splitBounds],
