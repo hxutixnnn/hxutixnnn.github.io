@@ -20,4 +20,8 @@ Tien OS uses the pinned [`@base-ui/react@1.6.0`](https://github.com/base-ui/reac
 
 Note: the earlier `@base-ui-components/react` package name was renamed by the upstream project to `@base-ui/react`; this repository depends on the current name.
 
+## Interface icons
+
+tienOS includes a subset of Font Awesome Pro 7.3.1 Classic Solid icons, copyright 2026 Fonticons, Inc., under the repository owner's Font Awesome Pro Commercial License. The required license material is distributed with the icons at [`public/fontawesome/LICENSE.txt`](public/fontawesome/LICENSE.txt).
+
 Asset-specific rights and provenance are authoritative in [`src/assets/provenance.yml`](src/assets/provenance.yml). No code or assets from the macOS/Tahoe visual replicas or liquid-glass candidates surveyed in [`docs/visual-baseline.md`](docs/visual-baseline.md) are included.

@@ -154,6 +154,8 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
     "10px",
   );
   await expect(page.getByText("About This OS", { exact: true })).toBeVisible();
+  await expect(page.locator('[data-fa-icon="sparkle"]')).toBeVisible();
+  await expect(page.locator('[data-fa-icon="chevron-right"]')).toBeVisible();
 });
 
 test("reveals the static desktop without JavaScript", async ({ browser }) => {
@@ -178,6 +180,17 @@ test("opens System Settings from the system menu", async ({ page }) => {
   await expect(page.getByRole("region", { name: "System Settings" })).toBeVisible();
   await expect(page.getByRole("menuitem", { name: "System Settings…" })).toBeHidden();
   await expect(page.getByRole("heading", { name: "General" })).toBeVisible();
+  await expect(page.locator('.settings-search [data-fa-icon="magnifying-glass"]')).toBeVisible();
+  await expect(page.locator('.settings-hero [data-fa-icon="gear"]')).toBeVisible();
+  await expect(page.locator('.settings-row [data-fa-icon="shield-check"]')).toBeVisible();
+  await expect(page.locator('.settings-row [data-fa-icon="chevron-right"]').first()).toBeVisible();
+  expect(
+    await page
+      .locator(
+        ".settings-search,.settings-family,.settings-icon,.settings-hero-icon,.settings-row-icon,.settings-chevron,.settings-history",
+      )
+      .allTextContents(),
+  ).not.toEqual(expect.arrayContaining([expect.stringMatching(/[⌁ᛒ◎◉⚙◌◐✦▣☀☷⌕❉◖⌨▱▤⛨▰▦♙›‹]/u)]));
   await page.getByRole("button", { name: "Close System Settings" }).click();
   await expect(page.getByRole("region", { name: "System Settings" })).toBeHidden();
 });

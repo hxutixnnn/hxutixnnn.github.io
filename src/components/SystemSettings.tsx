@@ -1,53 +1,56 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Rnd } from "react-rnd";
+import { FontAwesomeIcon, type FontAwesomeIconName } from "./FontAwesomeIcon";
 
 type SystemSettingsProps = {
   onClose: () => void;
 };
 
 type SettingCategory = {
-  icon: string;
+  icon: FontAwesomeIconName;
   label: string;
   color: string;
 };
 
+type GeneralSetting = [icon: FontAwesomeIconName, label: string];
+
 const categories: SettingCategory[] = [
-  { icon: "⌁", label: "Wi-Fi", color: "#2f8cff" },
-  { icon: "ᛒ", label: "Bluetooth", color: "#1686ff" },
-  { icon: "◎", label: "Network", color: "#1997ff" },
-  { icon: "◉", label: "VPN", color: "#1488de" },
-  { icon: "◉", label: "Battery", color: "#55c760" },
-  { icon: "⚙", label: "General", color: "#8c8c91" },
-  { icon: "◌", label: "Accessibility", color: "#238dff" },
-  { icon: "◐", label: "Appearance", color: "#a4a4a8" },
-  { icon: "✦", label: "Intelligence", color: "#ae72e8" },
-  { icon: "▣", label: "Desktop & Dock", color: "#85858a" },
-  { icon: "☀", label: "Displays", color: "#258cff" },
-  { icon: "☷", label: "Menu Bar", color: "#85858a" },
-  { icon: "⌕", label: "Spotlight", color: "#307ed2" },
-  { icon: "❉", label: "Wallpaper", color: "#31a6c8" },
-  { icon: "◖", label: "Sound", color: "#ec5965" },
-  { icon: "⌨", label: "Keyboard", color: "#85858a" },
-  { icon: "▱", label: "Trackpad", color: "#85858a" },
-  { icon: "▤", label: "Printers & Scanners", color: "#85858a" },
-  { icon: "⛨", label: "Privacy & Security", color: "#4389e9" },
+  { icon: "wifi", label: "Wi-Fi", color: "#2f8cff" },
+  { icon: "bluetooth", label: "Bluetooth", color: "#1686ff" },
+  { icon: "network-wired", label: "Network", color: "#1997ff" },
+  { icon: "shield-halved", label: "VPN", color: "#1488de" },
+  { icon: "battery-half", label: "Battery", color: "#55c760" },
+  { icon: "gear", label: "General", color: "#8c8c91" },
+  { icon: "universal-access", label: "Accessibility", color: "#238dff" },
+  { icon: "circle-half-stroke", label: "Appearance", color: "#a4a4a8" },
+  { icon: "sparkles", label: "Intelligence", color: "#ae72e8" },
+  { icon: "desktop", label: "Desktop & Dock", color: "#85858a" },
+  { icon: "display", label: "Displays", color: "#258cff" },
+  { icon: "bars", label: "Menu Bar", color: "#85858a" },
+  { icon: "magnifying-glass", label: "Spotlight", color: "#307ed2" },
+  { icon: "image", label: "Wallpaper", color: "#31a6c8" },
+  { icon: "volume-high", label: "Sound", color: "#ec5965" },
+  { icon: "keyboard", label: "Keyboard", color: "#85858a" },
+  { icon: "computer-mouse", label: "Trackpad", color: "#85858a" },
+  { icon: "scanner", label: "Printers & Scanners", color: "#85858a" },
+  { icon: "shield-halved", label: "Privacy & Security", color: "#4389e9" },
 ];
 
-const generalGroups = [
+const generalGroups: GeneralSetting[][] = [
   [
-    ["▱", "About"],
-    ["⚙", "Software Update"],
-    ["▰", "Storage"],
+    ["circle-info", "About"],
+    ["rotate", "Software Update"],
+    ["hard-drive", "Storage"],
   ],
-  [["✦", "Coverage & Warranty"]],
-  [["◎", "Sharing & Continuity"]],
+  [["shield-check", "Coverage & Warranty"]],
+  [["share-nodes", "Sharing & Continuity"]],
   [
-    ["⌨", "AutoFill & Passwords"],
-    ["▦", "Date & Time"],
-    ["◉", "Language & Region"],
-    ["☷", "Login Items & Extensions"],
-    ["♙", "Sharing"],
-    ["⌁", "Transfer or Reset"],
+    ["key", "AutoFill & Passwords"],
+    ["calendar-days", "Date & Time"],
+    ["language", "Language & Region"],
+    ["puzzle-piece", "Login Items & Extensions"],
+    ["user-group", "Sharing"],
+    ["arrow-right-arrow-left", "Transfer or Reset"],
   ],
 ];
 
@@ -194,7 +197,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
           </div>
 
           <label className="settings-search">
-            <span aria-hidden="true">⌕</span>
+            <FontAwesomeIcon name="magnifying-glass" className="settings-search-icon" />
             <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
           </label>
 
@@ -207,10 +210,8 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
           </div>
 
           <button className="settings-family">
-            <span className="settings-family-avatars" aria-hidden="true">
-              <i>✦</i>
-              <i>T</i>
-              <i>+</i>
+            <span className="settings-family-avatars">
+              <FontAwesomeIcon name="people-group" />
             </span>
             <span>Family</span>
           </button>
@@ -223,8 +224,8 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                 data-selected={selected === category.label || undefined}
                 onClick={() => setSelected(category.label)}
               >
-                <span className="settings-icon" style={{ background: category.color }} aria-hidden="true">
-                  {category.icon}
+                <span className="settings-icon" style={{ background: category.color }}>
+                  <FontAwesomeIcon name={category.icon} />
                 </span>
                 <span>{category.label}</span>
               </button>
@@ -235,22 +236,18 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
         <div className="settings-content">
           <div className="settings-history" aria-label="Navigation history">
             <button aria-label="Back" disabled>
-              ‹
+              <FontAwesomeIcon name="chevron-left" />
             </button>
             <span />
             <button aria-label="Forward" disabled>
-              ›
+              <FontAwesomeIcon name="chevron-right" />
             </button>
           </div>
 
           <div className="settings-scroll-area">
             <header className="settings-hero">
-              <span
-                className="settings-hero-icon"
-                style={{ background: selectedCategory.color }}
-                aria-hidden="true"
-              >
-                {selectedCategory.icon}
+              <span className="settings-hero-icon" style={{ background: selectedCategory.color }}>
+                <FontAwesomeIcon name={selectedCategory.icon} />
               </span>
               <h2>{selectedCategory.label}</h2>
               <p>
@@ -266,13 +263,11 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                   <div className="settings-group" key={groupIndex}>
                     {group.map(([icon, label]) => (
                       <button className="settings-row" key={label}>
-                        <span className="settings-row-icon" aria-hidden="true">
-                          {icon}
+                        <span className="settings-row-icon">
+                          <FontAwesomeIcon name={icon} />
                         </span>
                         <span>{label}</span>
-                        <span className="settings-chevron" aria-hidden="true">
-                          ›
-                        </span>
+                        <FontAwesomeIcon name="chevron-right" className="settings-chevron" />
                       </button>
                     ))}
                   </div>
@@ -280,12 +275,8 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
               </div>
             ) : (
               <div className="settings-empty-panel">
-                <span
-                  className="settings-icon"
-                  style={{ background: selectedCategory.color }}
-                  aria-hidden="true"
-                >
-                  {selectedCategory.icon}
+                <span className="settings-icon" style={{ background: selectedCategory.color }}>
+                  <FontAwesomeIcon name={selectedCategory.icon} />
                 </span>
                 <p>{selectedCategory.label} controls are ready for configuration.</p>
               </div>

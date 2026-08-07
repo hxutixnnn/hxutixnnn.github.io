@@ -36,10 +36,16 @@
         gap: 72px;
       }
       .tienos-boot-logo {
-        font:
-          112px/1 system-ui,
-          sans-serif;
+        width: 112px;
+        height: 112px;
+        fill: currentColor;
         filter: drop-shadow(0 8px 32px rgb(255 255 255 / 0.12));
+      }
+      .tienos-static-icon {
+        display: block;
+        width: 1em;
+        height: 1em;
+        fill: currentColor;
       }
       .tienos-boot-track {
         width: min(184px, 52vw);
@@ -97,7 +103,9 @@
   <body>
     <div id="tienos-boot" role="status" aria-label="Starting tienOS">
       <div class="tienos-boot-content">
-        <div class="tienos-boot-logo" aria-hidden="true">✦</div>
+        <svg class="tienos-boot-logo" aria-hidden="true" focusable="false">
+          <use href="/fontawesome/fontawesome-pro-solid.svg#fa-sparkle"></use>
+        </svg>
         <div class="tienos-boot-track" aria-hidden="true">
           <div class="tienos-boot-progress"></div>
         </div>
@@ -112,12 +120,24 @@
           class="fixed inset-x-0 top-0 z-40 flex items-center px-2 pt-[env(safe-area-inset-top)] sm:px-3"
         >
           <nav aria-label="tienOS menu bar" class="tienos-menubar flex h-9 flex-1 items-center gap-0.5">
-            <span class="tienos-menu-trigger rounded-full px-2 py-0.5 text-base leading-none">✦</span>
+            <span class="tienos-menu-trigger rounded-full px-2 py-0.5 text-base leading-none">
+              <svg class="tienos-static-icon" aria-hidden="true" focusable="false">
+                <use href="/fontawesome/fontawesome-pro-solid.svg#fa-sparkle"></use>
+              </svg>
+            </span>
             <span class="tienos-menu-trigger rounded-full px-2 py-0.5 font-medium">Navigator</span>
           </nav>
           <div class="flex items-center gap-2 px-2 text-[13px] font-medium text-white/75">
-            <span aria-label="Wi-Fi connected">⌁</span>
-            <span aria-label="Battery full">▰</span>
+            <span aria-label="Wi-Fi connected">
+              <svg class="tienos-static-icon" aria-hidden="true" focusable="false">
+                <use href="/fontawesome/fontawesome-pro-solid.svg#fa-wifi"></use>
+              </svg>
+            </span>
+            <span aria-label="Battery full">
+              <svg class="tienos-static-icon" aria-hidden="true" focusable="false">
+                <use href="/fontawesome/fontawesome-pro-solid.svg#fa-battery-full"></use>
+              </svg>
+            </span>
             <span class="whitespace-nowrap">tienOS</span>
           </div>
         </header>
