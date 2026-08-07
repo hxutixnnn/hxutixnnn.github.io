@@ -8,6 +8,7 @@ tienOS is a personal web desktop for projects, experiments, and ideas.
 - Tailwind CSS 4
 - Base UI for accessible headless interactions
 - `react-hotkeys-hook` for keyboard shortcuts
+- `react-rnd` for bounded desktop window movement and resizing
 - TypeScript and Vitest
 
 ## Development

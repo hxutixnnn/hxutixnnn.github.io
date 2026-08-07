@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Add `/preview/`, a non-indexed UI-component review gallery with a static HTML baseline and isolated interactive component labs.
+- Refine the desktop with a silent startup splash, contained scrolling, consistent menu geometry, and a desktop-draggable and resizable System Settings window with a fixed compact layout.
 
 ## 2026-08-01
 
