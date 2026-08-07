@@ -23,11 +23,9 @@ Use semantic tokens for shared color, spacing, radius, typography, motion, and s
 ### Surfaces and color
 
 Use semantic text, border, separator, accent, window, sidebar, content, control, and scrim tokens.
-Light and dark values are selected by the root `data-theme` attribute; components must not own or duplicate appearance state.
+Light and dark values are selected by the root `data-theme` attribute. The typed Zustand store in [`src/stores/appearance.ts`](../src/stores/appearance.ts) is the single runtime owner of appearance state; components must not own or duplicate it.
 Do not use color as the only indication of selection or status.
 The system provides stronger contrast, opaque reduced-transparency surfaces, and forced-color mappings.
-
-The inline bootstrap in [`index.html`](../index.html) validates the persisted appearance value and resolves Auto before styles or the desktop can paint. Runtime state and live system-preference tracking belong to [`src/stores/appearance.ts`](../src/stores/appearance.ts). This pre-paint step is part of the splash readiness contract and must remain synchronized with the store's storage key and fallback behavior.
 
 ### Typography
 
