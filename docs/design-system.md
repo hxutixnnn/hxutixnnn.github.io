@@ -57,7 +57,7 @@ Continuous wallpaper motion runs only when reduced motion is not requested.
 ### Menu bar and menus
 
 Use Base UI menu semantics, complete keyboard operation, familiar shortcuts, and semantic labels.
-Keep menu presentation compact. The top surface uses Tailwind-owned translucent gradient layers, pseudo-element edge highlights, backdrop blur/saturation, and inset/drop shadows; increased contrast strengthens its semantic border and fill, reduced transparency uses the opaque menu token without backdrop filtering, and forced colors use system colors without filters or shadows. The static HTML mirrors the same utilities to prevent startup material jumps. No menu-bar effect is retained in global CSS; document-wide resets, keyframes, and accessibility contracts remain there because utilities cannot consistently target those global states.
+Keep menu presentation compact. The menu bar is an edge-to-edge transparent overlay with safe-area top padding, wallpaper-colored text, and a restrained text shadow; the static HTML mirrors those utilities to prevent startup style jumps. Popup menus use the semantic menu surface and bounded backdrop blur, with an opaque reduced-transparency fallback.
 Selection uses the accent token plus text and positional state, never color alone.
 
 ### Windows
@@ -65,6 +65,7 @@ Selection uses the accent token plus text and positional state, never color alon
 Desktop windows support pointer dragging, eight-direction resizing, viewport bounds, and minimum dimensions.
 Window frames adapt reactively to the available viewport. Their top drag boundary is measured from the rendered menu-bar edge and observed for geometry changes rather than duplicated as a spacing constant.
 Compact layouts remain fully visible and fixed rather than scaling their contents.
+The Settings window supports one-finger dragging from its intended chrome and touch resizing through its `react-rnd` handles; interactive content and independently scrollable panes remain excluded from window dragging.
 Preserve a meaningful accessible window name.
 
 ### Sidebars
@@ -72,12 +73,13 @@ Preserve a meaningful accessible window name.
 Use one icon, one title, and optional secondary text.
 Rows remain plain and use one native-style selection highlight rather than individual cards.
 Settings sidebars use an inset rounded material panel that remains visually separate from the primary content.
-Sidebar navigation and detail content scroll independently when required; their scrollbars stay hidden at rest and appear for active scrolling, focus, hover, or dragging.
+The Settings sidebar defaults to about 31% on desktop and 40% in compact layouts. Its vertical separator supports mouse and touch dragging plus Left/Right, Home, and End keyboard controls, exposes current and clamped percentage bounds, and recomputes safely with the window width.
+Sidebar navigation and detail content scroll independently when required. In normal themes their scrollbar tracks are transparent and their thumbs fill the track width; scrollbars stay hidden at rest and appear for active scrolling, focus, hover, or dragging. Increased contrast and forced colors provide explicit track and thumb colors.
 
 ### Content groups
 
 Prefer a single content surface with whitespace and separators.
-Avoid glass-on-glass and card-within-card nesting.
+Reserve layered glass for the window shell and primary panes; avoid making nested controls glass or wrapping every row in a card.
 Settings groups use separators for related rows and spacing between unrelated groups.
 
 ### Controls

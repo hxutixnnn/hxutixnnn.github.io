@@ -943,7 +943,9 @@ test("keeps compact splitter bounds valid across intermediate phone widths", asy
   }
 });
 
-test("keeps labeled sidebar and immediate keyboard resizing after compact recomputation", async ({ page }) => {
+test("keeps labeled sidebar and immediate keyboard resizing after compact recomputation", async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 700, height: 700 });
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
@@ -951,7 +953,9 @@ test("keeps labeled sidebar and immediate keyboard resizing after compact recomp
   const splitter = page.getByRole("separator", { name: "Resize Settings sidebar" });
   await splitter.focus();
   await page.keyboard.press("End");
-  await expect(splitter).toHaveAttribute("aria-valuenow", await splitter.getAttribute("aria-valuemax"));
+  const maximum = await splitter.getAttribute("aria-valuemax");
+  expect(maximum).not.toBeNull();
+  await expect(splitter).toHaveAttribute("aria-valuenow", maximum!);
 
   await page.setViewportSize({ width: 320, height: 700 });
   await expect
