@@ -18,6 +18,7 @@
   --tienos-color-accent: #2863d7;
   --tienos-color-accent-hover: #326edc;
   --tienos-color-focus: #0a84ff;
+  --tienos-color-focus-on-accent: #fff;
   --tienos-color-hover: rgb(255 255 255 / 0.06);
   --tienos-color-text-primary: rgb(255 255 255 / 0.9);
   --tienos-color-text-secondary: rgb(255 255 255 / 0.55);
@@ -68,6 +69,7 @@
     --tienos-color-accent: Highlight;
     --tienos-color-accent-hover: Highlight;
     --tienos-color-focus: Highlight;
+    --tienos-color-focus-on-accent: HighlightText;
     --tienos-color-hover: Canvas;
     --tienos-color-text-primary: CanvasText;
     --tienos-color-text-secondary: CanvasText;

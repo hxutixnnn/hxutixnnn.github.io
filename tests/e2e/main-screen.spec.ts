@@ -10,6 +10,7 @@ test("applies design-system tokens to component styles", async ({ page }) => {
       space1: styles.getPropertyValue("--tienos-space-1").trim(),
       accent: styles.getPropertyValue("--tienos-color-accent").trim(),
       accentHover: styles.getPropertyValue("--tienos-color-accent-hover").trim(),
+      focusOnAccent: styles.getPropertyValue("--tienos-color-focus-on-accent").trim(),
       menuRadius: styles.getPropertyValue("--tienos-radius-menu").trim(),
       windowRadius: styles.getPropertyValue("--tienos-radius-window").trim(),
     };
@@ -19,6 +20,7 @@ test("applies design-system tokens to component styles", async ({ page }) => {
     space1: "4px",
     accent: "#2863d7",
     accentHover: "#326edc",
+    focusOnAccent: "#fff",
     menuRadius: "14px",
     windowRadius: "26px",
   });
@@ -71,6 +73,21 @@ test("keeps keyboard focus visible in forced colors", async ({ page }) => {
   await expect(settingsRow).toHaveCSS("outline-style", "solid");
   await expect(settingsRow).toHaveCSS("outline-width", "2px");
   await expect(settingsRow).toHaveCSS("outline-offset", "-2px");
+
+  const selectedNavItem = page.locator(".settings-nav-item[data-selected]");
+  await page.keyboard.press("Tab");
+  await selectedNavItem.focus();
+  const forcedColors = await selectedNavItem.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    const rootStyles = getComputedStyle(document.documentElement);
+    return {
+      background: styles.backgroundColor,
+      focus: styles.outlineColor,
+      focusToken: rootStyles.getPropertyValue("--tienos-color-focus-on-accent").trim(),
+    };
+  });
+  expect(forcedColors.focusToken).toBe("HighlightText");
+  expect(forcedColors.focus).not.toBe(forcedColors.background);
 });
 
 test("uses opaque menu surfaces with reduced transparency", async ({ page }) => {
@@ -106,6 +123,16 @@ test("adds visible row boundaries with increased contrast", async ({ page }) => 
   await expect(settingsRow).toHaveCSS("outline-style", "solid");
   await expect(settingsRow).toHaveCSS("outline-width", "2px");
   await expect(settingsRow).toHaveCSS("outline-offset", "-2px");
+
+  const selectedNavItem = page.locator(".settings-nav-item[data-selected]");
+  await page.keyboard.press("Tab");
+  await selectedNavItem.focus();
+  await expect(selectedNavItem).toHaveCSS("outline-color", "rgb(255, 255, 255)");
+  const selectedColors = await selectedNavItem.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    return { background: styles.backgroundColor, focus: styles.outlineColor };
+  });
+  expect(selectedColors.focus).not.toBe(selectedColors.background);
 });
 
 test("renders the tienOS main screen and system menu", async ({ page }) => {
