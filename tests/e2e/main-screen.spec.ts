@@ -127,10 +127,7 @@ test("applies design-system tokens to component styles", async ({ page }) => {
   await detailsViewport.focus();
   await expect(detailsViewport).toHaveCSS("border-radius", "16px");
   await page.getByRole("button", { name: "Appearance" }).click();
-  await expect(page.getByRole("region", { name: "Appearance style" })).toHaveCSS(
-    "border-radius",
-    "16px",
-  );
+  await expect(page.getByRole("region", { name: "Appearance style" })).toHaveCSS("border-radius", "16px");
 });
 
 test("uses conventional rounded geometry without shape masks", async ({ page }) => {
@@ -306,9 +303,9 @@ test("preserves migrated System Settings selection and separators", async ({ pag
 
   await page.getByRole("button", { name: "General" }).click();
   const separator = page.locator(".settings-row").first();
-  expect(
-    await separator.evaluate((element) => getComputedStyle(element, "::after").backgroundColor),
-  ).toBe("rgba(255, 255, 255, 0.1)");
+  expect(await separator.evaluate((element) => getComputedStyle(element, "::after").backgroundColor)).toBe(
+    "rgba(255, 255, 255, 0.1)",
+  );
 });
 
 test("adds visible row boundaries with increased contrast", async ({ page }) => {

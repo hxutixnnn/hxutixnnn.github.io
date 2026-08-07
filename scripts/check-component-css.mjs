@@ -2,7 +2,11 @@ import { readFile } from "node:fs/promises";
 import { glob } from "node:fs/promises";
 
 function isIdentifierStart(character, nextCharacter) {
-  return /[A-Z_a-z\u0080-\uFFFF]/u.test(character) || character === "\\" || (character === "-" && /[-A-Z_a-z\u0080-\uFFFF\\]/u.test(nextCharacter));
+  return (
+    /[A-Z_a-z\u0080-\uFFFF]/u.test(character) ||
+    character === "\\" ||
+    (character === "-" && /[-A-Z_a-z\u0080-\uFFFF\\]/u.test(nextCharacter))
+  );
 }
 
 function classSelectors(selector) {

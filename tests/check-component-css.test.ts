@@ -21,7 +21,9 @@ async function runAudit(css: string) {
 
 describe("component CSS audit CLI", () => {
   test("accepts global element and attribute contracts", async () => {
-    const result = await runAudit(":root { color-scheme: dark; } [data-theme='light'] body { color: CanvasText; }");
+    const result = await runAudit(
+      ":root { color-scheme: dark; } [data-theme='light'] body { color: CanvasText; }",
+    );
 
     expect(result.status).toBe(0);
     expect(result.stdout).toContain("Component CSS audit passed");

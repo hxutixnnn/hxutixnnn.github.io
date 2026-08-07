@@ -24,11 +24,9 @@ pnpm dev
 Use these checks before proposing a change:
 
 ```sh
-pnpm format:check
-pnpm lint
-pnpm typecheck
-pnpm test
+pnpm validate
 pnpm build
+pnpm test:e2e
 ```
 
 The default wallpaper is documented in [`src/assets/provenance.yml`](src/assets/provenance.yml).

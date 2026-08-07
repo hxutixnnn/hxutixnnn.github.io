@@ -7,6 +7,7 @@ When this document and a one-off visual choice conflict, prefer platform convent
 
 The source of truth for executable tokens is [`src/design-system.css`](../src/design-system.css).
 Use semantic tokens for shared color, spacing, radius, typography, motion, and shadow foundations; keep component-specific values local until they are promoted to a shared token.
+Author component presentation as complete Tailwind utility strings in JSX or TSX. Reserve [`src/styles.css`](../src/styles.css) for global tokens, resets, keyframes, accessibility overrides, and static pre-JavaScript contracts that utilities cannot reasonably own; `pnpm validate:css` enforces that boundary.
 
 ### Spacing
 
