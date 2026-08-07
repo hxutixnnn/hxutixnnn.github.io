@@ -399,7 +399,7 @@ test("preserves migrated System Settings selection and separators", async ({ pag
     await expect(select).toHaveCSS("color", settingsColor);
   }
 
-  const darkWidget = page.getByRole("button", { name: "Dark", exact: true }).last();
+  const darkWidget = page.getByRole("radio", { name: "Dark", exact: true }).last();
   await darkWidget.click();
   await expect(darkWidget).toHaveCSS("font-weight", "700");
   await expect(darkWidget).toHaveCSS("color", "rgba(255, 255, 255, 0.9)");
@@ -661,6 +661,119 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
   );
 });
 
+test("supports menu popup keyboard navigation, activation, focus return, and dismissal", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  const systemTrigger = page.getByRole("menuitem", { name: "Open tienOS menu" });
+  await systemTrigger.focus();
+  await systemTrigger.press("ArrowDown");
+  const systemPopup = page.locator(".tienos-menu-popup:visible");
+  await expect(systemPopup).toHaveCount(1);
+  await expect(systemPopup).toHaveCSS("background-image", /linear-gradient/);
+  await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+  await expect(page.getByRole("menuitem", { name: "About This OS" })).toHaveAttribute("data-highlighted", "");
+  await page.keyboard.press("Enter");
+  await expect(systemPopup).toBeHidden();
+  await expect(systemTrigger).toBeFocused();
+
+  await systemTrigger.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  await page.keyboard.press("ArrowDown");
+  const recentItems = page.getByRole("menuitem", { name: "Recent Items" });
+  await expect(recentItems).toHaveAttribute("data-highlighted", "");
+  await page.keyboard.press("ArrowRight");
+  const submenuPopup = page.locator(".tienos-menu-popup:visible").last();
+  await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
+  await expect(submenuPopup).toHaveCSS("background-image", /linear-gradient/);
+  await expect(submenuPopup).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+  await expect(page.getByRole("menuitem", { name: "No Recent Items" })).toHaveAttribute(
+    "aria-disabled",
+    "true",
+  );
+  await page.keyboard.press("Escape");
+  await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(1);
+  await expect(recentItems).toHaveAttribute("data-highlighted", "");
+  await page.keyboard.press("Escape");
+  await expect(systemPopup).toBeHidden();
+  await expect(systemTrigger).toBeFocused();
+
+  await systemTrigger.press("ArrowDown");
+  await page.getByRole("heading", { name: "General" }).click();
+  await expect(systemPopup).toBeHidden();
+
+  const navigatorTrigger = page.getByRole("menuitem", { name: "Navigator" });
+  await navigatorTrigger.focus();
+  await navigatorTrigger.press("ArrowDown");
+  const navigatorPopup = page.locator(".tienos-menu-popup:visible");
+  await expect(navigatorPopup).toHaveCount(1);
+  await expect(navigatorPopup).toHaveCSS("background-image", /linear-gradient/);
+  await expect(navigatorPopup).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+  await expect(page.getByRole("menuitem", { name: "About Navigator" })).toHaveAttribute(
+    "data-highlighted",
+    "",
+  );
+  await page.keyboard.press("Enter");
+  await expect(navigatorPopup).toBeHidden();
+  await expect(navigatorTrigger).toBeFocused();
+
+  await navigatorTrigger.press("ArrowDown");
+  await page.keyboard.press("Escape");
+  await expect(navigatorPopup).toBeHidden();
+  await expect(navigatorTrigger).toBeFocused();
+  await navigatorTrigger.click();
+  await page.getByRole("heading", { name: "General" }).click();
+  await expect(navigatorPopup).toBeHidden();
+});
+
+test("supports compact touch menu popups, submenu collision, activation, and dismissal", async ({
+  browser,
+}) => {
+  const context = await browser.newContext({ hasTouch: true, viewport: { width: 320, height: 320 } });
+  const page = await context.newPage();
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  const expectCompactGlass = async (popup: Locator) => {
+    await expect(popup).toBeVisible();
+    await expect(popup).toHaveCSS("border-radius", "14px");
+    await expect(popup).toHaveCSS("background-image", /linear-gradient/);
+    await expect(popup).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+    const bounds = await popup.boundingBox();
+    expect(bounds!.x).toBeGreaterThanOrEqual(7);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(313);
+    expect(bounds!.y).toBeGreaterThanOrEqual(0);
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(320);
+  };
+
+  const systemTrigger = page.getByRole("menuitem", { name: "Open tienOS menu" });
+  await systemTrigger.tap();
+  await expectCompactGlass(page.locator(".tienos-menu-popup:visible"));
+  await page.getByRole("menuitem", { name: "Recent Items" }).tap();
+  await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
+  await expectCompactGlass(page.locator(".tienos-menu-popup:visible").last());
+  await page.getByRole("heading", { name: "General" }).tap();
+  await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
+
+  await systemTrigger.tap();
+  await page.getByRole("menuitem", { name: "About This OS" }).tap();
+  await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
+  await expect(systemTrigger).toBeFocused();
+
+  const navigatorTrigger = page.getByRole("menuitem", { name: "Navigator" });
+  await navigatorTrigger.tap();
+  await expectCompactGlass(page.locator(".tienos-menu-popup:visible"));
+  await page.getByRole("menuitem", { name: "About Navigator" }).tap();
+  await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
+  await expect(navigatorTrigger).toBeFocused();
+
+  await navigatorTrigger.tap();
+  await page.getByRole("heading", { name: "General" }).tap();
+  await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
+  await context.close();
+});
+
 test("reveals the static desktop without JavaScript", async ({ browser }) => {
   const context = await browser.newContext({
     javaScriptEnabled: false,
@@ -817,18 +930,103 @@ test("uses independently accessible Base UI scroll areas with transient scrollba
 
   await page.getByRole("button", { name: "Appearance" }).click();
   await expect.poll(() => details.evaluate((node) => node.scrollTop)).toBe(0);
-  await page.getByRole("combobox", { name: "Text highlight color" }).selectOption("Purple");
-  await page.getByRole("combobox", { name: "Folder color" }).selectOption("Blue");
-  await page.getByRole("combobox", { name: "Sidebar icon size" }).selectOption("Large");
-  await expect(page.getByRole("combobox", { name: "Text highlight color" })).toHaveValue("Purple");
-  await expect(page.getByRole("combobox", { name: "Folder color" })).toHaveValue("Blue");
-  await expect(page.getByRole("combobox", { name: "Sidebar icon size" })).toHaveValue("Large");
+  for (const [name, option] of [
+    ["Text highlight color", "Purple"],
+    ["Folder color", "Blue"],
+    ["Sidebar icon size", "Large"],
+  ] as const) {
+    const trigger = page.getByRole("combobox", { name });
+    await trigger.click();
+    await page.getByRole("option", { name: option }).click();
+    await expect(trigger).toContainText(option);
+  }
 
   const detailTop = await details.evaluate((node) => node.scrollTop);
   await categories.hover();
   await page.mouse.wheel(0, 300);
   await expect.poll(() => categories.evaluate((node) => node.scrollTop)).toBeGreaterThan(0);
   expect(await details.evaluate((node) => node.scrollTop)).toBe(detailTop);
+});
+
+test("supports adopted Appearance controls across input and accessibility modes", async ({ browser }) => {
+  const context = await browser.newContext({
+    hasTouch: true,
+    reducedMotion: "reduce",
+    colorScheme: "dark",
+  });
+  const page = await context.newPage();
+  const session = await context.newCDPSession(page);
+  await session.send("Emulation.setEmulatedMedia", {
+    features: [
+      { name: "prefers-reduced-motion", value: "reduce" },
+      { name: "prefers-reduced-transparency", value: "reduce" },
+      { name: "prefers-contrast", value: "more" },
+      { name: "forced-colors", value: "active" },
+    ],
+  });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  await page.getByRole("button", { name: "Appearance" }).click();
+
+  const groups = {
+    appearance: page.getByRole("radiogroup", { name: "Appearance mode" }),
+    glass: page.getByRole("radiogroup", { name: "Liquid Glass style" }),
+    accent: page.getByRole("radiogroup", { name: "Accent color" }),
+    widgets: page.getByRole("radiogroup", { name: "Icon and widget style" }),
+  };
+  for (const group of Object.values(groups)) await expect(group).toBeVisible();
+
+  const darkMode = groups.appearance.getByRole("radio", { name: "Dark" });
+  await darkMode.click();
+  await expect(darkMode).toBeChecked();
+  await expect(darkMode).toHaveAttribute("aria-checked", "true");
+  await darkMode.press("ArrowLeft");
+  await expect(groups.appearance.getByRole("radio", { name: "Light" })).toBeChecked();
+
+  const tintedGlass = groups.glass.getByRole("radio", { name: "Tinted" });
+  await tintedGlass.tap();
+  await expect(tintedGlass).toBeChecked();
+  await tintedGlass.press("ArrowLeft");
+  const clearGlass = groups.glass.getByRole("radio", { name: "Clear" });
+  await expect(clearGlass).toBeChecked();
+  await expect(clearGlass).toHaveCSS("outline-style", "solid");
+
+  const purpleAccent = groups.accent.getByRole("radio", { name: "Purple" });
+  await purpleAccent.click();
+  await expect(purpleAccent).toBeChecked();
+  await purpleAccent.press("ArrowRight");
+  await expect(groups.accent.getByRole("radio", { name: "Pink" })).toBeChecked();
+
+  const clearWidgets = groups.widgets.getByRole("radio", { name: "Clear" });
+  await clearWidgets.click();
+  await expect(clearWidgets).toBeChecked();
+  await clearWidgets.press("ArrowRight");
+  await expect(groups.widgets.getByRole("radio", { name: "Tinted" })).toBeChecked();
+
+  const highlight = page.getByRole("combobox", { name: "Text highlight color" });
+  await highlight.tap();
+  await expect(page.getByRole("option", { name: "Purple" })).toBeVisible();
+  await page.getByRole("heading", { name: "Theme" }).tap();
+  await expect(page.getByRole("option", { name: "Purple" })).toBeHidden();
+
+  await highlight.tap();
+  const selectPopup = page.getByRole("listbox");
+  await expect(selectPopup).toHaveCSS("backdrop-filter", "none");
+  await page.keyboard.press("Escape");
+  await expect(highlight).toBeFocused();
+  await highlight.tap();
+  await page.getByRole("option", { name: "Purple" }).tap();
+  await expect(highlight).toContainText("Purple");
+
+  const wallpaperTint = page.getByRole("switch", {
+    name: "Tint window background with wallpaper color",
+  });
+  await expect(wallpaperTint).toBeChecked();
+  await wallpaperTint.tap();
+  await expect(wallpaperTint).not.toBeChecked();
+  await expect(wallpaperTint).toHaveAttribute("aria-checked", "false");
+
+  await context.close();
 });
 
 test("uses a visible high-contrast scrollbar palette in Light mode", async ({ page }) => {
@@ -1191,9 +1389,9 @@ test.describe("appearance modes", () => {
     await expect(settingsMenuItem.locator("kbd")).toHaveCSS("color", "rgb(255, 255, 255)");
     await settingsMenuItem.click();
     await page.getByRole("button", { name: "Appearance" }).click();
-    const modes = page.getByRole("group", { name: "Appearance mode" });
+    const modes = page.getByRole("radiogroup", { name: "Appearance mode" });
 
-    await modes.getByRole("button", { name: "Light" }).click();
+    await modes.getByRole("radio", { name: "Light" }).click();
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
@@ -1204,12 +1402,18 @@ test.describe("appearance modes", () => {
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
     await page.getByRole("menuitem", { name: "System Settings…" }).click();
     await page.getByRole("button", { name: "Appearance" }).click();
-    await page.getByRole("group", { name: "Appearance mode" }).getByRole("button", { name: "Auto" }).click();
+    await page
+      .getByRole("radiogroup", { name: "Appearance mode" })
+      .getByRole("radio", { name: "Auto" })
+      .click();
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
     await page.emulateMedia({ colorScheme: "light" });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
 
-    await page.getByRole("group", { name: "Appearance mode" }).getByRole("button", { name: "Dark" }).click();
+    await page
+      .getByRole("radiogroup", { name: "Appearance mode" })
+      .getByRole("radio", { name: "Dark" })
+      .click();
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
     await page.emulateMedia({ colorScheme: "light" });
