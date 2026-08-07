@@ -46,7 +46,7 @@ export function FontAwesomeIcon({ name, className }: FontAwesomeIconProps) {
   return (
     <svg
       aria-hidden="true"
-      className={className ? `fa-icon ${className}` : "fa-icon"}
+      className={`block size-[1em] shrink-0 overflow-visible fill-current ${className ?? ""}`}
       data-fa-icon={name}
       focusable="false"
     >

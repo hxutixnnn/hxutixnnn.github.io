@@ -206,14 +206,26 @@
       </div>
     </div>
     <div id="root">
-      <main aria-label="tienOS desktop" class="tienos-desktop relative min-h-screen overflow-hidden">
-        <div class="tienos-wallpaper" aria-hidden="true"></div>
-        <div class="tienos-vignette" aria-hidden="true"></div>
+      <main
+        aria-label="tienOS desktop"
+        class="tienos-desktop relative min-h-screen overflow-hidden bg-[#07121d] text-white [[data-theme=light]_&]:bg-[#dbeafe] [[data-theme=light]_&]:text-[#0f172a]"
+      >
+        <div
+          class="tienos-wallpaper pointer-events-none absolute inset-0 bg-[url(/wallpapers/tienos-default.jpg)] bg-cover bg-center"
+          aria-hidden="true"
+        ></div>
+        <div
+          class="tienos-vignette pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgb(0_0_0/.35),rgb(0_0_0/.24))]"
+          aria-hidden="true"
+        ></div>
         <h1 class="sr-only">tienOS desktop</h1>
         <header
           class="fixed inset-x-0 top-0 z-40 flex items-center px-2 pt-[env(safe-area-inset-top)] sm:px-3"
         >
-          <nav aria-label="tienOS menu bar" class="tienos-menubar flex h-9 flex-1 items-center gap-0.5">
+          <nav
+            aria-label="tienOS menu bar"
+            class="tienos-menubar flex h-9 text-[var(--tienos-color-text-on-wallpaper)] flex-1 items-center gap-0.5"
+          >
             <span class="tienos-menu-trigger rounded-full px-2 py-0.5 text-base leading-none">
               <svg class="tienos-static-icon" aria-hidden="true" focusable="false">
                 <use href="/fontawesome/fontawesome-pro-solid.svg#fa-sparkle"></use>

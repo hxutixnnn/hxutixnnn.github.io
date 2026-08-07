@@ -36,13 +36,25 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
   }, [desktopAssetsReady, onDesktopReady]);
 
   return (
-    <main aria-label="tienOS desktop" className="tienos-desktop relative min-h-screen overflow-hidden">
-      <div className="tienos-wallpaper" aria-hidden="true" />
-      <div className="tienos-vignette" aria-hidden="true" />
+    <main
+      aria-label="tienOS desktop"
+      className="relative min-h-screen overflow-hidden bg-[#07121d] text-white [[data-theme=light]_&]:bg-[#dbeafe] [[data-theme=light]_&]:text-[#0f172a]"
+    >
+      <div
+        className="tienos-wallpaper pointer-events-none absolute inset-0 scale-[1.02] bg-[url(/wallpapers/tienos-default.jpg)] bg-cover bg-center saturate-[1.08] motion-safe:animate-[tienos-drift_24s_ease-in-out_infinite_alternate]"
+        aria-hidden="true"
+      />
+      <div
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgb(0_0_0/0.35)_0%,rgb(0_0_0/0.08)_28%,rgb(0_0_0/0.24)_100%),radial-gradient(circle_at_center,transparent_34%,rgb(0_0_0/0.28)_100%)]"
+        aria-hidden="true"
+      />
       <MenuBar onAction={(action) => action === "System Settings…" && setSettingsOpen(true)} />
       {settingsOpen && (
         <>
-          <div className="settings-backdrop" aria-hidden="true" />
+          <div
+            className="fixed inset-0 z-20 bg-[var(--tienos-color-scrim)] backdrop-blur-[2px] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none"
+            aria-hidden="true"
+          />
           <SystemSettings onClose={() => setSettingsOpen(false)} />
         </>
       )}
