@@ -70,15 +70,21 @@ test("applies design-system tokens to component styles", async ({ page }) => {
     styles.setProperty("--tienos-motion-fast", "777ms");
     styles.setProperty("--tienos-motion-standard", "888ms");
   });
+  await expect(menuItem).toHaveCSS("transition-property", "background-color");
   await expect(menuItem).toHaveCSS("transition-duration", "0.777s");
+  await expect(menuItem).toHaveCSS("transition-timing-function", "ease");
   expect(
     await popup.evaluate((element) => {
       element.setAttribute("data-ending-style", "");
-      const duration = getComputedStyle(element).transitionDuration;
+      const styles = getComputedStyle(element);
+      const transition = {
+        duration: styles.transitionDuration,
+        timing: styles.transitionTimingFunction,
+      };
       element.removeAttribute("data-ending-style");
-      return duration;
+      return transition;
     }),
-  ).toBe("0.777s, 0.888s");
+  ).toEqual({ duration: "0.777s, 0.888s", timing: "ease, ease" });
 
   await menuItem.click();
   await page.locator(":root").evaluate((root) => {
@@ -87,6 +93,24 @@ test("applies design-system tokens to component styles", async ({ page }) => {
   const selectedNavItem = page.locator(".settings-nav-item[data-selected]");
   await selectedNavItem.hover();
   await expect(selectedNavItem).toHaveCSS("background-color", "rgb(1, 2, 3)");
+
+  await page.locator(":root").evaluate((root) => {
+    const styles = (root as HTMLElement).style;
+    styles.setProperty("--tienos-radius-window", "26px");
+    styles.setProperty("--tienos-radius-content", "16px");
+  });
+  await expect(page.locator(".settings-window")).toHaveCSS("border-radius", "26px");
+  await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("border-radius", "18px");
+  await expect(page.locator(".settings-hero")).toHaveCSS("border-radius", "16px");
+  await expect(page.locator(".settings-group").first()).toHaveCSS("border-radius", "16px");
+  const detailsViewport = page.locator('.settings-scroll-viewport[aria-label="Settings details"]');
+  await detailsViewport.focus();
+  await expect(detailsViewport).toHaveCSS("border-radius", "16px");
+  await page.getByRole("button", { name: "Appearance" }).click();
+  await expect(page.getByRole("region", { name: "Appearance style" })).toHaveCSS(
+    "border-radius",
+    "16px",
+  );
 });
 
 test("uses conventional rounded geometry without shape masks", async ({ page }) => {
@@ -671,7 +695,10 @@ test("fits and fixes an open System Settings window on compact screens", async (
   await expect(settingsWindow).toHaveCSS("border-radius", "18px");
   await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("border-radius", "11px");
   await expect(page.locator(".settings-hero h2")).toHaveCSS("font-size", "22px");
+  await expect(page.locator(".settings-search")).toHaveCSS("padding-left", "8px");
+  await expect(page.locator(".settings-search")).toHaveCSS("padding-right", "8px");
   const history = page.locator(".settings-history");
+  await expect(history).toHaveCSS("align-items", "center");
   await expect(history).toHaveCSS("height", "36px");
   await expect(history.getByRole("button", { name: "Back" })).toHaveCSS("width", "38px");
   await expect(history.getByRole("button", { name: "Back" })).toHaveCSS("font-size", "12px");

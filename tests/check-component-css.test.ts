@@ -36,4 +36,11 @@ describe("component CSS audit CLI", () => {
       expect(result.stderr).toContain("authored .component selector");
     },
   );
+
+  test("rejects component classes in scope preludes", async () => {
+    const result = await runAudit("@scope (.component) { button { color: red; } }");
+
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("authored .component selector");
+  });
 });

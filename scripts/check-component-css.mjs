@@ -105,7 +105,10 @@ function qualifiedRuleSelectors(css) {
           else if (blockCharacter === "{") depth += 1;
           else if (blockCharacter === "}") depth -= 1;
         }
-        if (prelude.startsWith("@")) parseRuleList(index + 1, blockEnd - 1);
+        if (/^@scope(?:\s|\()/u.test(prelude)) {
+          selectors.push(prelude.slice("@scope".length).trim());
+          parseRuleList(index + 1, blockEnd - 1);
+        } else if (prelude.startsWith("@")) parseRuleList(index + 1, blockEnd - 1);
         else if (prelude) {
           selectors.push(prelude);
           parseRuleList(index + 1, blockEnd - 1);

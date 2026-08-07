@@ -91,7 +91,7 @@ function SettingsScrollArea({
         ref={(element) => {
           if (viewportRef) viewportRef.current = element;
         }}
-        className="settings-scroll-viewport h-full w-full overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:-outline-offset-2 focus-visible:rounded-[14px] focus-visible:outline-2 focus-visible:outline-[var(--tienos-color-focus)]"
+        className="settings-scroll-viewport h-full w-full overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:-outline-offset-2 focus-visible:rounded-[var(--tienos-radius-content)] focus-visible:outline-2 focus-visible:outline-[var(--tienos-color-focus)]"
         aria-label={label}
         tabIndex={0}
       >
@@ -231,7 +231,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
       }
     >
       <section
-        className="settings-window relative grid h-full w-full grid-cols-[30.8%_69.2%] overflow-hidden rounded-[24px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-window)] text-[var(--tienos-color-text-primary)] shadow-[var(--tienos-shadow-window),inset_0_1px_rgb(255_255_255/0.05)] backdrop-blur-[28px] backdrop-saturate-[1.15] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none max-[700px]:grid-cols-[112px_1fr] max-[700px]:rounded-[18px]"
+        className="settings-window relative grid h-full w-full grid-cols-[30.8%_69.2%] overflow-hidden rounded-[var(--tienos-radius-window)] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-window)] text-[var(--tienos-color-text-primary)] shadow-[var(--tienos-shadow-window),inset_0_1px_rgb(255_255_255/0.05)] backdrop-blur-[28px] backdrop-saturate-[1.15] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none max-[700px]:grid-cols-[112px_1fr] max-[700px]:rounded-[18px]"
         aria-label="System Settings"
       >
         <aside
@@ -240,7 +240,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
         >
           <div
             data-sidebar-panel=""
-            className="settings-sidebar-panel flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[var(--tienos-color-border)] bg-[color-mix(in_srgb,var(--tienos-color-sidebar)_84%,transparent)] p-[10px_9px_8px] shadow-[0_8px_24px_rgb(0_0_0/0.17),inset_0_1px_rgb(255_255_255/0.08)] backdrop-blur-[24px] backdrop-saturate-[1.2] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
+            className="settings-sidebar-panel flex h-full min-h-0 flex-col overflow-hidden rounded-[calc(var(--tienos-radius-window)_-_8px)] border border-[var(--tienos-color-border)] bg-[color-mix(in_srgb,var(--tienos-color-sidebar)_84%,transparent)] p-[10px_9px_8px] shadow-[0_8px_24px_rgb(0_0_0/0.17),inset_0_1px_rgb(255_255_255/0.08)] backdrop-blur-[24px] backdrop-saturate-[1.2] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
           >
             <div
               className="mx-0.5 mb-[29px] flex gap-2.5 max-[700px]:mb-5 max-[700px]:gap-[7px]"
@@ -263,7 +263,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
 
             <label
               data-settings-search=""
-              className="settings-search flex h-7 items-center gap-[7px] rounded-[11px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-2.5 text-[var(--tienos-color-text-secondary)] [&_input]:min-w-0 [&_input]:w-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:text-[var(--tienos-color-text-primary)] [&_input::placeholder]:text-[var(--tienos-color-text-secondary)]"
+              className="settings-search flex h-7 items-center gap-[7px] rounded-[11px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-[10px] text-[var(--tienos-color-text-secondary)] [&_input]:min-w-0 [&_input]:w-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:text-[var(--tienos-color-text-primary)] [&_input::placeholder]:text-[var(--tienos-color-text-secondary)] max-[700px]:px-[8px]"
             >
               <FontAwesomeIcon name="magnifying-glass" className="text-xs" />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
@@ -330,7 +330,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
 
         <div className="flex min-h-0 min-w-0 flex-col p-[8px_20px_0] max-[700px]:p-[12px_10px_0]">
           <div
-            className="settings-history -ml-3 mb-[9px] flex h-[35px] shrink-0 self-start overflow-hidden rounded-[22px] border border-[var(--tienos-color-border)] [&_button]:grid [&_button]:h-full [&_button]:w-[36px] [&_button]:place-items-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[12px] [&_button]:text-[var(--tienos-color-text-tertiary)] [&>span]:h-6 [&>span]:w-px [&>span]:bg-[var(--tienos-color-separator)] max-[700px]:h-[36px] max-[700px]:[&_button]:w-[38px]"
+            className="settings-history -ml-3 mb-[9px] flex h-[35px] shrink-0 items-center self-start overflow-hidden rounded-[22px] border border-[var(--tienos-color-border)] [&_button]:grid [&_button]:h-full [&_button]:w-[36px] [&_button]:place-items-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[12px] [&_button]:text-[var(--tienos-color-text-tertiary)] [&>span]:h-6 [&>span]:w-px [&>span]:bg-[var(--tienos-color-separator)] max-[700px]:h-[36px] max-[700px]:[&_button]:w-[38px]"
             aria-label="Navigation history"
           >
             <button aria-label="Back" disabled>
@@ -349,7 +349,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
             viewportRef={detailsViewportRef}
           >
             {selected !== "Appearance" && (
-              <header className="settings-hero rounded-[14px] border border-white/[.015] bg-[var(--tienos-color-content)] p-[23px_32px_19px] text-center max-[700px]:p-[24px_14px] max-[700px]:[&_h2]:text-[22px] [&_h2]:m-0 [&_h2]:text-[23px] [&_h2]:leading-none [&_h2]:tracking-[-0.03em] [&_p]:mx-auto [&_p]:mt-px [&_p]:mb-0 [&_p]:max-w-[600px] [&_p]:text-[var(--tienos-color-text-secondary)] [&_p]:leading-[var(--tienos-leading-body)]">
+              <header className="settings-hero rounded-[var(--tienos-radius-content)] border border-white/[.015] bg-[var(--tienos-color-content)] p-[23px_32px_19px] text-center max-[700px]:p-[24px_14px] max-[700px]:[&_h2]:text-[22px] [&_h2]:m-0 [&_h2]:text-[23px] [&_h2]:leading-none [&_h2]:tracking-[-0.03em] [&_p]:mx-auto [&_p]:mt-px [&_p]:mb-0 [&_p]:max-w-[600px] [&_p]:text-[var(--tienos-color-text-secondary)] [&_p]:leading-[var(--tienos-leading-body)]">
                 <span
                   className={`settings-hero-icon mx-auto mb-1 grid size-[54px] place-items-center rounded-[18px] border border-white/20 text-[28px] text-white shadow-[inset_0_1px_rgb(255_255_255/0.2),0_1px_2px_rgb(0_0_0/0.4)] ${selectedCategory.colorClass}`}
                 >
@@ -368,7 +368,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
               <div className="grid gap-3 [&_h2]:m-0 [&_h2]:text-[22px] [&_h3]:m-0 [&_h3]:p-[10px_12px_0] [&_h3]:text-[17px]">
                 <h2>Appearance</h2>
                 <section
-                  className="overflow-hidden rounded-[14px] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
+                  className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
                   aria-label="Appearance style"
                 >
                   <div
@@ -415,7 +415,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
 
                 <h3>Theme</h3>
                 <section
-                  className="overflow-hidden rounded-[14px] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
+                  className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
                   aria-label="Theme"
                 >
                   <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px]">
@@ -462,7 +462,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                   </label>
                 </section>
                 <section
-                  className="overflow-hidden rounded-[14px] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
+                  className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
                   aria-label="Icon and widget style"
                 >
                   <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&>[role=group]]:flex [&>[role=group]]:gap-3 max-[520px]:[&>[role=group]]:flex-wrap">
@@ -500,7 +500,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                 </section>
                 <h3>Windows</h3>
                 <section
-                  className="overflow-hidden rounded-[14px] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
+                  className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
                   aria-label="Windows"
                 >
                   <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
@@ -529,7 +529,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
               <div className="grid gap-[10px] pt-[10px]">
                 {generalGroups.map((group, groupIndex) => (
                   <div
-                    className="settings-group overflow-hidden rounded-[14px] border border-white/[.018] bg-[var(--tienos-color-content)]"
+                    className="settings-group overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.018] bg-[var(--tienos-color-content)]"
                     key={groupIndex}
                   >
                     {group.map(([icon, label]) => (
