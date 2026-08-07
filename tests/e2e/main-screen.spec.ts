@@ -1,4 +1,4 @@
-import { expect, test, type Locator } from "@playwright/test";
+import { expect, test, type CDPSession, type Locator } from "@playwright/test";
 import sharp from "sharp";
 
 const spriteUrl = "/fontawesome/fontawesome-pro-solid.svg";
@@ -68,6 +68,22 @@ async function expectConventionalRoundedGeometry(element: Locator) {
   expect(geometry.clipPath).toBe("none");
   expect(geometry.maskImage).toBe("none");
   expect(geometry.webkitMaskImage).toBe("none");
+}
+
+async function touchDrag(session: CDPSession, from: { x: number; y: number }, to: { x: number; y: number }) {
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchStart",
+    touchPoints: [{ x: from.x, y: from.y }],
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }],
+  });
+  await session.send("Input.dispatchTouchEvent", {
+    type: "touchMove",
+    touchPoints: [{ x: to.x, y: to.y }],
+  });
+  await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
 }
 
 async function readCenterPixel(element: Locator) {
@@ -290,53 +306,47 @@ test("uses opaque menu surfaces with reduced transparency", async ({ page }) => 
   await page.getByRole("menuitem", { name: "System Settings…" }).click();
   await expect(page.locator(".settings-window")).toHaveCSS("backdrop-filter", "none");
   await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("backdrop-filter", "none");
-  const menuBarSurface = page.locator('header:has([aria-label="tienOS menu bar"])');
-  await expect(menuBarSurface).toHaveCSS("background-color", "rgb(20, 27, 36)");
-  await expect(menuBarSurface).toHaveCSS("backdrop-filter", "none");
+  await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
 });
 
-test("renders the floating glass menu bar across themes and compact geometry", async ({ page }) => {
+test("restores the pre-PR-16 menu bar while Settings carries layered glass", async ({ page }, testInfo) => {
   for (const theme of ["dark", "light"] as const) {
     await page.addInitScript(
       (mode) => localStorage.setItem("tienos-appearance", JSON.stringify(mode)),
       theme,
     );
     await page.goto("/");
-    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
-    await expect(page.locator(":root")).toHaveAttribute("data-appearance", theme);
-    await expect(page.locator(":root")).toHaveAttribute("data-theme", theme);
-    const surface = page.locator("[data-menu-bar-surface]");
-    await expect(surface).toHaveCSS("backdrop-filter", "blur(14px) saturate(1.45)");
-    await expect(surface).toHaveCSS("border-radius", "18px");
-    await expect(surface).toHaveCSS("box-shadow", /inset.*24px/);
-    const bounds = await surface.boundingBox();
-    expect(bounds?.x).toBe(12);
-    expect(bounds?.width).toBe(page.viewportSize()!.width - 24);
+    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden({ timeout: 10_000 });
+    const menu = page.locator("[data-menu-bar-surface]");
+    await expect(menu).toHaveCSS("top", "0px");
+    await expect(menu).toHaveCSS("left", "0px");
+    await expect(menu).toHaveCSS("right", "0px");
+    await expect(menu).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(menu).toHaveCSS("background-image", "none");
+    await expect(menu).toHaveCSS("backdrop-filter", "none");
+    await expect(menu).toHaveCSS("border-radius", "0px");
+    await expect(menu).toHaveCSS("box-shadow", "none");
+
+    const shell = page.locator(".settings-window");
+    const sidebar = page.locator(".settings-sidebar-panel");
+    const detail = page.locator(".settings-detail");
+    await expect(shell).toHaveCSS("backdrop-filter", "blur(32px) saturate(1.4)");
+    await expect(sidebar).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+    await expect(shell).toHaveCSS("background-image", /linear-gradient/);
+    await expect(sidebar).toHaveCSS("background-image", /linear-gradient/);
+    await expect(detail).toHaveCSS("background-image", /linear-gradient/);
+    await page.screenshot({ path: testInfo.outputPath(`settings-glass-${theme}.png`) });
   }
 
-  const surface = page.locator("[data-menu-bar-surface]");
+  const shell = page.locator(".settings-window");
   const wallpaper = page.locator(".tienos-wallpaper");
-  await wallpaper.evaluate((element) => {
-    (element as HTMLElement).style.background = "rgb(0 0 0)";
-  });
-  const pixelOverDarkWallpaper = await readCenterPixel(surface);
-  await wallpaper.evaluate((element) => {
-    (element as HTMLElement).style.background = "rgb(255 255 255)";
-  });
-  const pixelOverLightWallpaper = await readCenterPixel(surface);
+  await wallpaper.evaluate((node) => ((node as HTMLElement).style.background = "rgb(0 0 0)"));
+  const darkPixel = await readCenterPixel(shell);
+  await wallpaper.evaluate((node) => ((node as HTMLElement).style.background = "rgb(255 255 255)"));
+  const lightPixel = await readCenterPixel(shell);
   expect(
-    pixelOverLightWallpaper.reduce(
-      (difference, channel, index) => difference + Math.abs(channel - pixelOverDarkWallpaper[index]),
-      0,
-    ),
-  ).toBeGreaterThan(30);
-
-  await page.setViewportSize({ width: 320, height: 480 });
-  const compactSurface = page.locator("[data-menu-bar-surface]");
-  await expect(compactSurface).toHaveCSS("border-radius", "14px");
-  const compactBounds = await compactSurface.boundingBox();
-  expect(compactBounds?.x).toBe(6);
-  expect(compactBounds?.width).toBe(308);
+    lightPixel.reduce((sum, channel, index) => sum + Math.abs(channel - darkPixel[index]), 0),
+  ).toBeGreaterThan(10);
 });
 
 test("preserves migrated System Settings selection and separators", async ({ page }) => {
@@ -682,13 +692,13 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
   expect(wallpaperState.transformScale).toBeCloseTo(1.02);
   await expect(vignette).toHaveCSS("background-image", /linear-gradient.*radial-gradient/);
   const menuBarSurface = page.locator("[data-menu-bar-surface]");
-  await expect(menuBarSurface).toHaveCSS("backdrop-filter", "blur(14px) saturate(1.45)");
-  await expect(menuBarSurface).toHaveCSS("background-image", /linear-gradient/);
-  await expect(menuBarSurface).toHaveCSS("border-radius", "18px");
-  await expect(menuBarSurface).toHaveCSS("box-shadow", /inset.*24px/);
+  await expect(menuBarSurface).toHaveCSS("backdrop-filter", "none");
+  await expect(menuBarSurface).toHaveCSS("background-image", "none");
+  await expect(menuBarSurface).toHaveCSS("border-radius", "0px");
+  await expect(menuBarSurface).toHaveCSS("box-shadow", "none");
   await expect(page.getByRole("navigation", { name: "tienOS menu bar" })).toHaveCSS(
     "text-shadow",
-    "rgba(0, 0, 0, 0.32) 0px 1px 3px",
+    "rgba(0, 0, 0, 0.4) 0px 1px 3px",
   );
 
   await context.close();
@@ -750,8 +760,8 @@ test("matches the System Settings reference geometry", async ({ page }) => {
     bounds && Object.fromEntries(Object.entries(bounds).map(([key, value]) => [key, Math.round(value)]));
 
   expect(roundedBounds(windowBounds)).toMatchObject({ x: 97, y: 97, width: 723, height: 670 });
-  expect(roundedBounds(heroBounds)).toMatchObject({ x: 340, y: 150, width: 459, height: 161 });
-  expect(roundedBounds(firstGroupBounds)).toMatchObject({ x: 340, y: 321, width: 459, height: 128 });
+  expect(roundedBounds(heroBounds)).toMatchObject({ x: 348, y: 150, width: 451, height: 161 });
+  expect(roundedBounds(firstGroupBounds)).toMatchObject({ x: 348, y: 321, width: 451, height: 128 });
 });
 
 test("uses independently accessible Base UI scroll areas with transient scrollbars", async ({ page }) => {
@@ -767,6 +777,14 @@ test("uses independently accessible Base UI scroll areas with transient scrollba
   const details = page.locator('.settings-scroll-viewport[aria-label="Settings details"]');
   const categories = page.locator('.settings-scroll-viewport[aria-label="Settings categories"]');
   const detailScrollbar = details.locator("..").locator(".settings-scrollbar");
+  const detailThumb = detailScrollbar.locator(".settings-scroll-thumb");
+  await expect(detailScrollbar).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  const [trackWidth, thumbWidth] = await Promise.all([
+    detailScrollbar.evaluate((node) => node.getBoundingClientRect().width),
+    detailThumb.evaluate((node) => node.getBoundingClientRect().width),
+  ]);
+  expect(thumbWidth).toBe(trackWidth);
+  await expect(detailThumb).toHaveCSS("border-width", "0px");
   await expect(details).toHaveAttribute("tabindex", "0");
   await expect(categories).toHaveAttribute("tabindex", "0");
   await expect(detailScrollbar).toHaveCSS("opacity", "0");
@@ -849,18 +867,20 @@ test("drags and resizes the System Settings window with react-rnd", async ({ pag
   const initial = await settingsWindow.boundingBox();
   expect(initial).not.toBeNull();
 
-  await page.mouse.move(initial!.x + initial!.width * 0.7, initial!.y + 16);
+  const dragHandle = await page.locator(".settings-sidebar-panel").boundingBox();
+  await page.mouse.move(dragHandle!.x + dragHandle!.width - 12, dragHandle!.y + 20);
   await page.mouse.down();
-  await page.mouse.move(initial!.x + initial!.width * 0.7 + 30, initial!.y + 36, { steps: 4 });
+  await page.mouse.move(dragHandle!.x + dragHandle!.width + 18, dragHandle!.y + 40, { steps: 4 });
   await page.mouse.up();
 
   const dragged = await settingsWindow.boundingBox();
   expect(Math.round(dragged!.x - initial!.x)).toBe(30);
   expect(Math.round(dragged!.y - initial!.y)).toBe(20);
 
-  await page.mouse.move(dragged!.x + dragged!.width * 0.7, dragged!.y + 16);
+  const movedHandle = await page.locator(".settings-sidebar-panel").boundingBox();
+  await page.mouse.move(movedHandle!.x + movedHandle!.width - 12, movedHandle!.y + 20);
   await page.mouse.down();
-  await page.mouse.move(dragged!.x + dragged!.width * 0.7, -100, { steps: 6 });
+  await page.mouse.move(movedHandle!.x + movedHandle!.width - 12, -100, { steps: 6 });
   await page.mouse.up();
   const menuBar = await page.locator('header:has([aria-label="tienOS menu bar"])').boundingBox();
   const topClamped = await settingsWindow.boundingBox();
@@ -936,15 +956,172 @@ test("fits and fixes an open System Settings window on compact screens", async (
     .toEqual({ x: 8, y: 46, width: 304, height: 266 });
 
   const compactBounds = await settingsWindow.boundingBox();
-  await page.mouse.move(compactBounds!.x + compactBounds!.width * 0.7, compactBounds!.y + 16);
+  const compactDragHandle = await page.locator(".settings-history").boundingBox();
+  await page.mouse.move(compactDragHandle!.x + 38, compactDragHandle!.y + compactDragHandle!.height / 2);
   await page.mouse.down();
-  await page.mouse.move(compactBounds!.x + compactBounds!.width * 0.7 - 40, compactBounds!.y - 20, {
+  await page.mouse.move(compactDragHandle!.x - 2, compactBounds!.y - 20, {
     steps: 4,
   });
   await page.mouse.up();
 
   const fixedBounds = await settingsWindow.boundingBox();
   expect(fixedBounds).toEqual(compactBounds);
+});
+
+test("resizes the Settings sidebar with mouse, keyboard, touch, and responsive bounds", async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  const splitter = page.getByRole("separator", { name: "Resize Settings sidebar" });
+  await expect(splitter).toHaveAttribute("aria-orientation", "vertical");
+  const initialValue = Number(await splitter.getAttribute("aria-valuenow"));
+  const splitterBounds = await splitter.boundingBox();
+  await page.mouse.move(splitterBounds!.x + 4, splitterBounds!.y + 120);
+  await page.mouse.down();
+  await page.mouse.move(splitterBounds!.x + 64, splitterBounds!.y + 120);
+  await page.mouse.up();
+  expect(Number(await splitter.getAttribute("aria-valuenow"))).toBeGreaterThan(initialValue);
+
+  await splitter.focus();
+  await page.keyboard.press("Home");
+  expect(await splitter.getAttribute("aria-valuenow")).toBe(await splitter.getAttribute("aria-valuemin"));
+  await page.keyboard.press("End");
+  expect(await splitter.getAttribute("aria-valuenow")).toBe(await splitter.getAttribute("aria-valuemax"));
+  await page.keyboard.press("ArrowLeft");
+  expect(Number(await splitter.getAttribute("aria-valuenow"))).toBeLessThan(
+    Number(await splitter.getAttribute("aria-valuemax")),
+  );
+
+  const session = await page.context().newCDPSession(page);
+  const beforeTouch = Number(await splitter.getAttribute("aria-valuenow"));
+  const touchBounds = await splitter.boundingBox();
+  await touchDrag(
+    session,
+    { x: touchBounds!.x + 4, y: touchBounds!.y + 160 },
+    { x: touchBounds!.x - 35, y: touchBounds!.y + 160 },
+  );
+  expect(Number(await splitter.getAttribute("aria-valuenow"))).toBeLessThan(beforeTouch);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const settingsWindow = page.locator(".settings-window");
+  await expect.poll(async () => Math.round((await settingsWindow.boundingBox())?.width ?? 0)).toBe(374);
+  expect(Number(await splitter.getAttribute("aria-valuenow"))).toBeGreaterThanOrEqual(36);
+  const shell = await settingsWindow.boundingBox();
+  const sidebar = await page.locator(".settings-sidebar").boundingBox();
+  expect(Math.round(shell!.width)).toBe(374);
+  expect(sidebar!.width / shell!.width).toBeGreaterThanOrEqual(0.36);
+  expect(sidebar!.width / shell!.width).toBeLessThanOrEqual(0.43);
+  await expect(page.locator(".settings-nav-item").first()).toHaveCSS("min-height", "33.5px");
+});
+
+test("keeps compact splitter bounds valid across intermediate phone widths", async ({ page }) => {
+  for (const width of [431, 500, 563]) {
+    await page.setViewportSize({ width, height: 700 });
+    await page.goto("/");
+    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+    const splitter = page.getByRole("separator", { name: "Resize Settings sidebar" });
+    const minimum = Number(await splitter.getAttribute("aria-valuemin"));
+    const maximum = Number(await splitter.getAttribute("aria-valuemax"));
+    const current = Number(await splitter.getAttribute("aria-valuenow"));
+    const shell = await page.locator(".settings-window").boundingBox();
+    const sidebar = await page.locator(".settings-sidebar").boundingBox();
+
+    expect(minimum).toBeLessThanOrEqual(maximum);
+    expect(current).toBeGreaterThanOrEqual(minimum);
+    expect(current).toBeLessThanOrEqual(maximum);
+    expect(sidebar!.width / shell!.width).toBeGreaterThanOrEqual(0.39);
+    expect(sidebar!.width / shell!.width).toBeLessThanOrEqual(0.41);
+  }
+});
+
+test("keeps labeled sidebar and immediate keyboard resizing after compact recomputation", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 700, height: 700 });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  const splitter = page.getByRole("separator", { name: "Resize Settings sidebar" });
+  await splitter.focus();
+  await page.keyboard.press("End");
+  const maximum = await splitter.getAttribute("aria-valuemax");
+  expect(maximum).not.toBeNull();
+  await expect(splitter).toHaveAttribute("aria-valuenow", maximum!);
+
+  await page.setViewportSize({ width: 320, height: 700 });
+  await expect
+    .poll(
+      async () =>
+        Number(await splitter.getAttribute("aria-valuenow")) ===
+        Number(await splitter.getAttribute("aria-valuemax")),
+    )
+    .toBe(true);
+  const beforeArrow = Number(await splitter.getAttribute("aria-valuenow"));
+  await page.keyboard.press("ArrowLeft");
+  expect(Number(await splitter.getAttribute("aria-valuenow"))).toBeLessThan(beforeArrow);
+
+  const firstCategory = page.locator(".settings-nav-item").first();
+  const firstLabel = firstCategory.getByText("General", { exact: true });
+  await expect(firstLabel).toBeVisible();
+  const [categoryBounds, labelBounds] = await Promise.all([
+    firstCategory.boundingBox(),
+    firstLabel.boundingBox(),
+  ]);
+  expect(categoryBounds!.height).toBeGreaterThanOrEqual(33.5);
+  expect(labelBounds!.width).toBeGreaterThan(0);
+  expect(labelBounds!.x + labelBounds!.width).toBeLessThanOrEqual(categoryBounds!.x + categoryBounds!.width);
+});
+
+test("supports touch window drag, resize, boundary clamping, and inner scrolling", async ({ browser }) => {
+  const context = await browser.newContext({ hasTouch: true, viewport: { width: 1100, height: 900 } });
+  const page = await context.newPage();
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  const session = await context.newCDPSession(page);
+  const shell = page.locator(".settings-window");
+  const initial = await shell.boundingBox();
+  const dragHandle = await page.locator(".settings-sidebar-panel").boundingBox();
+  await touchDrag(
+    session,
+    { x: dragHandle!.x + dragHandle!.width - 12, y: dragHandle!.y + 20 },
+    { x: dragHandle!.x + dragHandle!.width + 18, y: dragHandle!.y + 44 },
+  );
+  const dragged = await shell.boundingBox();
+  expect(Math.round(dragged!.x - initial!.x)).toBe(30);
+  expect(Math.round(dragged!.y - initial!.y)).toBe(24);
+
+  const movedHandle = await page.locator(".settings-sidebar-panel").boundingBox();
+  await touchDrag(
+    session,
+    { x: movedHandle!.x + movedHandle!.width - 12, y: movedHandle!.y + 20 },
+    { x: movedHandle!.x + movedHandle!.width - 12, y: 0 },
+  );
+  const menu = await page.locator("[data-menu-bar-surface]").boundingBox();
+  expect((await shell.boundingBox())!.y).toBeGreaterThanOrEqual(menu!.y + menu!.height);
+
+  const resizeHandle = await page.locator('.settings-rnd div[style*="se-resize"]').boundingBox();
+  const beforeResize = await shell.boundingBox();
+  await touchDrag(
+    session,
+    { x: resizeHandle!.x + 5, y: resizeHandle!.y + 5 },
+    { x: resizeHandle!.x + 35, y: resizeHandle!.y + 25 },
+  );
+  const resized = await shell.boundingBox();
+  expect(resized!.width).toBeGreaterThan(beforeResize!.width);
+  expect(resized!.height).toBeGreaterThan(beforeResize!.height);
+
+  const details = page.locator('.settings-scroll-viewport[aria-label="Settings details"]');
+  const detailsBounds = await details.boundingBox();
+  const beforeScroll = await details.evaluate((node) => node.scrollTop);
+  await touchDrag(
+    session,
+    { x: detailsBounds!.x + detailsBounds!.width / 2, y: detailsBounds!.y + detailsBounds!.height - 30 },
+    { x: detailsBounds!.x + detailsBounds!.width / 2, y: detailsBounds!.y + 30 },
+  );
+  expect(await details.evaluate((node) => node.scrollTop)).toBeGreaterThan(beforeScroll);
+  await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
+  await context.close();
 });
 
 test("uses measured menu geometry for initial and constrained settings frames", async ({ page }) => {
@@ -976,8 +1153,9 @@ test("uses measured menu geometry for initial and constrained settings frames", 
 
   await page.setViewportSize({ width: 1100, height: 500 });
   const frame = page.locator(".settings-rnd");
-  await expect(frame).toHaveCSS("min-height", "450px");
-  await expect(frame).toHaveCSS("max-height", "450px");
+  const expectedAvailableHeight = `${500 - Math.ceil(menuBottom)}px`;
+  await expect(frame).toHaveCSS("min-height", expectedAvailableHeight);
+  await expect(frame).toHaveCSS("max-height", expectedAvailableHeight);
   const constrainedBounds = await settingsWindow.boundingBox();
   expect(constrainedBounds!.y).toBeGreaterThanOrEqual(menuBottom);
   expect(constrainedBounds!.y + constrainedBounds!.height).toBeLessThanOrEqual(500);

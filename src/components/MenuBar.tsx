@@ -61,11 +61,11 @@ export function MenuBar({ onAction }: MenuBarProps) {
   return (
     <header
       data-menu-bar-surface=""
-      className="fixed top-[max(6px,env(safe-area-inset-top))] right-[6px] left-[6px] z-40 flex h-[40px] items-center overflow-hidden rounded-[14px] border border-white/20 bg-[linear-gradient(135deg,rgb(255_255_255/0.16),rgb(255_255_255/0.07)_48%,rgb(7_18_29/0.14))] px-2 text-[var(--tienos-color-text-on-wallpaper)] shadow-[inset_0_1px_0_rgb(255_255_255/0.32),inset_0_-1px_0_rgb(0_0_0/0.12),0_8px_24px_rgb(2_8_23/0.16),0_2px_6px_rgb(2_8_23/0.1)] backdrop-blur-[14px] backdrop-saturate-[1.45] before:pointer-events-none before:absolute before:inset-px before:rounded-[12px] before:bg-[linear-gradient(180deg,rgb(255_255_255/0.13),transparent_45%)] before:content-[''] after:pointer-events-none after:absolute after:right-3 after:bottom-0 after:left-3 after:h-px after:bg-white/10 after:content-[''] sm:top-[max(10px,env(safe-area-inset-top))] sm:right-[12px] sm:left-[12px] sm:rounded-[18px] sm:px-3 sm:before:rounded-[16px] contrast-more:border-[var(--tienos-color-border)] contrast-more:bg-[var(--tienos-color-menu)] [@media(prefers-reduced-transparency:reduce)]:bg-[var(--tienos-color-menu)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:bg-[Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none"
+      className="fixed inset-x-0 top-0 z-40 flex items-center px-2 pt-[env(safe-area-inset-top)] sm:px-3"
     >
       <Menubar
         aria-label="tienOS menu bar"
-        className="relative z-10 flex h-9 flex-1 items-center gap-0.5 bg-transparent [text-shadow:0_1px_3px_rgb(0_0_0/0.32)] [@media(forced-colors:active)]:[text-shadow:none]"
+        className="flex h-9 flex-1 items-center gap-0.5 bg-transparent text-[var(--tienos-color-text-on-wallpaper)] [text-shadow:0_1px_3px_rgb(0_0_0/0.4)]"
       >
         <Menu.Root open={systemMenuOpen} onOpenChange={setSystemMenuOpen} triggerId={systemMenuTriggerId}>
           <Menu.Trigger
@@ -148,7 +148,7 @@ export function MenuBar({ onAction }: MenuBarProps) {
           </MenuPopup>
         </Menu.Root>
       </Menubar>
-      <div className="relative z-10 flex items-center gap-2 px-2 text-[13px] font-medium text-[color-mix(in_srgb,var(--tienos-color-text-on-wallpaper)_82%,transparent)]">
+      <div className="flex items-center gap-2 px-2 text-[13px] font-medium text-white/75">
         <span role="img" aria-label="Wi-Fi connected">
           <FontAwesomeIcon name="wifi" className="text-[13px]" />
         </span>
