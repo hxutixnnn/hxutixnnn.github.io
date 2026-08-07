@@ -1,15 +1,5 @@
 @import "tailwindcss";
-
-@theme {
-  --radius-xs: 0.375rem;
-  --radius-sm: 0.5rem;
-  --radius-md: 0.75rem;
-  --radius-lg: 1rem;
-  --radius-xl: 1.25rem;
-  --radius-2xl: 1.5rem;
-  --radius-3xl: 2rem;
-  --radius-4xl: 2.5rem;
-}
+@import "./design-system.css";
 
 :root {
   color-scheme: dark;
@@ -37,10 +27,13 @@
   color: inherit;
 }
 
-*:focus,
+*:focus {
+  outline: none;
+}
+
 *:focus-visible {
-  outline: none !important;
-  box-shadow: none !important;
+  outline: none;
+  box-shadow: var(--tienos-focus-ring);
 }
 
 html,
@@ -106,10 +99,10 @@ button {
 }
 
 .tienos-menu-popup {
-  border-radius: 14px;
+  border-radius: var(--tienos-radius-menu);
   overflow: hidden;
-  padding: 4px;
-  border: 1px solid rgb(255 255 255 / 0.18);
+  padding: var(--tienos-space-1);
+  border: 1px solid var(--tienos-color-border);
   background: rgb(20 27 36 / 0.78);
   box-shadow:
     0 22px 50px rgb(0 0 0 / 0.3),
@@ -133,14 +126,14 @@ button {
 }
 
 .tienos-menu-item {
-  border-radius: 10px;
+  border-radius: var(--tienos-radius-menu-item);
   cursor: default;
   transition: background-color 100ms ease;
 }
 
 .tienos-menu-item[data-highlighted],
 .tienos-menu-item:hover:not([data-disabled]) {
-  background: rgb(73 142 255 / 0.78);
+  background: var(--tienos-color-accent);
   color: white;
   outline: none;
 }
@@ -152,14 +145,14 @@ button {
 .tienos-menu-separator {
   height: 1px;
   border: 0;
-  background: rgb(255 255 255 / 0.14);
+  background: var(--tienos-color-separator);
 }
 
 .settings-backdrop {
   position: fixed;
   z-index: 20;
   inset: 0;
-  background: rgb(0 0 0 / 0.34);
+  background: var(--tienos-color-scrim);
   -webkit-backdrop-filter: blur(2px);
   backdrop-filter: blur(2px);
 }
@@ -174,13 +167,13 @@ button {
   width: 100%;
   height: 100%;
   grid-template-columns: 30.8% 69.2%;
-  font-size: 14px;
+  font-size: var(--tienos-type-window);
   overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 0.22);
-  border-radius: 26px;
-  background: rgb(29 29 31 / 0.97);
+  border: 1px solid var(--tienos-color-border);
+  border-radius: var(--tienos-radius-window);
+  background: var(--tienos-color-window);
   box-shadow:
-    0 42px 120px rgb(0 0 0 / 0.58),
+    var(--tienos-shadow-window),
     inset 0 1px rgb(255 255 255 / 0.05);
   -webkit-backdrop-filter: blur(28px) saturate(1.15);
   backdrop-filter: blur(28px) saturate(1.15);
@@ -190,7 +183,7 @@ button {
   min-width: 0;
   overflow: hidden;
   border-right: 1px solid rgb(255 255 255 / 0.13);
-  background: rgb(24 24 25 / 0.86);
+  background: var(--tienos-color-sidebar);
   padding: 18px 9px 18px 17px;
 }
 
@@ -224,7 +217,7 @@ button {
   gap: 7px;
   border: 1px solid rgb(255 255 255 / 0.035);
   border-radius: 11px;
-  background: rgb(255 255 255 / 0.11);
+  background: var(--tienos-color-control);
   padding: 0 10px;
   color: rgb(255 255 255 / 0.55);
 }
@@ -333,8 +326,14 @@ button {
   text-align: left;
 }
 
+.settings-nav-item:hover:not([data-selected]),
+.settings-row:hover,
+.settings-family:hover {
+  background: rgb(255 255 255 / 0.06);
+}
+
 .settings-nav-item[data-selected] {
-  background: #2863d7;
+  background: var(--tienos-color-accent);
   color: white;
 }
 
@@ -405,8 +404,8 @@ button {
 
 .settings-hero {
   border: 1px solid rgb(255 255 255 / 0.015);
-  border-radius: 14px;
-  background: rgb(255 255 255 / 0.04);
+  border-radius: var(--tienos-radius-content);
+  background: var(--tienos-color-content);
   padding: 23px 32px 19px;
   text-align: center;
 }
@@ -421,15 +420,15 @@ button {
 
 .settings-hero h2 {
   margin: 0;
-  font-size: 23px;
+  font-size: var(--tienos-type-title);
   line-height: 1;
   letter-spacing: -0.03em;
 }
 .settings-hero p {
   max-width: 600px;
   margin: 1px auto 0;
-  color: rgb(255 255 255 / 0.55);
-  line-height: 1.35;
+  color: var(--tienos-color-text-secondary);
+  line-height: var(--tienos-leading-body);
 }
 .settings-groups {
   display: grid;
@@ -440,8 +439,8 @@ button {
 .settings-group {
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 0.018);
-  border-radius: 14px;
-  background: rgb(255 255 255 / 0.045);
+  border-radius: var(--tienos-radius-content);
+  background: var(--tienos-color-content);
 }
 
 .settings-row {
@@ -454,7 +453,7 @@ button {
   border: 0;
   background: transparent;
   padding: 8px 18px;
-  color: rgb(255 255 255 / 0.85);
+  color: var(--tienos-color-text-primary);
   text-align: left;
 }
 
@@ -464,7 +463,7 @@ button {
   bottom: 0;
   left: 50px;
   height: 1px;
-  background: rgb(255 255 255 / 0.08);
+  background: var(--tienos-color-separator);
   content: "";
 }
 
@@ -476,7 +475,7 @@ button {
 }
 .settings-chevron {
   margin-left: auto;
-  color: rgb(255 255 255 / 0.3);
+  color: var(--tienos-color-text-tertiary);
   font-size: 25px;
 }
 
@@ -551,6 +550,34 @@ button {
   }
   .settings-row {
     padding: 8px 12px;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .tienos-menu-popup,
+  .settings-backdrop,
+  .settings-window {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .settings-nav-item,
+  .settings-row,
+  .settings-family,
+  .settings-search,
+  .tienos-menu-item {
+    border-color: var(--tienos-color-border);
+  }
+}
+
+@media (forced-colors: active) {
+  .settings-icon,
+  .settings-row-icon,
+  .settings-hero-icon,
+  .settings-light {
+    forced-color-adjust: auto;
   }
 }
 

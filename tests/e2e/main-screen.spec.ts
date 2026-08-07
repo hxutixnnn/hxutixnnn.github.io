@@ -1,5 +1,24 @@
 import { expect, test } from "@playwright/test";
 
+test("exposes design-system tokens and visible keyboard focus", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  const tokens = await page.locator(":root").evaluate((root) => {
+    const styles = getComputedStyle(root);
+    return {
+      space1: styles.getPropertyValue("--tienos-space-1").trim(),
+      accent: styles.getPropertyValue("--tienos-color-accent").trim(),
+      menuRadius: styles.getPropertyValue("--tienos-radius-menu").trim(),
+      windowRadius: styles.getPropertyValue("--tienos-radius-window").trim(),
+    };
+  });
+
+  expect(tokens).toEqual({ space1: "4px", accent: "#2863d7", menuRadius: "14px", windowRadius: "26px" });
+  await page.keyboard.press("Tab");
+  await expect(page.getByRole("menuitem", { name: "Open tienOS menu" })).not.toHaveCSS("box-shadow", "none");
+});
+
 test("renders the tienOS main screen and system menu", async ({ page }) => {
   await page.goto("/");
 
