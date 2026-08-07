@@ -31,6 +31,8 @@
   --tienos-color-content: rgb(255 255 255 / 0.04);
   --tienos-color-control: rgb(255 255 255 / 0.11);
   --tienos-color-scrim: rgb(0 0 0 / 0.34);
+  --tienos-color-scrollbar-track: rgb(0 0 0 / 0.12);
+  --tienos-color-scrollbar-thumb: rgb(255 255 255 / 0.5);
 
   --tienos-radius-menu: 14px;
   --tienos-radius-menu-item: 10px;
@@ -59,6 +61,8 @@
   --tienos-color-content: rgb(255 255 255 / 0.72);
   --tienos-color-control: rgb(15 23 42 / 0.08);
   --tienos-color-scrim: rgb(15 23 42 / 0.2);
+  --tienos-color-scrollbar-track: rgb(15 23 42 / 0.12);
+  --tienos-color-scrollbar-thumb: rgb(15 23 42 / 0.58);
   --tienos-shadow-window: 0 42px 120px rgb(15 23 42 / 0.35);
 }
 
@@ -68,6 +72,8 @@
     --tienos-color-text-tertiary: rgb(255 255 255 / 0.62);
     --tienos-color-separator: rgb(255 255 255 / 0.3);
     --tienos-color-border: rgb(255 255 255 / 0.48);
+    --tienos-color-scrollbar-track: rgb(0 0 0 / 0.3);
+    --tienos-color-scrollbar-thumb: rgb(255 255 255 / 0.85);
   }
 
   :root[data-theme="light"] {
@@ -75,6 +81,8 @@
     --tienos-color-text-tertiary: rgb(15 23 42 / 0.7);
     --tienos-color-separator: rgb(15 23 42 / 0.32);
     --tienos-color-border: rgb(15 23 42 / 0.48);
+    --tienos-color-scrollbar-track: rgb(15 23 42 / 0.18);
+    --tienos-color-scrollbar-thumb: rgb(15 23 42 / 0.82);
   }
 }
 
@@ -116,5 +124,7 @@
     --tienos-color-sidebar: Canvas;
     --tienos-color-content: Canvas;
     --tienos-color-control: Canvas;
+    --tienos-color-scrollbar-track: Canvas;
+    --tienos-color-scrollbar-thumb: CanvasText;
   }
 }

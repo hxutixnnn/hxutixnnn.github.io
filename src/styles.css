@@ -492,7 +492,7 @@ button {
   bottom: 5px;
   width: 8px;
   border-radius: 999px;
-  background: rgb(0 0 0 / 0.12);
+  background: var(--tienos-color-scrollbar-track);
   opacity: 0;
   transition: opacity 180ms ease-out;
 }
@@ -509,7 +509,7 @@ button {
   min-height: 24px;
   border: 2px solid transparent;
   border-radius: inherit;
-  background: rgb(255 255 255 / 0.5);
+  background: var(--tienos-color-scrollbar-thumb);
   background-clip: padding-box;
 }
 

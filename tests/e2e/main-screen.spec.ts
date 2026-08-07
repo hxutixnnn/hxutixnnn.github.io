@@ -503,6 +503,31 @@ test("uses independently accessible Base UI scroll areas with transient scrollba
   expect(await details.evaluate((node) => node.scrollTop)).toBe(detailTop);
 });
 
+test("uses a visible high-contrast scrollbar palette in Light mode", async ({ page }) => {
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setEmulatedMedia", {
+    features: [
+      { name: "prefers-color-scheme", value: "light" },
+      { name: "prefers-contrast", value: "more" },
+    ],
+  });
+  await page.setViewportSize({ width: 700, height: 520 });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+  await page.getByRole("menuitem", { name: "System Settings…" }).click();
+
+  const details = page.locator('.settings-scroll-viewport[aria-label="Settings details"]');
+  const scrollbar = details.locator("..").locator(".settings-scrollbar");
+  const thumb = scrollbar.locator(".settings-scroll-thumb");
+  await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+  await expect(scrollbar).toHaveCSS("opacity", "0");
+  await scrollbar.hover();
+  await expect(scrollbar).toHaveCSS("opacity", "1");
+  await expect(scrollbar).toHaveCSS("background-color", "rgba(15, 23, 42, 0.18)");
+  await expect(thumb).toHaveCSS("background-color", "rgba(15, 23, 42, 0.82)");
+});
+
 test("drags and resizes the System Settings window with react-rnd", async ({ page }) => {
   await page.setViewportSize({ width: 1100, height: 900 });
   await page.goto("/");
