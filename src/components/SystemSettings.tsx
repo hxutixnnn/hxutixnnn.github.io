@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { ScrollArea } from "@base-ui/react/scroll-area";
-import { Rnd } from "react-rnd";
+import { Rnd, type RndResizeCallback } from "react-rnd";
 import { FontAwesomeIcon, type FontAwesomeIconName } from "./FontAwesomeIcon";
 import { useAppearanceStore, type AppearanceMode } from "../stores/appearance";
 
@@ -108,12 +108,13 @@ function SettingsScrollArea({
   );
 }
 
-function compactFrame(viewport: Viewport): SettingsFrame {
+function compactFrame(viewport: Viewport, menuBottom: number): SettingsFrame {
+  const top = Math.ceil(menuBottom);
   return {
     x: 8,
-    y: 46,
+    y: top,
     width: Math.max(0, viewport.width - 16),
-    height: Math.max(0, viewport.height - 54),
+    height: Math.max(0, viewport.height - top - 8),
   };
 }
 
@@ -137,16 +138,50 @@ function desktopFrame(viewport: Viewport): SettingsFrame {
   };
 }
 
-function clampFrame(frame: SettingsFrame, viewport: Viewport): SettingsFrame {
+function clampFrame(frame: SettingsFrame, viewport: Viewport, menuBottom = 0): SettingsFrame {
+  const top = Math.ceil(menuBottom);
+  const availableHeight = Math.max(0, viewport.height - top);
   const width = clamp(frame.width, Math.min(desktopMinimum.width, viewport.width), viewport.width);
-  const height = clamp(frame.height, Math.min(desktopMinimum.height, viewport.height), viewport.height);
+  const height = clamp(frame.height, Math.min(desktopMinimum.height, availableHeight), availableHeight);
 
   return {
     x: clamp(frame.x, 0, viewport.width - width),
-    y: clamp(frame.y, 0, viewport.height - height),
+    y: clamp(frame.y, top, viewport.height - height),
     width,
     height,
   };
+}
+
+function frameFromResize(
+  direction: Parameters<RndResizeCallback>[1],
+  element: HTMLElement,
+  position: Parameters<RndResizeCallback>[4],
+  viewport: Viewport,
+  menuBottom: number,
+): SettingsFrame {
+  const top = direction.toLowerCase().startsWith("top")
+    ? Math.max(position.y, Math.ceil(menuBottom))
+    : position.y;
+  const bottom = position.y + element.offsetHeight;
+
+  return clampFrame(
+    {
+      x: position.x,
+      y: top,
+      width: element.offsetWidth,
+      height: direction.toLowerCase().startsWith("top") ? Math.max(0, bottom - top) : element.offsetHeight,
+    },
+    viewport,
+    menuBottom,
+  );
+}
+
+function applyFrameDuringResize(element: HTMLElement, frame: SettingsFrame) {
+  const bounds = element.getBoundingClientRect();
+  const transform = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+  element.style.width = `${frame.width}px`;
+  element.style.height = `${frame.height}px`;
+  element.style.transform = `translate(${transform.e + frame.x - bounds.x}px, ${transform.f + frame.y - bounds.y}px)`;
 }
 
 export function SystemSettings({ onClose }: SystemSettingsProps) {
@@ -163,29 +198,37 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
   const [wallpaperTint, setWallpaperTint] = useState(true);
   const [viewport, setViewport] = useState(readViewport);
   const compact = viewport.width <= compactBreakpoint;
-  const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport) : desktopFrame(viewport)));
+  const [menuBottom, setMenuBottom] = useState(0);
+  const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport, 0) : desktopFrame(viewport)));
   const compactRef = useRef(compact);
   const detailsViewportRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const updateViewport = () => {
+  useLayoutEffect(() => {
+    const menuBar = document.querySelector<HTMLElement>("[data-menu-bar-surface]");
+    const updateGeometry = () => {
       const nextViewport = readViewport();
+      const nextMenuBottom = menuBar?.getBoundingClientRect().bottom ?? 0;
       const nextCompact = nextViewport.width <= compactBreakpoint;
       const modeChanged = compactRef.current !== nextCompact;
       compactRef.current = nextCompact;
 
       setViewport(nextViewport);
+      setMenuBottom(nextMenuBottom);
       setFrame((currentFrame) => {
-        if (nextCompact) {
-          return compactFrame(nextViewport);
-        }
-
-        return modeChanged ? desktopFrame(nextViewport) : clampFrame(currentFrame, nextViewport);
+        if (nextCompact) return compactFrame(nextViewport, nextMenuBottom);
+        const nextFrame = modeChanged ? desktopFrame(nextViewport) : currentFrame;
+        return clampFrame(nextFrame, nextViewport, nextMenuBottom);
       });
     };
 
-    window.addEventListener("resize", updateViewport);
-    return () => window.removeEventListener("resize", updateViewport);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateGeometry);
+    if (menuBar) observer?.observe(menuBar);
+    window.addEventListener("resize", updateGeometry);
+    updateGeometry();
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateGeometry);
+    };
   }, []);
   useEffect(() => {
     if (detailsViewportRef.current) detailsViewportRef.current.scrollTop = 0;
@@ -198,6 +241,25 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
     [query],
   );
   const selectedCategory = categories.find(({ label }) => label === selected) ?? categories[0];
+  const availableHeight = Math.max(0, viewport.height - menuBottom);
+  const minimumHeight = compact
+    ? Math.min(frame.height, availableHeight)
+    : Math.min(desktopMinimum.height, availableHeight);
+  const updateFrameFromResize: RndResizeCallback = (_, direction, element, __, position) => {
+    const nextFrame = frameFromResize(direction, element, position, viewport, menuBottom);
+    applyFrameDuringResize(element, nextFrame);
+    setFrame(nextFrame);
+  };
+  const commitFrameFromResize: RndResizeCallback = (_, __, element) => {
+    const bounds = element.getBoundingClientRect();
+    setFrame(
+      clampFrame(
+        { x: bounds.x, y: bounds.y, width: element.offsetWidth, height: element.offsetHeight },
+        viewport,
+        menuBottom,
+      ),
+    );
+  };
 
   return (
     <Rnd
@@ -206,29 +268,25 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
       position={{ x: frame.x, y: frame.y }}
       bounds="window"
       minWidth={compact ? frame.width : Math.min(desktopMinimum.width, viewport.width)}
-      minHeight={compact ? frame.height : Math.min(desktopMinimum.height, viewport.height)}
+      minHeight={minimumHeight}
       maxWidth={viewport.width}
-      maxHeight={viewport.height}
+      maxHeight={availableHeight}
       disableDragging={compact}
       enableResizing={!compact}
       dragHandleClassName="settings-window"
       cancel=".settings-navigation,.settings-scroll-area,button,input"
-      onDragStop={(_, position) =>
-        setFrame((currentFrame) => clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport))
-      }
-      onResizeStop={(_, __, element, ___, position) =>
-        setFrame(
-          clampFrame(
-            {
-              x: position.x,
-              y: position.y,
-              width: element.offsetWidth,
-              height: element.offsetHeight,
-            },
-            viewport,
-          ),
+      onDrag={(_, position) =>
+        setFrame((currentFrame) =>
+          clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom),
         )
       }
+      onDragStop={(_, position) =>
+        setFrame((currentFrame) =>
+          clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom),
+        )
+      }
+      onResize={updateFrameFromResize}
+      onResizeStop={commitFrameFromResize}
     >
       <section
         className="settings-window relative grid h-full w-full grid-cols-[30.8%_69.2%] overflow-hidden rounded-[var(--tienos-radius-window)] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-window)] text-[var(--tienos-color-text-primary)] shadow-[var(--tienos-shadow-window),inset_0_1px_rgb(255_255_255/0.05)] backdrop-blur-[28px] backdrop-saturate-[1.15] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none max-[700px]:grid-cols-[112px_1fr] max-[700px]:rounded-[18px]"
