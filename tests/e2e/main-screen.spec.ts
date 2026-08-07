@@ -209,6 +209,17 @@ test("keeps the splash over the desktop until paint-critical assets are ready", 
 
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
   await expect(bootScreen).toBeVisible();
+  await page.evaluate(() => {
+    const observedWindow = window as typeof window & { iconPaintedAtDismissal?: boolean };
+    const boot = document.getElementById("tienos-boot");
+    new MutationObserver((_, observer) => {
+      if (!boot?.hasAttribute("data-complete")) return;
+      const use = document.querySelector<SVGGraphicsElement>('[data-fa-icon="sparkle"] use');
+      const bounds = use?.getBBox();
+      observedWindow.iconPaintedAtDismissal = Boolean(bounds && bounds.width > 0 && bounds.height > 0);
+      observer.disconnect();
+    }).observe(boot!, { attributes: true, attributeFilter: ["data-complete"] });
+  });
 
   releaseWallpaper();
   await expect(bootScreen).toBeVisible();
@@ -217,7 +228,25 @@ test("keeps the splash over the desktop until paint-critical assets are ready", 
   await expect(bootScreen).toBeHidden();
   await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
   await expect(page.locator(".tienos-wallpaper")).not.toHaveCSS("background-image", "none");
+  expect(
+    await page.evaluate(
+      () => (window as typeof window & { iconPaintedAtDismissal?: boolean }).iconPaintedAtDismissal,
+    ),
+  ).toBe(true);
   await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="sparkle"]'), "sparkle");
+});
+
+test("releases the static desktop when a critical asset stalls", async ({ page }) => {
+  await page.route("**/wallpapers/tienos-default.jpg", async () => {
+    await new Promise(() => {});
+  });
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
+  await expect(bootScreen).toBeVisible();
+  await expect(bootScreen).toBeHidden({ timeout: 10_000 });
+  await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
 });
 
 test("reveals the static desktop when the application module fails", async ({ page }) => {

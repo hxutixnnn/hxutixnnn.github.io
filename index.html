@@ -110,10 +110,15 @@
         const bootDuration = reducedMotion ? 120 : 420;
         const fadeDuration = reducedMotion ? 80 : 160;
         let finished = false;
+        let resolveReleased;
+        const released = new Promise((resolve) => {
+          resolveReleased = resolve;
+        });
 
         const dismiss = (respectBootDuration) => {
           if (finished) return;
           finished = true;
+          resolveReleased();
           window.clearTimeout(startupTimeout);
           window.removeEventListener("error", handleError, true);
           window.removeEventListener("unhandledrejection", release);
@@ -135,7 +140,9 @@
         window.addEventListener("error", handleError, true);
         window.addEventListener("unhandledrejection", release);
         window.tienosBoot = {
-          started: () => window.clearTimeout(startupTimeout),
+          failed: release,
+          isFinished: () => finished,
+          released,
           ready: () => dismiss(true),
         };
       })();

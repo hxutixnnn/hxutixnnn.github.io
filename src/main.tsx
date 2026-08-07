@@ -10,12 +10,13 @@ if (!root) {
 }
 
 type BootController = {
-  started: () => void;
+  failed: () => void;
+  isFinished: () => boolean;
+  released: Promise<void>;
   ready: () => void;
 };
 
 const bootController = (window as Window & { tienosBoot?: BootController }).tienosBoot;
-bootController?.started();
 
 async function loadWallpaper() {
   const wallpaper = new Image();
@@ -29,7 +30,36 @@ async function loadIconSprite() {
   await response.arrayBuffer();
 }
 
-const desktopAssetsReady = Promise.allSettled([loadWallpaper(), loadIconSprite()]).then(() => undefined);
+function waitForIconPaint() {
+  return new Promise<void>((resolve) => {
+    const checkGeometry = () => {
+      if (bootController?.isFinished()) {
+        resolve();
+        return;
+      }
+
+      const use = document.querySelector<SVGGraphicsElement>('[data-fa-icon="sparkle"] use');
+      if (use && typeof use.getBBox === "function") {
+        try {
+          const bounds = use.getBBox();
+          if (bounds.width > 0 && bounds.height > 0) {
+            resolve();
+            return;
+          }
+        } catch {}
+      }
+      window.requestAnimationFrame(checkGeometry);
+    };
+    checkGeometry();
+  });
+}
+
+const assetReadiness = Promise.all([loadWallpaper(), loadIconSprite()])
+  .then(waitForIconPaint)
+  .catch(() => bootController?.failed());
+const desktopAssetsReady = bootController
+  ? Promise.race([assetReadiness, bootController.released])
+  : assetReadiness;
 
 createRoot(root).render(
   <StrictMode>
