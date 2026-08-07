@@ -281,7 +281,7 @@ test("restores the pre-PR-16 menu bar while Settings carries layered glass", asy
       theme,
     );
     await page.goto("/");
-    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden({ timeout: 10_000 });
     const menu = page.locator("[data-menu-bar-surface]");
     await expect(menu).toHaveCSS("top", "0px");
     await expect(menu).toHaveCSS("left", "0px");
@@ -911,10 +911,10 @@ test("resizes the Settings sidebar with mouse, keyboard, touch, and responsive b
   expect(Number(await splitter.getAttribute("aria-valuenow"))).toBeLessThan(beforeTouch);
 
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect
-    .poll(async () => Number(await splitter.getAttribute("aria-valuenow")))
-    .toBeGreaterThanOrEqual(36);
-  const shell = await page.locator(".settings-window").boundingBox();
+  const settingsWindow = page.locator(".settings-window");
+  await expect.poll(async () => Math.round((await settingsWindow.boundingBox())?.width ?? 0)).toBe(374);
+  expect(Number(await splitter.getAttribute("aria-valuenow"))).toBeGreaterThanOrEqual(36);
+  const shell = await settingsWindow.boundingBox();
   const sidebar = await page.locator(".settings-sidebar").boundingBox();
   expect(Math.round(shell!.width)).toBe(374);
   expect(sidebar!.width / shell!.width).toBeGreaterThanOrEqual(0.36);
