@@ -1,12 +1,23 @@
-import { lazy, Suspense, useState } from "react";
+import { lazy, Suspense, useLayoutEffect, useState } from "react";
 import { MenuBar } from "./components/MenuBar";
 
 const SystemSettings = lazy(() =>
   import("./components/SystemSettings").then(({ SystemSettings }) => ({ default: SystemSettings })),
 );
 
-export function App() {
+type AppProps = {
+  onDesktopReady?: () => void;
+};
+
+export function App({ onDesktopReady }: AppProps = {}) {
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  useLayoutEffect(() => {
+    if (!onDesktopReady) return;
+
+    const frame = window.requestAnimationFrame(onDesktopReady);
+    return () => window.cancelAnimationFrame(frame);
+  }, [onDesktopReady]);
 
   return (
     <main

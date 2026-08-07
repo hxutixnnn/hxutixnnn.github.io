@@ -152,6 +152,34 @@ test("adds visible row boundaries with increased contrast", async ({ page }) => 
   expect(selectedColors.focus).not.toBe(selectedColors.background);
 });
 
+test("keeps the splash over the desktop until delayed styles are ready", async ({ page }) => {
+  let releaseStyles!: () => void;
+  const stylesMayLoad = new Promise<void>((resolve) => {
+    releaseStyles = resolve;
+  });
+  let stylesheetIntercepted = false;
+
+  await page.route(/\/assets\/.*\.css$/, async (route) => {
+    stylesheetIntercepted = true;
+    await stylesMayLoad;
+    await route.continue();
+  });
+
+  const navigation = page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect.poll(() => stylesheetIntercepted).toBe(true);
+  await page.waitForTimeout(700);
+
+  const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
+  await expect(bootScreen).toBeVisible();
+  await expect(page.locator(":root")).toHaveCSS("font-size", "16px");
+
+  releaseStyles();
+  await navigation;
+  await expect(bootScreen).toBeHidden();
+  await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
+  await expect(page.locator(".tienos-wallpaper")).not.toHaveCSS("background-image", "none");
+});
+
 test("renders the tienOS main screen and system menu", async ({ page }) => {
   await page.goto("/");
 

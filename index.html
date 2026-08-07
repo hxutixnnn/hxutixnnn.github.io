@@ -21,7 +21,6 @@
         background: #050505;
         color: #fff;
         opacity: 1;
-        animation: tienos-boot-dismiss 160ms ease 420ms forwards;
         transition: opacity 160ms ease;
       }
       #tienos-boot[data-complete] {
@@ -77,20 +76,8 @@
           transform: scaleX(1);
         }
       }
-      @keyframes tienos-boot-dismiss {
-        from {
-          opacity: 1;
-          visibility: visible;
-        }
-        to {
-          opacity: 0;
-          visibility: hidden;
-        }
-      }
       @media (prefers-reduced-motion: reduce) {
         #tienos-boot {
-          animation-delay: 120ms;
-          animation-duration: 80ms;
           transition-duration: 80ms;
         }
         .tienos-boot-progress {
@@ -98,6 +85,25 @@
         }
       }
     </style>
+    <noscript>
+      <style>
+        #tienos-boot {
+          animation: tienos-boot-dismiss 160ms ease 420ms forwards;
+        }
+        @keyframes tienos-boot-dismiss {
+          to {
+            opacity: 0;
+            visibility: hidden;
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          #tienos-boot {
+            animation-delay: 120ms;
+            animation-duration: 80ms;
+          }
+        }
+      </style>
+    </noscript>
     <title>tienOS</title>
   </head>
   <body>
