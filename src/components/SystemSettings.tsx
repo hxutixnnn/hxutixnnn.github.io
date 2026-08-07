@@ -11,24 +11,24 @@ type SystemSettingsProps = {
 type SettingCategory = {
   icon: FontAwesomeIconName;
   label: string;
-  color: string;
+  colorClass: string;
 };
 
 type GeneralSetting = [icon: FontAwesomeIconName, label: string];
 
 const categories: SettingCategory[] = [
-  { icon: "gear", label: "General", color: "#8c8c91" },
-  { icon: "circle-half-stroke", label: "Appearance", color: "#a4a4a8" },
-  { icon: "desktop", label: "Desktop & Dock", color: "#85858a" },
-  { icon: "display", label: "Displays", color: "#258cff" },
-  { icon: "bars", label: "Menu Bar", color: "#85858a" },
-  { icon: "magnifying-glass", label: "Spotlight", color: "#307ed2" },
-  { icon: "image", label: "Wallpaper", color: "#31a6c8" },
-  { icon: "sparkles", label: "Notifications", color: "#ec5965" },
-  { icon: "volume-high", label: "Sound", color: "#ec5965" },
-  { icon: "key", label: "Lock Screen", color: "#85858a" },
-  { icon: "keyboard", label: "Keyboard", color: "#85858a" },
-  { icon: "computer-mouse", label: "Trackpad", color: "#85858a" },
+  { icon: "gear", label: "General", colorClass: "bg-[#8c8c91]" },
+  { icon: "circle-half-stroke", label: "Appearance", colorClass: "bg-[#a4a4a8]" },
+  { icon: "desktop", label: "Desktop & Dock", colorClass: "bg-[#85858a]" },
+  { icon: "display", label: "Displays", colorClass: "bg-[#258cff]" },
+  { icon: "bars", label: "Menu Bar", colorClass: "bg-[#85858a]" },
+  { icon: "magnifying-glass", label: "Spotlight", colorClass: "bg-[#307ed2]" },
+  { icon: "image", label: "Wallpaper", colorClass: "bg-[#31a6c8]" },
+  { icon: "sparkles", label: "Notifications", colorClass: "bg-[#ec5965]" },
+  { icon: "volume-high", label: "Sound", colorClass: "bg-[#ec5965]" },
+  { icon: "key", label: "Lock Screen", colorClass: "bg-[#85858a]" },
+  { icon: "keyboard", label: "Keyboard", colorClass: "bg-[#85858a]" },
+  { icon: "computer-mouse", label: "Trackpad", colorClass: "bg-[#85858a]" },
 ];
 
 const generalGroups: GeneralSetting[][] = [
@@ -74,10 +74,17 @@ type SettingsScrollAreaProps = {
   children: ReactNode;
   className: string;
   label: string;
+  contentClassName?: string;
   viewportRef?: RefObject<HTMLDivElement | null>;
 };
 
-function SettingsScrollArea({ children, className, label, viewportRef }: SettingsScrollAreaProps) {
+function SettingsScrollArea({
+  children,
+  className,
+  contentClassName = "",
+  label,
+  viewportRef,
+}: SettingsScrollAreaProps) {
   return (
     <ScrollArea.Root className={`group/scroll relative overflow-hidden ${className}`}>
       <ScrollArea.Viewport
@@ -88,10 +95,10 @@ function SettingsScrollArea({ children, className, label, viewportRef }: Setting
         aria-label={label}
         tabIndex={0}
       >
-        <ScrollArea.Content className="pb-6">{children}</ScrollArea.Content>
+        <ScrollArea.Content className={contentClassName}>{children}</ScrollArea.Content>
       </ScrollArea.Viewport>
       <ScrollArea.Scrollbar
-        className="settings-scrollbar absolute inset-y-[5px] right-[3px] z-[2] w-2 rounded-full bg-[var(--tienos-color-scrollbar-track)] opacity-0 transition-opacity data-[scrolling]:opacity-100 hover:opacity-100 active:opacity-100 group-has-[:focus]/scroll:opacity-100 motion-reduce:transition-none"
+        className="settings-scrollbar absolute inset-y-[5px] right-[3px] z-[2] w-2 rounded-full bg-[var(--tienos-color-scrollbar-track)] opacity-0 transition-opacity duration-[180ms] ease-out data-[has-overflow-y]:data-[scrolling]:opacity-100 data-[has-overflow-y]:hover:opacity-100 data-[has-overflow-y]:active:opacity-100 group-has-[:focus]/scroll:data-[has-overflow-y]:opacity-100 motion-reduce:transition-none"
         orientation="vertical"
         keepMounted
       >
@@ -224,7 +231,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
       }
     >
       <section
-        className="settings-window relative grid h-full w-full grid-cols-[30.8%_69.2%] overflow-hidden rounded-[24px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-window)] text-[var(--tienos-color-text-primary)] shadow-[var(--tienos-shadow-window)] backdrop-blur-[28px] max-[700px]:grid-cols-[112px_1fr] max-[700px]:rounded-[18px]"
+        className="settings-window relative grid h-full w-full grid-cols-[30.8%_69.2%] overflow-hidden rounded-[24px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-window)] text-[var(--tienos-color-text-primary)] shadow-[var(--tienos-shadow-window),inset_0_1px_rgb(255_255_255/0.05)] backdrop-blur-[28px] backdrop-saturate-[1.15] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none max-[700px]:grid-cols-[112px_1fr] max-[700px]:rounded-[18px]"
         aria-label="System Settings"
       >
         <aside
@@ -233,7 +240,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
         >
           <div
             data-sidebar-panel=""
-            className="settings-sidebar-panel flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-sidebar)] p-[10px_9px_8px] shadow-lg backdrop-blur-[24px] max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
+            className="settings-sidebar-panel flex h-full min-h-0 flex-col overflow-hidden rounded-[16px] border border-[var(--tienos-color-border)] bg-[color-mix(in_srgb,var(--tienos-color-sidebar)_84%,transparent)] p-[10px_9px_8px] shadow-[0_8px_24px_rgb(0_0_0/0.17),inset_0_1px_rgb(255_255_255/0.08)] backdrop-blur-[24px] backdrop-saturate-[1.2] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
           >
             <div
               className="mx-0.5 mb-[29px] flex gap-2.5 max-[700px]:mb-5 max-[700px]:gap-[7px]"
@@ -272,7 +279,10 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
               </div>
             </div>
 
-            <button className="settings-family flex h-8 w-full items-center gap-2 border-0 bg-transparent px-[7px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] max-[700px]:hidden">
+            <button
+              data-inset-focus=""
+              className="settings-family flex h-8 w-full items-center gap-2 border-0 bg-transparent px-[7px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:hidden"
+            >
               <span className="grid h-[22px] w-[42px] place-items-center rounded-lg bg-[#465268] text-white">
                 <FontAwesomeIcon name="people-group" />
               </span>
@@ -297,14 +307,13 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                           <button
                             key={category.label}
                             data-inset-focus=""
-                            className="settings-nav-item flex min-h-[33.5px] w-full items-center gap-2.5 rounded-[10px] border-0 bg-transparent p-[4px_8px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] data-[selected]:bg-[var(--tienos-color-accent)] data-[selected]:text-white data-[selected]:hover:bg-[var(--tienos-color-accent-hover)] max-[700px]:justify-center max-[700px]:p-1 max-[700px]:[&>span:last-child]:hidden"
+                            className="settings-nav-item flex min-h-[33.5px] w-full items-center gap-2.5 rounded-[10px] border-0 bg-transparent p-[4px_8px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] data-[selected]:bg-[var(--tienos-color-accent)] data-[selected]:text-white data-[selected]:hover:bg-[var(--tienos-color-accent-hover)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] contrast-more:data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] max-[700px]:justify-center max-[700px]:p-1 max-[700px]:[&>span:last-child]:hidden"
                             aria-label={category.label}
                             data-selected={selected === category.label || undefined}
                             onClick={() => setSelected(category.label)}
                           >
                             <span
-                              className="settings-icon grid size-5 shrink-0 place-items-center rounded-[7px] border border-white/20 text-[11px] text-white shadow-sm"
-                              style={{ background: category.color }}
+                              className={`settings-icon grid size-5 shrink-0 place-items-center rounded-[7px] border border-white/20 text-[11px] text-white shadow-sm ${category.colorClass}`}
                             >
                               <FontAwesomeIcon name={category.icon} />
                             </span>
@@ -335,14 +344,14 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
 
           <SettingsScrollArea
             className="settings-scroll-area min-h-0 flex-1"
+            contentClassName="pb-6"
             label="Settings details"
             viewportRef={detailsViewportRef}
           >
             {selected !== "Appearance" && (
               <header className="settings-hero rounded-[14px] border border-white/[.015] bg-[var(--tienos-color-content)] p-[23px_32px_20px] text-center max-[700px]:p-[24px_14px] [&_h2]:m-0 [&_h2]:text-[23px] [&_h2]:leading-none [&_p]:mx-auto [&_p]:mt-px [&_p]:mb-0 [&_p]:max-w-[600px] [&_p]:text-[var(--tienos-color-text-secondary)] [&_p]:leading-[var(--tienos-leading-body)]">
                 <span
-                  className="settings-hero-icon mx-auto mb-1 grid size-[54px] place-items-center rounded-[18px] border border-white/20 text-[28px] text-white"
-                  style={{ background: selectedCategory.color }}
+                  className={`settings-hero-icon mx-auto mb-1 grid size-[54px] place-items-center rounded-[18px] border border-white/20 text-[28px] text-white ${selectedCategory.colorClass}`}
                 >
                   <FontAwesomeIcon name={selectedCategory.icon} />
                 </span>
@@ -462,6 +471,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                       {["Default", "Dark", "Clear", "Tinted"].map((style) => (
                         <button
                           key={style}
+                          className="grid gap-1 border-0 bg-transparent text-center text-[var(--tienos-color-text-secondary)] aria-pressed:font-bold aria-pressed:text-[var(--tienos-color-text-primary)] aria-pressed:[&>span]:border-[var(--tienos-color-accent)] aria-pressed:[&>span]:shadow-[0_0_0_2px_var(--tienos-color-accent)]"
                           aria-pressed={widgetStyle === style}
                           onClick={() => setWidgetStyle(style)}
                         >
@@ -525,7 +535,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                     {group.map(([icon, label]) => (
                       <button
                         data-inset-focus=""
-                        className="settings-row relative flex h-[42px] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] [@media(forced-colors:active)]:focus-visible:-outline-offset-2 w-full items-center gap-3 border-0 bg-transparent p-[8px_18px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] max-[700px]:p-[8px_12px]"
+                        className="settings-row relative flex h-[42px] w-full items-center gap-3 border-0 bg-transparent p-[8px_18px] text-left text-[var(--tienos-color-text-primary)] after:absolute after:right-[18px] after:bottom-0 after:left-[50px] after:h-px after:bg-[var(--tienos-color-separator)] after:content-[''] last:after:hidden hover:bg-[var(--tienos-color-hover)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] [@media(forced-colors:active)]:focus-visible:-outline-offset-2 max-[700px]:p-[8px_12px]"
                         key={label}
                       >
                         <span className="settings-row-icon grid size-[22px] place-items-center rounded-md border border-white/20 bg-[#292a2c] text-xs text-white">
@@ -544,8 +554,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
             ) : (
               <div className="mt-3.5 grid min-h-60 content-center place-items-center gap-3.5 rounded-[15px] bg-[var(--tienos-color-content)] text-[var(--tienos-color-text-secondary)]">
                 <span
-                  className="settings-icon grid size-5 shrink-0 place-items-center rounded-[7px] border border-white/20 text-[11px] text-white shadow-sm"
-                  style={{ background: selectedCategory.color }}
+                  className={`settings-icon grid size-5 shrink-0 place-items-center rounded-[7px] border border-white/20 text-[11px] text-white shadow-sm ${selectedCategory.colorClass}`}
                 >
                   <FontAwesomeIcon name={selectedCategory.icon} />
                 </span>

@@ -189,6 +189,29 @@ test("uses opaque menu surfaces with reduced transparency", async ({ page }) => 
   const popup = page.locator(".tienos-menu-popup").first();
   await expect(popup).toHaveCSS("background-color", "rgb(20, 27, 36)");
   await expect(popup).toHaveCSS("backdrop-filter", "none");
+  await page.getByRole("menuitem", { name: "System Settings…" }).click();
+  await expect(page.locator(".settings-window")).toHaveCSS("backdrop-filter", "none");
+  await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("backdrop-filter", "none");
+});
+
+test("preserves migrated System Settings selection and separators", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  await page.getByRole("button", { name: "Appearance" }).click();
+
+  const darkWidget = page.getByRole("button", { name: "Dark", exact: true }).last();
+  await darkWidget.click();
+  await expect(darkWidget).toHaveCSS("font-weight", "700");
+  await expect(darkWidget).toHaveCSS("color", "rgba(255, 255, 255, 0.9)");
+  await expect(darkWidget.locator("span")).toHaveCSS("border-color", "rgb(40, 99, 215)");
+  await expect(darkWidget.locator("span")).not.toHaveCSS("box-shadow", "none");
+
+  await page.getByRole("button", { name: "General" }).click();
+  const separator = page.locator(".settings-row").first();
+  expect(
+    await separator.evaluate((element) => getComputedStyle(element, "::after").backgroundColor),
+  ).toBe("rgba(255, 255, 255, 0.1)");
 });
 
 test("adds visible row boundaries with increased contrast", async ({ page }) => {
@@ -392,6 +415,11 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Battery full" })).toBeVisible();
+  const wallpaper = page.locator(".tienos-wallpaper");
+  const vignette = page.locator(".tienos-vignette");
+  await expect(wallpaper).toHaveCSS("filter", "saturate(1.08)");
+  await expect(wallpaper).not.toHaveCSS("transform", "none");
+  await expect(vignette).toHaveCSS("background-image", /linear-gradient.*radial-gradient/);
 
   await context.close();
 });
