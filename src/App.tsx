@@ -11,7 +11,7 @@ type AppProps = {
 };
 
 export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(true);
 
   useLayoutEffect(() => {
     if (!onDesktopReady) return;

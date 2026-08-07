@@ -10,7 +10,6 @@
   --tienos-type-caption: 11px;
   --tienos-type-secondary: 12px;
   --tienos-type-body: 13px;
-  --tienos-type-window: 14px;
   --tienos-type-title: 23px;
   --tienos-leading-tight: 1;
   --tienos-leading-body: 1.35;
@@ -34,7 +33,7 @@
 
   --tienos-radius-menu: 14px;
   --tienos-radius-menu-item: 10px;
-  --tienos-radius-window: 26px;
+  --tienos-radius-window: 24px;
   --tienos-radius-content: 14px;
   --tienos-radius-control: 10px;
 

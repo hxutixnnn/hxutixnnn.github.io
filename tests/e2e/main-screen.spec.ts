@@ -39,7 +39,7 @@ test("applies design-system tokens to component styles", async ({ page }) => {
     accentHover: "#326edc",
     focusOnAccent: "#fff",
     menuRadius: "14px",
-    windowRadius: "26px",
+    windowRadius: "24px",
   });
   await page.keyboard.press("Tab");
   await expect(page.getByRole("menuitem", { name: "Open tienOS menu" })).not.toHaveCSS("box-shadow", "none");
@@ -69,6 +69,74 @@ test("applies design-system tokens to component styles", async ({ page }) => {
   const selectedNavItem = page.locator(".settings-nav-item[data-selected]");
   await selectedNavItem.hover();
   await expect(selectedNavItem).toHaveCSS("background-color", "rgb(1, 2, 3)");
+});
+
+test("uses conventional rounded geometry without shape masks", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  const trigger = page.getByRole("menuitem", { name: "Open tienOS menu" });
+  await trigger.click();
+  const popup = page.locator(".tienos-menu-popup").first();
+  const menuItem = page.getByRole("menuitem", { name: "System Settings…" });
+
+  expect(await trigger.evaluate((node) => parseFloat(getComputedStyle(node).borderRadius))).toBeGreaterThan(
+    0,
+  );
+  await expect(popup).toHaveCSS("border-radius", "14px");
+  await expect(menuItem).toHaveCSS("border-radius", "10px");
+  await menuItem.click();
+
+  const settingsWindow = page.locator(".settings-window");
+  const sidebarPanel = page.locator(".settings-sidebar-panel");
+  await expect(settingsWindow).toHaveCSS("font-size", "13px");
+  await expect(settingsWindow).toHaveCSS("border-radius", "24px");
+  await expect(sidebarPanel).toHaveCSS("border-radius", "16px");
+  await expect(page.locator(".settings-hero h2")).toHaveCSS("font-size", "23px");
+
+  const representatives = [
+    settingsWindow,
+    page.locator(".settings-sidebar-panel"),
+    page.locator(".settings-search"),
+    page.locator(".settings-nav-item").first(),
+    page.locator(".settings-icon").first(),
+    page.locator(".settings-hero"),
+    page.locator(".settings-hero-icon"),
+    page.locator(".settings-group").first(),
+    page.locator(".settings-row-icon").first(),
+  ];
+
+  for (const element of representatives) {
+    await expect(element).toBeVisible();
+    const geometry = await element.evaluate((node) => {
+      const styles = getComputedStyle(node);
+      return {
+        borderRadius: styles.borderRadius,
+        clipPath: styles.clipPath,
+        maskImage: styles.maskImage,
+        webkitMaskImage: styles.getPropertyValue("-webkit-mask-image"),
+      };
+    });
+    expect(geometry.borderRadius).not.toBe("0px");
+    expect(geometry.clipPath).toBe("none");
+    expect(geometry.maskImage).toBe("none");
+    expect(geometry.webkitMaskImage).toBe("none");
+  }
+
+  const circles = [page.locator(".settings-light").first(), page.locator(".settings-avatar")];
+  for (const circle of circles) {
+    await expect(circle).toHaveCSS("border-radius", "50%");
+    const box = await circle.boundingBox();
+    expect(box?.width).toBe(box?.height);
+  }
+
+  const shippedCss = await page.evaluate(() =>
+    [...document.styleSheets]
+      .flatMap((sheet) => [...sheet.cssRules])
+      .map((rule) => rule.cssText)
+      .join("\n"),
+  );
+  expect(shippedCss).not.toMatch(/corner-shape|squircle|superellipse/i);
 });
 
 test("keeps keyboard focus visible in forced colors", async ({ page }) => {
@@ -293,7 +361,10 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
   await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Battery full" })).toBeVisible();
   await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="sparkle"]'), "sparkle");
-  await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="chevron-right"]'), "chevron-right");
+  await expectFontAwesomeIconToPaint(
+    popup.locator('[data-fa-icon="chevron-right"]').first(),
+    "chevron-right",
+  );
 });
 
 test("reveals the static desktop without JavaScript", async ({ browser }) => {
@@ -311,13 +382,21 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
   await context.close();
 });
 
-test("opens System Settings from the system menu", async ({ page }) => {
+test("opens System Settings by default and supports close and reopen", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  const settingsWindow = page.getByRole("region", { name: "System Settings" });
+  await expect(settingsWindow).toBeVisible();
+  await expect(settingsWindow).toHaveCount(1);
+  await page.getByRole("button", { name: "Close System Settings" }).click();
+  await expect(settingsWindow).toBeHidden();
+
   await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
   await page.getByRole("menuitem", { name: "System Settings…" }).click();
 
-  await expect(page.getByRole("region", { name: "System Settings" })).toBeVisible();
+  await expect(settingsWindow).toBeVisible();
+  await expect(settingsWindow).toHaveCount(1);
   await expect(page.getByRole("menuitem", { name: "System Settings…" })).toBeHidden();
   await expect(page.getByRole("heading", { name: "General" })).toBeVisible();
   await expectFontAwesomeIconToPaint(
@@ -359,8 +438,8 @@ test("matches the System Settings reference geometry", async ({ page }) => {
     bounds && Object.fromEntries(Object.entries(bounds).map(([key, value]) => [key, Math.round(value)]));
 
   expect(roundedBounds(windowBounds)).toMatchObject({ x: 97, y: 97, width: 723, height: 670 });
-  expect(roundedBounds(heroBounds)).toMatchObject({ x: 340, y: 150, width: 459, height: 164 });
-  expect(roundedBounds(firstGroupBounds)).toMatchObject({ x: 340, y: 324, width: 459, height: 128 });
+  expect(roundedBounds(heroBounds)).toMatchObject({ x: 340, y: 150, width: 459, height: 161 });
+  expect(roundedBounds(firstGroupBounds)).toMatchObject({ x: 340, y: 321, width: 459, height: 128 });
 });
 
 test("uses independently accessible Base UI scroll areas with transient scrollbars", async ({ page }) => {
@@ -465,6 +544,8 @@ test("fits and fixes an open System Settings window on compact screens", async (
 
   const settingsWindow = page.getByRole("region", { name: "System Settings" });
   await page.setViewportSize({ width: 320, height: 320 });
+  await expect(settingsWindow).toHaveCSS("border-radius", "18px");
+  await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("border-radius", "11px");
 
   await expect
     .poll(async () => {
