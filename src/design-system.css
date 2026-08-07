@@ -23,6 +23,7 @@
   --tienos-color-text-primary: rgb(255 255 255 / 0.9);
   --tienos-color-text-secondary: rgb(255 255 255 / 0.55);
   --tienos-color-text-tertiary: rgb(255 255 255 / 0.38);
+  --tienos-color-text-on-wallpaper: rgb(255 255 255 / 0.9);
   --tienos-color-separator: rgb(255 255 255 / 0.1);
   --tienos-color-border: rgb(255 255 255 / 0.2);
   --tienos-color-menu: rgb(20 27 36 / 0.78);
@@ -117,6 +118,7 @@
     --tienos-color-text-primary: CanvasText;
     --tienos-color-text-secondary: CanvasText;
     --tienos-color-text-tertiary: GrayText;
+    --tienos-color-text-on-wallpaper: CanvasText;
     --tienos-color-separator: CanvasText;
     --tienos-color-border: CanvasText;
     --tienos-color-menu: Canvas;

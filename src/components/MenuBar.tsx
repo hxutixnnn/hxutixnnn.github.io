@@ -9,7 +9,7 @@ type MenuBarProps = {
 };
 
 const triggerClassName =
-  "tienos-menu-trigger rounded-full px-2 py-0.5 text-left font-medium text-white/90 transition-colors";
+  "tienos-menu-trigger rounded-full px-2 py-0.5 text-left font-medium transition-colors";
 const itemClassName = "tienos-menu-item flex min-h-7 w-full items-center gap-3 px-2 py-1 text-left";
 const popupClassName = "tienos-menu-popup min-w-60";
 const separatorClassName = "tienos-menu-separator my-0.5";

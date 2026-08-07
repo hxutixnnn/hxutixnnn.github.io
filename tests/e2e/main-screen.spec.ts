@@ -332,6 +332,7 @@ test("releases the static desktop when a critical asset stalls", async ({ page }
 });
 
 test("reveals the static desktop when the application module fails", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("light")));
   await page.route(/\/assets\/.*\.js$/, (route) => route.abort("failed"));
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -339,6 +340,17 @@ test("reveals the static desktop when the application module fails", async ({ pa
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
   await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
+  await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+  const menubar = page.getByRole("navigation", { name: "tienOS menu bar" });
+  await expect(menubar).toHaveCSS("color", "rgba(255, 255, 255, 0.9)");
+  await expect(menubar.locator(".tienos-menu-trigger").first()).toHaveCSS(
+    "color",
+    "rgba(255, 255, 255, 0.9)",
+  );
+  await expect(menubar.getByText("Navigator", { exact: true })).toHaveCSS(
+    "color",
+    "rgba(255, 255, 255, 0.9)",
+  );
 });
 
 test("renders the tienOS main screen and system menu", async ({ page }) => {
