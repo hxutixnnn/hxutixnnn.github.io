@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { ScrollArea } from "@base-ui/react/scroll-area";
 import { Rnd } from "react-rnd";
 import { FontAwesomeIcon, type FontAwesomeIconName } from "./FontAwesomeIcon";
@@ -108,7 +108,7 @@ function SettingsScrollArea({
   );
 }
 
-function compactFrame(viewport: Viewport, menuBottom = 46): SettingsFrame {
+function compactFrame(viewport: Viewport, menuBottom: number): SettingsFrame {
   const top = Math.ceil(menuBottom);
   return {
     x: 8,
@@ -167,12 +167,12 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
   const [viewport, setViewport] = useState(readViewport);
   const compact = viewport.width <= compactBreakpoint;
   const [menuBottom, setMenuBottom] = useState(0);
-  const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport) : desktopFrame(viewport)));
+  const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport, 0) : desktopFrame(viewport)));
   const compactRef = useRef(compact);
   const detailsViewportRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const menuBar = document.querySelector<HTMLElement>('header:has([aria-label="tienOS menu bar"])');
+  useLayoutEffect(() => {
+    const menuBar = document.querySelector<HTMLElement>("[data-menu-bar-surface]");
     const updateGeometry = () => {
       const nextViewport = readViewport();
       const nextMenuBottom = menuBar?.getBoundingClientRect().bottom ?? 0;
@@ -209,6 +209,10 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
     [query],
   );
   const selectedCategory = categories.find(({ label }) => label === selected) ?? categories[0];
+  const availableHeight = Math.max(0, viewport.height - menuBottom);
+  const minimumHeight = compact
+    ? Math.min(frame.height, availableHeight)
+    : Math.min(desktopMinimum.height, availableHeight);
 
   return (
     <Rnd
@@ -217,9 +221,9 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
       position={{ x: frame.x, y: frame.y }}
       bounds="window"
       minWidth={compact ? frame.width : Math.min(desktopMinimum.width, viewport.width)}
-      minHeight={compact ? frame.height : Math.min(desktopMinimum.height, viewport.height)}
+      minHeight={minimumHeight}
       maxWidth={viewport.width}
-      maxHeight={Math.max(0, viewport.height - menuBottom)}
+      maxHeight={availableHeight}
       disableDragging={compact}
       enableResizing={!compact}
       dragHandleClassName="settings-window"

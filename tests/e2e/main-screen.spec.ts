@@ -1,4 +1,5 @@
 import { expect, test, type Locator } from "@playwright/test";
+import sharp from "sharp";
 
 const spriteUrl = "/fontawesome/fontawesome-pro-solid.svg";
 
@@ -32,6 +33,13 @@ async function expectConventionalRoundedGeometry(element: Locator) {
   expect(geometry.clipPath).toBe("none");
   expect(geometry.maskImage).toBe("none");
   expect(geometry.webkitMaskImage).toBe("none");
+}
+
+async function readCenterPixel(element: Locator) {
+  const screenshot = await element.screenshot();
+  const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
+  const offset = (Math.floor(info.height / 2) * info.width + Math.floor(info.width / 2)) * info.channels;
+  return Array.from(data.subarray(offset, offset + 3));
 }
 
 test("applies design-system tokens to component styles", async ({ page }) => {
@@ -186,6 +194,11 @@ test("keeps keyboard focus visible in forced colors", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
 
+  const menuBarSurface = page.locator("[data-menu-bar-surface]");
+  await expect(menuBarSurface).toHaveCSS("backdrop-filter", "none");
+  await expect(menuBarSurface).toHaveCSS("box-shadow", "none");
+  await expect(menuBarSurface).toHaveCSS("background-image", "none");
+
   await page.keyboard.press("Tab");
   const trigger = page.getByRole("menuitem", { name: "Open tienOS menu" });
   await expect(trigger).toHaveCSS("outline-style", "solid");
@@ -255,7 +268,9 @@ test("renders the floating glass menu bar across themes and compact geometry", a
     );
     await page.goto("/");
     await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
-    const surface = page.locator('header:has([aria-label="tienOS menu bar"])');
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", theme);
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", theme);
+    const surface = page.locator("[data-menu-bar-surface]");
     await expect(surface).toHaveCSS("backdrop-filter", "blur(14px) saturate(1.45)");
     await expect(surface).toHaveCSS("border-radius", "18px");
     await expect(surface).toHaveCSS("box-shadow", /inset.*24px/);
@@ -264,8 +279,25 @@ test("renders the floating glass menu bar across themes and compact geometry", a
     expect(bounds?.width).toBe(page.viewportSize()!.width - 24);
   }
 
+  const surface = page.locator("[data-menu-bar-surface]");
+  const wallpaper = page.locator(".tienos-wallpaper");
+  await wallpaper.evaluate((element) => {
+    (element as HTMLElement).style.background = "rgb(0 0 0)";
+  });
+  const pixelOverDarkWallpaper = await readCenterPixel(surface);
+  await wallpaper.evaluate((element) => {
+    (element as HTMLElement).style.background = "rgb(255 255 255)";
+  });
+  const pixelOverLightWallpaper = await readCenterPixel(surface);
+  expect(
+    pixelOverLightWallpaper.reduce(
+      (difference, channel, index) => difference + Math.abs(channel - pixelOverDarkWallpaper[index]),
+      0,
+    ),
+  ).toBeGreaterThan(30);
+
   await page.setViewportSize({ width: 320, height: 480 });
-  const compactSurface = page.locator('header:has([aria-label="tienOS menu bar"])');
+  const compactSurface = page.locator("[data-menu-bar-surface]");
   await expect(compactSurface).toHaveCSS("border-radius", "14px");
   const compactBounds = await compactSurface.boundingBox();
   expect(compactBounds?.x).toBe(6);
@@ -557,6 +589,11 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
   expect(wallpaperState.scale).toBe("none");
   expect(wallpaperState.transformScale).toBeCloseTo(1.02);
   await expect(vignette).toHaveCSS("background-image", /linear-gradient.*radial-gradient/);
+  const menuBarSurface = page.locator("[data-menu-bar-surface]");
+  await expect(menuBarSurface).toHaveCSS("backdrop-filter", "blur(14px) saturate(1.45)");
+  await expect(menuBarSurface).toHaveCSS("background-image", /linear-gradient/);
+  await expect(menuBarSurface).toHaveCSS("border-radius", "18px");
+  await expect(menuBarSurface).toHaveCSS("box-shadow", /inset.*24px/);
   await expect(page.getByRole("navigation", { name: "tienOS menu bar" })).toHaveCSS(
     "text-shadow",
     "rgba(0, 0, 0, 0.32) 0px 1px 3px",
@@ -795,6 +832,42 @@ test("fits and fixes an open System Settings window on compact screens", async (
 
   const fixedBounds = await settingsWindow.boundingBox();
   expect(fixedBounds).toEqual(compactBounds);
+});
+
+test("uses measured menu geometry for initial and constrained settings frames", async ({ page }) => {
+  await page.setViewportSize({ width: 680, height: 500 });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  const settingsWindow = page.getByRole("region", { name: "System Settings" });
+  await page.getByRole("button", { name: "Close System Settings" }).click();
+  await page.evaluate(() => {
+    const observedWindow = window as typeof window & { firstSettingsTop?: number };
+    new MutationObserver((_, observer) => {
+      const settings = document.querySelector<HTMLElement>(".settings-window");
+      if (!settings) return;
+      observedWindow.firstSettingsTop = settings.getBoundingClientRect().top;
+      observer.disconnect();
+    }).observe(document.getElementById("root")!, { childList: true, subtree: true });
+  });
+
+  await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+  await page.getByRole("menuitem", { name: "System Settings…" }).click();
+  const menuBottom = await page
+    .locator("[data-menu-bar-surface]")
+    .evaluate((element) => element.getBoundingClientRect().bottom);
+  expect(
+    await page.evaluate(() => (window as typeof window & { firstSettingsTop?: number }).firstSettingsTop),
+  ).toBeGreaterThanOrEqual(menuBottom);
+  expect((await settingsWindow.boundingBox())!.y).toBeGreaterThanOrEqual(menuBottom);
+
+  await page.setViewportSize({ width: 1100, height: 500 });
+  const frame = page.locator(".settings-rnd");
+  await expect(frame).toHaveCSS("min-height", "450px");
+  await expect(frame).toHaveCSS("max-height", "450px");
+  const constrainedBounds = await settingsWindow.boundingBox();
+  expect(constrainedBounds!.y).toBeGreaterThanOrEqual(menuBottom);
+  expect(constrainedBounds!.y + constrainedBounds!.height).toBeLessThanOrEqual(500);
 });
 
 test("keeps the default menu corners on a small viewport", async ({ page }) => {
