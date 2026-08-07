@@ -57,13 +57,13 @@ Continuous wallpaper motion runs only when reduced motion is not requested.
 ### Menu bar and menus
 
 Use Base UI menu semantics, complete keyboard operation, familiar shortcuts, and semantic labels.
-Keep menu presentation compact.
+Keep menu presentation compact. The top surface uses Tailwind-owned translucent gradient layers, pseudo-element edge highlights, backdrop blur/saturation, and inset/drop shadows; reduced transparency replaces it with the opaque menu token, while increased contrast and forced colors remove ambiguous transparency. The static HTML mirrors the same utilities to prevent startup material jumps. No menu-bar effect is retained in global CSS; only the existing document, keyframe, and accessibility contracts remain there because utilities cannot consistently target those global states.
 Selection uses the accent token plus text and positional state, never color alone.
 
 ### Windows
 
 Desktop windows support pointer dragging, eight-direction resizing, viewport bounds, and minimum dimensions.
-Window frames adapt reactively to the available viewport.
+Window frames adapt reactively to the available viewport. Their top drag boundary is measured from the rendered menu-bar edge and observed for geometry changes rather than duplicated as a spacing constant.
 Compact layouts remain fully visible and fixed rather than scaling their contents.
 Preserve a meaningful accessible window name.
 

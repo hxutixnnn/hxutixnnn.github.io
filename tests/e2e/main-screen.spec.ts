@@ -242,6 +242,34 @@ test("uses opaque menu surfaces with reduced transparency", async ({ page }) => 
   await page.getByRole("menuitem", { name: "System Settings…" }).click();
   await expect(page.locator(".settings-window")).toHaveCSS("backdrop-filter", "none");
   await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("backdrop-filter", "none");
+  const menuBarSurface = page.locator('header:has([aria-label="tienOS menu bar"])');
+  await expect(menuBarSurface).toHaveCSS("background-color", "rgb(20, 27, 36)");
+  await expect(menuBarSurface).toHaveCSS("backdrop-filter", "none");
+});
+
+test("renders the floating glass menu bar across themes and compact geometry", async ({ page }) => {
+  for (const theme of ["dark", "light"] as const) {
+    await page.addInitScript(
+      (mode) => localStorage.setItem("tienos-appearance", JSON.stringify(mode)),
+      theme,
+    );
+    await page.goto("/");
+    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+    const surface = page.locator('header:has([aria-label="tienOS menu bar"])');
+    await expect(surface).toHaveCSS("backdrop-filter", "blur(14px) saturate(1.45)");
+    await expect(surface).toHaveCSS("border-radius", "18px");
+    await expect(surface).toHaveCSS("box-shadow", /inset.*24px/);
+    const bounds = await surface.boundingBox();
+    expect(bounds?.x).toBe(12);
+    expect(bounds?.width).toBe(page.viewportSize()!.width - 24);
+  }
+
+  await page.setViewportSize({ width: 320, height: 480 });
+  const compactSurface = page.locator('header:has([aria-label="tienOS menu bar"])');
+  await expect(compactSurface).toHaveCSS("border-radius", "14px");
+  const compactBounds = await compactSurface.boundingBox();
+  expect(compactBounds?.x).toBe(6);
+  expect(compactBounds?.width).toBe(308);
 });
 
 test("preserves migrated System Settings selection and separators", async ({ page }) => {
@@ -531,7 +559,7 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
   await expect(vignette).toHaveCSS("background-image", /linear-gradient.*radial-gradient/);
   await expect(page.getByRole("navigation", { name: "tienOS menu bar" })).toHaveCSS(
     "text-shadow",
-    "rgba(0, 0, 0, 0.4) 0px 1px 3px",
+    "rgba(0, 0, 0, 0.32) 0px 1px 3px",
   );
 
   await context.close();
@@ -700,6 +728,14 @@ test("drags and resizes the System Settings window with react-rnd", async ({ pag
   const dragged = await settingsWindow.boundingBox();
   expect(Math.round(dragged!.x - initial!.x)).toBe(30);
   expect(Math.round(dragged!.y - initial!.y)).toBe(20);
+
+  await page.mouse.move(dragged!.x + dragged!.width * 0.7, dragged!.y + 16);
+  await page.mouse.down();
+  await page.mouse.move(dragged!.x + dragged!.width * 0.7, -100, { steps: 6 });
+  await page.mouse.up();
+  const menuBar = await page.locator('header:has([aria-label="tienOS menu bar"])').boundingBox();
+  const topClamped = await settingsWindow.boundingBox();
+  expect(topClamped!.y).toBeGreaterThanOrEqual(menuBar!.y + menuBar!.height);
 
   const southeastHandle = page.locator('.settings-rnd div[style*="se-resize"]');
   const handle = await southeastHandle.boundingBox();

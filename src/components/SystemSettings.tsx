@@ -108,12 +108,13 @@ function SettingsScrollArea({
   );
 }
 
-function compactFrame(viewport: Viewport): SettingsFrame {
+function compactFrame(viewport: Viewport, menuBottom = 46): SettingsFrame {
+  const top = Math.ceil(menuBottom);
   return {
     x: 8,
-    y: 46,
+    y: top,
     width: Math.max(0, viewport.width - 16),
-    height: Math.max(0, viewport.height - 54),
+    height: Math.max(0, viewport.height - top - 8),
   };
 }
 
@@ -137,13 +138,15 @@ function desktopFrame(viewport: Viewport): SettingsFrame {
   };
 }
 
-function clampFrame(frame: SettingsFrame, viewport: Viewport): SettingsFrame {
+function clampFrame(frame: SettingsFrame, viewport: Viewport, menuBottom = 0): SettingsFrame {
+  const top = Math.ceil(menuBottom);
+  const availableHeight = Math.max(0, viewport.height - top);
   const width = clamp(frame.width, Math.min(desktopMinimum.width, viewport.width), viewport.width);
-  const height = clamp(frame.height, Math.min(desktopMinimum.height, viewport.height), viewport.height);
+  const height = clamp(frame.height, Math.min(desktopMinimum.height, availableHeight), availableHeight);
 
   return {
     x: clamp(frame.x, 0, viewport.width - width),
-    y: clamp(frame.y, 0, viewport.height - height),
+    y: clamp(frame.y, top, viewport.height - height),
     width,
     height,
   };
@@ -163,29 +166,37 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
   const [wallpaperTint, setWallpaperTint] = useState(true);
   const [viewport, setViewport] = useState(readViewport);
   const compact = viewport.width <= compactBreakpoint;
+  const [menuBottom, setMenuBottom] = useState(0);
   const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport) : desktopFrame(viewport)));
   const compactRef = useRef(compact);
   const detailsViewportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const updateViewport = () => {
+    const menuBar = document.querySelector<HTMLElement>('header:has([aria-label="tienOS menu bar"])');
+    const updateGeometry = () => {
       const nextViewport = readViewport();
+      const nextMenuBottom = menuBar?.getBoundingClientRect().bottom ?? 0;
       const nextCompact = nextViewport.width <= compactBreakpoint;
       const modeChanged = compactRef.current !== nextCompact;
       compactRef.current = nextCompact;
 
       setViewport(nextViewport);
+      setMenuBottom(nextMenuBottom);
       setFrame((currentFrame) => {
-        if (nextCompact) {
-          return compactFrame(nextViewport);
-        }
-
-        return modeChanged ? desktopFrame(nextViewport) : clampFrame(currentFrame, nextViewport);
+        if (nextCompact) return compactFrame(nextViewport, nextMenuBottom);
+        const nextFrame = modeChanged ? desktopFrame(nextViewport) : currentFrame;
+        return clampFrame(nextFrame, nextViewport, nextMenuBottom);
       });
     };
 
-    window.addEventListener("resize", updateViewport);
-    return () => window.removeEventListener("resize", updateViewport);
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateGeometry);
+    if (menuBar) observer?.observe(menuBar);
+    window.addEventListener("resize", updateGeometry);
+    updateGeometry();
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateGeometry);
+    };
   }, []);
   useEffect(() => {
     if (detailsViewportRef.current) detailsViewportRef.current.scrollTop = 0;
@@ -208,13 +219,20 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
       minWidth={compact ? frame.width : Math.min(desktopMinimum.width, viewport.width)}
       minHeight={compact ? frame.height : Math.min(desktopMinimum.height, viewport.height)}
       maxWidth={viewport.width}
-      maxHeight={viewport.height}
+      maxHeight={Math.max(0, viewport.height - menuBottom)}
       disableDragging={compact}
       enableResizing={!compact}
       dragHandleClassName="settings-window"
       cancel=".settings-navigation,.settings-scroll-area,button,input"
+      onDrag={(_, position) =>
+        setFrame((currentFrame) =>
+          clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom),
+        )
+      }
       onDragStop={(_, position) =>
-        setFrame((currentFrame) => clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport))
+        setFrame((currentFrame) =>
+          clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom),
+        )
       }
       onResizeStop={(_, __, element, ___, position) =>
         setFrame(
@@ -226,6 +244,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
               height: element.offsetHeight,
             },
             viewport,
+            menuBottom,
           ),
         )
       }
