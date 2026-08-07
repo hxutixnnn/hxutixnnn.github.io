@@ -263,13 +263,13 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
 
             <label
               data-settings-search=""
-              className="settings-search flex h-7 items-center gap-[7px] rounded-[11px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-2.5 text-[var(--tienos-color-text-secondary)] [&_input]:min-w-0 [&_input]:w-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:text-[var(--tienos-color-text-primary)]"
+              className="settings-search flex h-7 items-center gap-[7px] rounded-[11px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-2.5 text-[var(--tienos-color-text-secondary)] [&_input]:min-w-0 [&_input]:w-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:text-[var(--tienos-color-text-primary)] [&_input::placeholder]:text-[var(--tienos-color-text-secondary)]"
             >
               <FontAwesomeIcon name="magnifying-glass" className="text-xs" />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
             </label>
 
-            <div className="flex items-center gap-[11px] p-[13px_7px_10px] max-[700px]:hidden [&_strong]:block [&_span]:block [&_span]:text-xs [&_span]:text-[var(--tienos-color-text-secondary)]">
+            <div className="flex items-center gap-[11px] p-[13px_7px_10px] max-[700px]:hidden [&_strong]:block [&_span]:mt-[2px] [&_span]:block [&_span]:text-xs [&_span]:text-[var(--tienos-color-text-secondary)]">
               <div className="settings-avatar grid size-[34px] place-items-center rounded-[50%] bg-[linear-gradient(145deg,#59677c,#192334)] text-[17px] font-bold">
                 T
               </div>
@@ -281,9 +281,9 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
 
             <button
               data-inset-focus=""
-              className="settings-family flex h-8 w-full items-center gap-2 border-0 bg-transparent px-[7px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:hidden"
+              className="settings-family flex h-8 w-full items-center gap-[9px] border-0 bg-transparent px-[7px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:hidden"
             >
-              <span className="grid h-[22px] w-[42px] place-items-center rounded-lg bg-[#465268] text-white">
+              <span className="grid h-[22px] w-[42px] place-items-center rounded-lg bg-[#465268] text-[15px] text-white">
                 <FontAwesomeIcon name="people-group" />
               </span>
               <span>Family</span>
@@ -349,7 +349,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
             viewportRef={detailsViewportRef}
           >
             {selected !== "Appearance" && (
-              <header className="settings-hero rounded-[14px] border border-white/[.015] bg-[var(--tienos-color-content)] p-[23px_32px_19px] text-center max-[700px]:p-[24px_14px] [&_h2]:m-0 [&_h2]:text-[23px] [&_h2]:leading-none [&_h2]:tracking-[-0.03em] [&_p]:mx-auto [&_p]:mt-px [&_p]:mb-0 [&_p]:max-w-[600px] [&_p]:text-[var(--tienos-color-text-secondary)] [&_p]:leading-[var(--tienos-leading-body)]">
+              <header className="settings-hero rounded-[14px] border border-white/[.015] bg-[var(--tienos-color-content)] p-[23px_32px_19px] text-center max-[700px]:p-[24px_14px] max-[700px]:[&_h2]:text-[22px] [&_h2]:m-0 [&_h2]:text-[23px] [&_h2]:leading-none [&_h2]:tracking-[-0.03em] [&_p]:mx-auto [&_p]:mt-px [&_p]:mb-0 [&_p]:max-w-[600px] [&_p]:text-[var(--tienos-color-text-secondary)] [&_p]:leading-[var(--tienos-leading-body)]">
                 <span
                   className={`settings-hero-icon mx-auto mb-1 grid size-[54px] place-items-center rounded-[18px] border border-white/20 text-[28px] text-white shadow-[inset_0_1px_rgb(255_255_255/0.2),0_1px_2px_rgb(0_0_0/0.4)] ${selectedCategory.colorClass}`}
                 >
@@ -446,7 +446,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                       ))}
                     </div>
                   </div>
-                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px]">
+                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
                     <span>Text highlight color</span>
                     <select
                       aria-label="Text highlight color"
@@ -483,7 +483,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                       ))}
                     </div>
                   </div>
-                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px]">
+                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
                     <span>Folder color</span>
                     <select
                       aria-label="Folder color"
@@ -503,7 +503,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                   className="overflow-hidden rounded-[14px] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
                   aria-label="Windows"
                 >
-                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px]">
+                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
                     <span>Sidebar icon size</span>
                     <select
                       aria-label="Sidebar icon size"

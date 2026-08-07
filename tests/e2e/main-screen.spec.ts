@@ -151,6 +151,15 @@ test("keeps keyboard focus visible in forced colors", async ({ page }) => {
   await expect(trigger).toHaveCSS("outline-width", "2px");
 
   await trigger.click();
+  await page.keyboard.press("ArrowDown");
+  const highlightedMenuItem = page.locator(".tienos-menu-item[data-highlighted]");
+  await highlightedMenuItem.focus();
+  const highlightedColors = await highlightedMenuItem.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    return { background: styles.backgroundColor, outline: styles.outlineColor };
+  });
+  expect(highlightedColors.outline).not.toBe(highlightedColors.background);
+
   await page.getByRole("menuitem", { name: "System Settings…" }).click();
   const settingsRow = page.locator(".settings-row").first();
   await page.keyboard.press("Tab");
@@ -196,8 +205,18 @@ test("uses opaque menu surfaces with reduced transparency", async ({ page }) => 
 
 test("preserves migrated System Settings selection and separators", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
+  await page.emulateMedia({ colorScheme: "light" });
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  expect(
+    await page
+      .getByPlaceholder("Search")
+      .evaluate((element) => getComputedStyle(element, "::placeholder").color),
+  ).toBe("rgba(255, 255, 255, 0.55)");
+  await expect(page.getByText("tienOS Account", { exact: true })).toHaveCSS("margin-top", "2px");
+  await expect(page.locator(".settings-family")).toHaveCSS("column-gap", "9px");
+  await expect(page.locator(".settings-family > span").first()).toHaveCSS("font-size", "15px");
 
   const selectedNavigation = page.locator(".settings-nav-item[data-selected]");
   await selectedNavigation.focus();
@@ -226,6 +245,13 @@ test("preserves migrated System Settings selection and separators", async ({ pag
   ).toBeCloseTo(-0.69);
 
   await page.getByRole("button", { name: "Appearance" }).click();
+
+  const settingsColor = await page
+    .locator(".settings-window")
+    .evaluate((element) => getComputedStyle(element).color);
+  for (const select of await page.getByRole("combobox").all()) {
+    await expect(select).toHaveCSS("color", settingsColor);
+  }
 
   const darkWidget = page.getByRole("button", { name: "Dark", exact: true }).last();
   await darkWidget.click();
@@ -644,6 +670,7 @@ test("fits and fixes an open System Settings window on compact screens", async (
   await page.setViewportSize({ width: 320, height: 320 });
   await expect(settingsWindow).toHaveCSS("border-radius", "18px");
   await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("border-radius", "11px");
+  await expect(page.locator(".settings-hero h2")).toHaveCSS("font-size", "22px");
   const history = page.locator(".settings-history");
   await expect(history).toHaveCSS("height", "36px");
   await expect(history.getByRole("button", { name: "Back" })).toHaveCSS("width", "38px");
