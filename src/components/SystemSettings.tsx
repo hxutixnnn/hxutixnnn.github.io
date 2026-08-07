@@ -1,4 +1,16 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+  type KeyboardEvent,
+  type PointerEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 import { ScrollArea } from "@base-ui/react/scroll-area";
 import { Rnd, type RndResizeCallback } from "react-rnd";
 import { FontAwesomeIcon, type FontAwesomeIconName } from "./FontAwesomeIcon";
@@ -51,6 +63,17 @@ const generalGroups: GeneralSetting[][] = [
 
 const compactBreakpoint = 700;
 const desktopMinimum = { width: 680, height: 520 };
+const touchResizeHandleStyle: CSSProperties = { touchAction: "none", userSelect: "none" };
+const resizeHandleStyles = {
+  top: touchResizeHandleStyle,
+  right: touchResizeHandleStyle,
+  bottom: touchResizeHandleStyle,
+  left: touchResizeHandleStyle,
+  topRight: touchResizeHandleStyle,
+  bottomRight: touchResizeHandleStyle,
+  bottomLeft: touchResizeHandleStyle,
+  topLeft: touchResizeHandleStyle,
+};
 
 type Viewport = {
   width: number;
@@ -102,7 +125,7 @@ function SettingsScrollArea({
         orientation="vertical"
         keepMounted
       >
-        <ScrollArea.Thumb className="settings-scroll-thumb min-h-6 w-full rounded-[inherit] border-2 border-transparent bg-[var(--tienos-color-scrollbar-thumb)] bg-clip-padding" />
+        <ScrollArea.Thumb className="settings-scroll-thumb min-h-6 w-full rounded-[inherit] bg-[var(--tienos-color-scrollbar-thumb)] hover:brightness-110 active:brightness-125" />
       </ScrollArea.Scrollbar>
     </ScrollArea.Root>
   );
@@ -199,7 +222,9 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
   const [viewport, setViewport] = useState(readViewport);
   const compact = viewport.width <= compactBreakpoint;
   const [menuBottom, setMenuBottom] = useState(0);
+  const [sidebarPercent, setSidebarPercent] = useState(() => (viewport.width <= 430 ? 40 : 30.8));
   const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport, 0) : desktopFrame(viewport)));
+  const windowRef = useRef<HTMLElement>(null);
   const compactRef = useRef(compact);
   const detailsViewportRef = useRef<HTMLDivElement>(null);
 
@@ -214,6 +239,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
 
       setViewport(nextViewport);
       setMenuBottom(nextMenuBottom);
+      if (modeChanged) setSidebarPercent(nextViewport.width <= 430 ? 40 : 30.8);
       setFrame((currentFrame) => {
         if (nextCompact) return compactFrame(nextViewport, nextMenuBottom);
         const nextFrame = modeChanged ? desktopFrame(nextViewport) : currentFrame;
@@ -241,7 +267,42 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
     [query],
   );
   const selectedCategory = categories.find(({ label }) => label === selected) ?? categories[0];
-  const availableHeight = Math.max(0, viewport.height - menuBottom);
+  const splitBounds = useMemo(() => {
+    const width = Math.max(1, frame.width);
+    const minimumSidebar = viewport.width <= 430 ? 112 : 180;
+    const minimumDetails = viewport.width <= 430 ? 170 : 360;
+    return {
+      minimum: (minimumSidebar / width) * 100,
+      maximum: ((width - minimumDetails - 8) / width) * 100,
+    };
+  }, [frame.width, viewport.width]);
+  const clampSplit = useCallback(
+    (value: number) => clamp(value, splitBounds.minimum, splitBounds.maximum),
+    [splitBounds],
+  );
+  const resolvedSidebarPercent = clampSplit(sidebarPercent);
+  const resizeSidebar = (event: PointerEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+  const moveSidebar = (event: PointerEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId) || !windowRef.current) return;
+    const bounds = windowRef.current.getBoundingClientRect();
+    setSidebarPercent(clampSplit(((event.clientX - bounds.left) / bounds.width) * 100));
+  };
+  const resizeSidebarWithKeyboard = (event: KeyboardEvent<HTMLDivElement>) => {
+    const direction = event.key === "ArrowLeft" ? -2 : event.key === "ArrowRight" ? 2 : 0;
+    if (!direction && event.key !== "Home" && event.key !== "End") return;
+    event.preventDefault();
+    setSidebarPercent((value) =>
+      event.key === "Home"
+        ? splitBounds.minimum
+        : event.key === "End"
+          ? splitBounds.maximum
+          : clampSplit(value + direction),
+    );
+  };
+  const availableHeight = Math.max(0, viewport.height - Math.ceil(menuBottom));
   const minimumHeight = compact
     ? Math.min(frame.height, availableHeight)
     : Math.min(desktopMinimum.height, availableHeight);
@@ -273,8 +334,9 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
       maxHeight={availableHeight}
       disableDragging={compact}
       enableResizing={!compact}
-      dragHandleClassName="settings-window"
-      cancel=".settings-navigation,.settings-scroll-area,button,input"
+      dragHandleClassName="settings-drag-handle"
+      cancel=".settings-navigation,.settings-scroll-area,button,input,select,label"
+      resizeHandleStyles={resizeHandleStyles}
       onDrag={(_, position) =>
         setFrame((currentFrame) =>
           clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom),
@@ -289,7 +351,9 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
       onResizeStop={commitFrameFromResize}
     >
       <section
-        className="settings-window relative grid h-full w-full grid-cols-[30.8%_69.2%] overflow-hidden rounded-[var(--tienos-radius-window)] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-window)] text-[var(--tienos-color-text-primary)] shadow-[var(--tienos-shadow-window),inset_0_1px_rgb(255_255_255/0.05)] backdrop-blur-[28px] backdrop-saturate-[1.15] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none max-[700px]:grid-cols-[112px_1fr] max-[700px]:rounded-[18px]"
+        ref={windowRef}
+        style={{ gridTemplateColumns: `${resolvedSidebarPercent}% 8px minmax(0, 1fr)` }}
+        className="settings-window relative grid h-full w-full overflow-hidden rounded-[var(--tienos-radius-window)] border border-white/25 [background:linear-gradient(135deg,rgb(255_255_255/0.16),transparent_36%,rgb(4_10_20/0.16)),var(--tienos-color-window)] text-[var(--tienos-color-text-primary)] shadow-[var(--tienos-shadow-window),0_10px_32px_rgb(2_8_23/0.24),inset_0_1px_0_rgb(255_255_255/0.3),inset_0_-1px_0_rgb(0_0_0/0.16)] backdrop-blur-[32px] backdrop-saturate-[1.4] contrast-more:border-[var(--tienos-color-border)] contrast-more:[background:var(--tienos-color-window)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-window)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none max-[700px]:rounded-[18px]"
         aria-label="System Settings"
       >
         <aside
@@ -298,10 +362,10 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
         >
           <div
             data-sidebar-panel=""
-            className="settings-sidebar-panel flex h-full min-h-0 flex-col overflow-hidden rounded-[calc(var(--tienos-radius-window)_-_8px)] border border-[var(--tienos-color-border)] bg-[color-mix(in_srgb,var(--tienos-color-sidebar)_84%,transparent)] p-[10px_9px_8px] shadow-[0_8px_24px_rgb(0_0_0/0.17),inset_0_1px_rgb(255_255_255/0.08)] backdrop-blur-[24px] backdrop-saturate-[1.2] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
+            className="settings-sidebar-panel settings-drag-handle flex h-full min-h-0 flex-col overflow-hidden rounded-[calc(var(--tienos-radius-window)_-_8px)] border border-white/20 [background:linear-gradient(145deg,rgb(255_255_255/0.13),transparent_46%),var(--tienos-color-sidebar)] p-[10px_9px_8px] shadow-[0_12px_30px_rgb(0_0_0/0.2),inset_0_1px_0_rgb(255_255_255/0.25),inset_0_-1px_0_rgb(0_0_0/0.1)] backdrop-blur-[24px] backdrop-saturate-[1.35] contrast-more:border-[var(--tienos-color-border)] contrast-more:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
           >
             <div
-              className="mx-0.5 mb-[29px] flex gap-2.5 max-[700px]:mb-5 max-[700px]:gap-[7px]"
+              className="settings-drag-handle mx-0.5 mb-[29px] flex touch-none select-none gap-2.5 max-[700px]:mb-5 max-[700px]:gap-[7px]"
               aria-label="Window controls"
             >
               <button
@@ -365,7 +429,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                           <button
                             key={category.label}
                             data-inset-focus=""
-                            className="settings-nav-item flex min-h-[33.5px] w-full items-center gap-2.5 rounded-[10px] border-0 bg-transparent p-[4px_8px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] data-[selected]:bg-[var(--tienos-color-accent)] data-[selected]:text-white data-[selected]:hover:bg-[var(--tienos-color-accent-hover)] data-[selected]:focus-visible:outline-2 data-[selected]:focus-visible:-outline-offset-2 data-[selected]:focus-visible:outline-solid data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] contrast-more:data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] max-[700px]:justify-center max-[700px]:p-1 max-[700px]:[&>span:last-child]:hidden"
+                            className="settings-nav-item flex min-h-[33.5px] w-full items-center gap-2.5 rounded-[10px] border-0 bg-transparent p-[4px_8px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] data-[selected]:bg-[var(--tienos-color-accent)] data-[selected]:text-white data-[selected]:hover:bg-[var(--tienos-color-accent-hover)] data-[selected]:focus-visible:outline-2 data-[selected]:focus-visible:-outline-offset-2 data-[selected]:focus-visible:outline-solid data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] contrast-more:data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] max-[700px]:p-1 max-[330px]:justify-center max-[330px]:[&>span:last-child]:hidden"
                             aria-label={category.label}
                             data-selected={selected === category.label || undefined}
                             onClick={() => setSelected(category.label)}
@@ -386,9 +450,26 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
           </div>
         </aside>
 
-        <div className="flex min-h-0 min-w-0 flex-col p-[8px_20px_0] max-[700px]:p-[12px_10px_0]">
+        {/* The ARIA separator pattern is keyboard interactive despite having no native HTML element. */}
+        {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+        <div
+          className="settings-splitter group relative z-10 touch-none select-none border-0 bg-transparent p-0 outline-none before:absolute before:inset-y-0 before:left-1/2 before:w-px before:-translate-x-1/2 before:bg-white/10 before:transition-[width,background-color] hover:before:w-0.5 hover:before:bg-[var(--tienos-color-focus)] focus-visible:before:w-0.5 focus-visible:before:bg-[var(--tienos-color-focus)] active:before:w-1 active:before:bg-[var(--tienos-color-focus)] motion-reduce:before:transition-none [@media(forced-colors:active)]:before:bg-[CanvasText]"
+          role="separator"
+          aria-label="Resize Settings sidebar"
+          aria-orientation="vertical"
+          aria-valuemin={Math.round(splitBounds.minimum)}
+          aria-valuemax={Math.round(splitBounds.maximum)}
+          aria-valuenow={Math.round(resolvedSidebarPercent)}
+          // eslint-disable-next-line jsx-a11y/no-noninteractive-tabindex
+          tabIndex={0}
+          onPointerDown={resizeSidebar}
+          onPointerMove={moveSidebar}
+          onKeyDown={resizeSidebarWithKeyboard}
+        />
+
+        <div className="settings-detail flex min-h-0 min-w-0 flex-col [background:linear-gradient(160deg,rgb(255_255_255/0.07),transparent_42%),var(--tienos-color-detail)] p-[8px_20px_0] shadow-[inset_1px_0_0_rgb(255_255_255/0.08)] contrast-more:[background:var(--tienos-color-detail)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-detail)] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none max-[700px]:p-[12px_10px_0]">
           <div
-            className="settings-history -ml-3 mb-[9px] flex h-[35px] shrink-0 items-center self-start overflow-hidden rounded-[22px] border border-[var(--tienos-color-border)] [&_button]:grid [&_button]:h-full [&_button]:w-[36px] [&_button]:place-items-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[12px] [&_button]:text-[var(--tienos-color-text-tertiary)] [&>span]:h-6 [&>span]:w-px [&>span]:bg-[var(--tienos-color-separator)] max-[700px]:h-[36px] max-[700px]:[&_button]:w-[38px]"
+            className="settings-history settings-drag-handle -ml-3 mb-[9px] flex h-[35px] shrink-0 touch-none select-none items-center self-start overflow-hidden rounded-[22px] border border-[var(--tienos-color-border)] [&_button]:grid [&_button]:h-full [&_button]:w-[36px] [&_button]:place-items-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[12px] [&_button]:text-[var(--tienos-color-text-tertiary)] [&>span]:h-6 [&>span]:w-px [&>span]:bg-[var(--tienos-color-separator)] max-[700px]:h-[36px] max-[700px]:[&_button]:w-[38px]"
             aria-label="Navigation history"
           >
             <button aria-label="Back" disabled>
