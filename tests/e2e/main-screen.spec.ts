@@ -817,12 +817,16 @@ test("uses independently accessible Base UI scroll areas with transient scrollba
 
   await page.getByRole("button", { name: "Appearance" }).click();
   await expect.poll(() => details.evaluate((node) => node.scrollTop)).toBe(0);
-  await page.getByRole("combobox", { name: "Text highlight color" }).selectOption("Purple");
-  await page.getByRole("combobox", { name: "Folder color" }).selectOption("Blue");
-  await page.getByRole("combobox", { name: "Sidebar icon size" }).selectOption("Large");
-  await expect(page.getByRole("combobox", { name: "Text highlight color" })).toHaveValue("Purple");
-  await expect(page.getByRole("combobox", { name: "Folder color" })).toHaveValue("Blue");
-  await expect(page.getByRole("combobox", { name: "Sidebar icon size" })).toHaveValue("Large");
+  for (const [name, option] of [
+    ["Text highlight color", "Purple"],
+    ["Folder color", "Blue"],
+    ["Sidebar icon size", "Large"],
+  ] as const) {
+    const trigger = page.getByRole("combobox", { name });
+    await trigger.click();
+    await page.getByRole("option", { name: option }).click();
+    await expect(trigger).toContainText(option);
+  }
 
   const detailTop = await details.evaluate((node) => node.scrollTop);
   await categories.hover();

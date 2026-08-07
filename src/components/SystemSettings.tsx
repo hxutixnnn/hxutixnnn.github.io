@@ -11,9 +11,13 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { Field } from "@base-ui/react/field";
+import { Input } from "@base-ui/react/input";
 import { ScrollArea } from "@base-ui/react/scroll-area";
+import { Switch } from "@base-ui/react/switch";
 import { Rnd, type RndResizeCallback } from "react-rnd";
 import { FontAwesomeIcon, type FontAwesomeIconName } from "./FontAwesomeIcon";
+import { SettingsSelect } from "./SettingsControls";
 import { useAppearanceStore, type AppearanceMode } from "../stores/appearance";
 
 type SystemSettingsProps = {
@@ -391,13 +395,14 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
               />
             </div>
 
-            <label
+            <Field.Root
               data-settings-search=""
-              className="settings-search flex h-7 items-center gap-[7px] rounded-[11px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-[10px] text-[var(--tienos-color-text-secondary)] [&_input]:min-w-0 [&_input]:w-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:text-[var(--tienos-color-text-primary)] [&_input::placeholder]:text-[var(--tienos-color-text-secondary)] max-[700px]:px-[8px]"
+              className="settings-search flex h-7 items-center gap-[7px] rounded-[11px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-[10px] text-[var(--tienos-color-text-secondary)] data-[focused]:outline data-[focused]:outline-2 data-[focused]:outline-[var(--tienos-color-focus)] [&_input]:min-w-0 [&_input]:w-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:text-[var(--tienos-color-text-primary)] [&_input]:outline-none [&_input::placeholder]:text-[var(--tienos-color-text-secondary)] max-[700px]:px-[8px]"
             >
               <FontAwesomeIcon name="magnifying-glass" className="text-xs" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
-            </label>
+              <Field.Label className="sr-only">Search settings</Field.Label>
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
+            </Field.Root>
 
             <div className="flex items-center gap-[11px] p-[13px_7px_10px] max-[700px]:hidden [&_strong]:block [&_span]:mt-[2px] [&_span]:block [&_span]:text-xs [&_span]:text-[var(--tienos-color-text-secondary)]">
               <div className="settings-avatar grid size-[34px] place-items-center rounded-[50%] bg-[linear-gradient(145deg,#59677c,#192334)] text-[17px] font-bold">
@@ -593,20 +598,15 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                       ))}
                     </div>
                   </div>
-                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
+                  <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t">
                     <span>Text highlight color</span>
-                    <select
-                      aria-label="Text highlight color"
+                    <SettingsSelect
+                      label="Text highlight color"
                       value={textHighlightColor}
-                      onChange={(event) => setTextHighlightColor(event.target.value)}
-                    >
-                      {["Automatic", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green"].map(
-                        (color) => (
-                          <option key={color}>{color}</option>
-                        ),
-                      )}
-                    </select>
-                  </label>
+                      onValueChange={setTextHighlightColor}
+                      options={["Automatic", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green"]}
+                    />
+                  </div>
                 </section>
                 <section
                   className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
@@ -630,46 +630,41 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                       ))}
                     </div>
                   </div>
-                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
+                  <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t">
                     <span>Folder color</span>
-                    <select
-                      aria-label="Folder color"
+                    <SettingsSelect
+                      label="Folder color"
                       value={folderColor}
-                      onChange={(event) => setFolderColor(event.target.value)}
-                    >
-                      {["Automatic", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green"].map(
-                        (color) => (
-                          <option key={color}>{color}</option>
-                        ),
-                      )}
-                    </select>
-                  </label>
+                      onValueChange={setFolderColor}
+                      options={["Automatic", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green"]}
+                    />
+                  </div>
                 </section>
                 <h3>Windows</h3>
                 <section
                   className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
                   aria-label="Windows"
                 >
-                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
+                  <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t">
                     <span>Sidebar icon size</span>
-                    <select
-                      aria-label="Sidebar icon size"
+                    <SettingsSelect
+                      label="Sidebar icon size"
                       value={sidebarIconSize}
-                      onChange={(event) => setSidebarIconSize(event.target.value)}
-                    >
-                      {["Small", "Medium", "Large"].map((size) => (
-                        <option key={size}>{size}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px]">
-                    <span>Tint window background with wallpaper color</span>
-                    <input
-                      type="checkbox"
-                      checked={wallpaperTint}
-                      onChange={(event) => setWallpaperTint(event.target.checked)}
+                      onValueChange={setSidebarIconSize}
+                      options={["Small", "Medium", "Large"]}
                     />
-                  </label>
+                  </div>
+                  <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t">
+                    <label htmlFor="wallpaper-tint">Tint window background with wallpaper color</label>
+                    <Switch.Root
+                      id="wallpaper-tint"
+                      checked={wallpaperTint}
+                      onCheckedChange={setWallpaperTint}
+                      className="relative h-6 w-10 rounded-full bg-[var(--tienos-color-control)] shadow-inner transition-colors data-[checked]:bg-[var(--tienos-color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)]"
+                    >
+                      <Switch.Thumb className="block size-5 translate-x-0.5 rounded-full bg-white shadow transition-transform data-[checked]:translate-x-[18px] motion-reduce:transition-none" />
+                    </Switch.Root>
+                  </div>
                 </section>
               </div>
             ) : selected === "General" ? (

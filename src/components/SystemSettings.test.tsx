@@ -65,15 +65,22 @@ describe("SystemSettings", () => {
     await user.click(dark);
     expect(dark).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("group", { name: "Accent color" })).toBeVisible();
-    await user.selectOptions(screen.getByRole("combobox", { name: "Text highlight color" }), "Purple");
-    await user.selectOptions(screen.getByRole("combobox", { name: "Folder color" }), "Blue");
-    await user.selectOptions(screen.getByRole("combobox", { name: "Sidebar icon size" }), "Large");
-    expect(screen.getByRole("combobox", { name: "Text highlight color" })).toHaveValue("Purple");
-    expect(screen.getByRole("combobox", { name: "Folder color" })).toHaveValue("Blue");
-    expect(screen.getByRole("combobox", { name: "Sidebar icon size" })).toHaveValue("Large");
-    expect(
-      screen.getByRole("checkbox", { name: "Tint window background with wallpaper color" }),
-    ).toBeChecked();
+    const highlight = screen.getByRole("combobox", { name: "Text highlight color" });
+    await user.click(highlight);
+    await user.click(screen.getByRole("option", { name: "Purple" }));
+    expect(highlight).toHaveTextContent("Purple");
+
+    const folder = screen.getByRole("combobox", { name: "Folder color" });
+    await user.click(folder);
+    await user.keyboard("{ArrowDown}{Escape}");
+    expect(folder).toHaveFocus();
+    expect(folder).toHaveTextContent("Automatic");
+
+    const iconSize = screen.getByRole("combobox", { name: "Sidebar icon size" });
+    await user.click(iconSize);
+    await user.click(screen.getByRole("option", { name: "Large" }));
+    expect(iconSize).toHaveTextContent("Large");
+    expect(screen.getByRole("switch", { name: "Tint window background with wallpaper color" })).toBeChecked();
   });
 
   it("resets the details viewport when the selected category changes", async () => {

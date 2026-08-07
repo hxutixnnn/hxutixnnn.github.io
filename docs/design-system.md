@@ -54,6 +54,8 @@ Continuous wallpaper motion runs only when reduced motion is not requested.
 
 ## Component contracts
 
+The version-pinned audit and adoption decisions for every installed Base UI export live in [`docs/base-ui-inventory.md`](base-ui-inventory.md). Revisit that inventory whenever `@base-ui/react` changes version or a new interaction is added.
+
 ### Menu bar and menus
 
 Use Base UI menu semantics, complete keyboard operation, familiar shortcuts, and semantic labels.
