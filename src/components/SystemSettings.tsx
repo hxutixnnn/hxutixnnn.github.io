@@ -302,12 +302,12 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
     const direction = event.key === "ArrowLeft" ? -2 : event.key === "ArrowRight" ? 2 : 0;
     if (!direction && event.key !== "Home" && event.key !== "End") return;
     event.preventDefault();
-    setSidebarPercent((value) =>
+    setSidebarPercent(
       event.key === "Home"
         ? splitBounds.minimum
         : event.key === "End"
           ? splitBounds.maximum
-          : clampSplit(value + direction),
+          : clampSplit(resolvedSidebarPercent + direction),
     );
   };
   const availableHeight = Math.max(0, viewport.height - Math.ceil(menuBottom));
@@ -437,7 +437,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                           <button
                             key={category.label}
                             data-inset-focus=""
-                            className="settings-nav-item flex min-h-[33.5px] w-full items-center gap-2.5 rounded-[10px] border-0 bg-transparent p-[4px_8px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] data-[selected]:bg-[var(--tienos-color-accent)] data-[selected]:text-white data-[selected]:hover:bg-[var(--tienos-color-accent-hover)] data-[selected]:focus-visible:outline-2 data-[selected]:focus-visible:-outline-offset-2 data-[selected]:focus-visible:outline-solid data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] contrast-more:data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] max-[700px]:p-1 max-[330px]:justify-center max-[330px]:[&>span:last-child]:hidden"
+                            className="settings-nav-item flex min-h-[33.5px] w-full min-w-0 items-center gap-2.5 rounded-[10px] border-0 bg-transparent p-[4px_8px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] data-[selected]:bg-[var(--tienos-color-accent)] data-[selected]:text-white data-[selected]:hover:bg-[var(--tienos-color-accent-hover)] data-[selected]:focus-visible:outline-2 data-[selected]:focus-visible:-outline-offset-2 data-[selected]:focus-visible:outline-solid data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] contrast-more:data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] max-[700px]:gap-1.5 max-[700px]:p-1"
                             aria-label={category.label}
                             data-selected={selected === category.label || undefined}
                             onClick={() => setSelected(category.label)}
@@ -447,7 +447,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                             >
                               <FontAwesomeIcon name={category.icon} />
                             </span>
-                            <span>{category.label}</span>
+                            <span className="min-w-0 truncate">{category.label}</span>
                           </button>
                         ))}
                       </div>

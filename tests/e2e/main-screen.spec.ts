@@ -943,6 +943,40 @@ test("keeps compact splitter bounds valid across intermediate phone widths", asy
   }
 });
 
+test("keeps labeled sidebar and immediate keyboard resizing after compact recomputation", async ({ page }) => {
+  await page.setViewportSize({ width: 700, height: 700 });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  const splitter = page.getByRole("separator", { name: "Resize Settings sidebar" });
+  await splitter.focus();
+  await page.keyboard.press("End");
+  await expect(splitter).toHaveAttribute("aria-valuenow", await splitter.getAttribute("aria-valuemax"));
+
+  await page.setViewportSize({ width: 320, height: 700 });
+  await expect
+    .poll(
+      async () =>
+        Number(await splitter.getAttribute("aria-valuenow")) ===
+        Number(await splitter.getAttribute("aria-valuemax")),
+    )
+    .toBe(true);
+  const beforeArrow = Number(await splitter.getAttribute("aria-valuenow"));
+  await page.keyboard.press("ArrowLeft");
+  expect(Number(await splitter.getAttribute("aria-valuenow"))).toBeLessThan(beforeArrow);
+
+  const firstCategory = page.locator(".settings-nav-item").first();
+  const firstLabel = firstCategory.getByText("General", { exact: true });
+  await expect(firstLabel).toBeVisible();
+  const [categoryBounds, labelBounds] = await Promise.all([
+    firstCategory.boundingBox(),
+    firstLabel.boundingBox(),
+  ]);
+  expect(categoryBounds!.height).toBeGreaterThanOrEqual(33.5);
+  expect(labelBounds!.width).toBeGreaterThan(0);
+  expect(labelBounds!.x + labelBounds!.width).toBeLessThanOrEqual(categoryBounds!.x + categoryBounds!.width);
+});
+
 test("supports touch window drag, resize, boundary clamping, and inner scrolling", async ({ browser }) => {
   const context = await browser.newContext({ hasTouch: true, viewport: { width: 1100, height: 900 } });
   const page = await context.newPage();
