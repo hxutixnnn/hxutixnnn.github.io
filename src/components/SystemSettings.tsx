@@ -268,6 +268,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                           <button
                             key={category.label}
                             className="settings-nav-item"
+                            aria-label={category.label}
                             data-selected={selected === category.label || undefined}
                             onClick={() => setSelected(category.label)}
                           >
