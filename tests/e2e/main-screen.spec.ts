@@ -18,6 +18,41 @@ async function expectFontAwesomeIconToPaint(icon: Locator, name: string) {
     .toBe(true);
 }
 
+async function expectBootIconToPaint(icon: Locator) {
+  await expect(icon).toBeVisible();
+  const geometry = await icon.evaluate((element) => {
+    const iconBounds = element.getBoundingClientRect();
+    const path = element.querySelector("path") as SVGGraphicsElement | null;
+    const pathBounds = path?.getBBox();
+    const styles = getComputedStyle(element);
+    const pathStyles = path ? getComputedStyle(path) : null;
+    return {
+      icon: {
+        x: iconBounds.x,
+        y: iconBounds.y,
+        width: iconBounds.width,
+        height: iconBounds.height,
+      },
+      path: pathBounds
+        ? { x: pathBounds.x, y: pathBounds.y, width: pathBounds.width, height: pathBounds.height }
+        : null,
+      display: styles.display,
+      opacity: styles.opacity,
+      visibility: styles.visibility,
+      fill: pathStyles?.fill,
+    };
+  });
+  expect(geometry.icon.width).toBeGreaterThan(0);
+  expect(geometry.icon.height).toBeGreaterThan(0);
+  expect(geometry.path?.width).toBeGreaterThan(0);
+  expect(geometry.path?.height).toBeGreaterThan(0);
+  expect(geometry.display).not.toBe("none");
+  expect(geometry.opacity).not.toBe("0");
+  expect(geometry.visibility).toBe("visible");
+  expect(geometry.fill).not.toBe("none");
+  return geometry.icon;
+}
+
 async function expectConventionalRoundedGeometry(element: Locator) {
   await expect(element).toBeVisible();
   const geometry = await element.evaluate((node) => {
@@ -467,19 +502,12 @@ test("paints a stable splash icon before delayed app and desktop assets", async 
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
   const bootIcon = page.locator("[data-boot-icon]");
   await expect(bootScreen).toBeVisible();
-  await expect(bootIcon).toBeVisible();
-  const bootIconBounds = await bootIcon.boundingBox();
-  expect(bootIconBounds?.x).toBeCloseTo(104, 0);
-  expect(bootIconBounds).toMatchObject({ y: 190, width: 112, height: 112 });
-  expect(
-    await bootIcon.locator("path").evaluate((path) => {
-      const bounds = (path as SVGGraphicsElement).getBBox();
-      return bounds.width > 0 && bounds.height > 0;
-    }),
-  ).toBe(true);
+  const coldGeometry = await expectBootIconToPaint(bootIcon);
+  expect(coldGeometry.x).toBeCloseTo(104, 0);
+  expect(coldGeometry).toMatchObject({ y: 190, width: 112, height: 112 });
   await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
   await page.waitForTimeout(700);
-  await expect(bootIcon).toBeVisible();
+  expect(await expectBootIconToPaint(bootIcon)).toEqual(coldGeometry);
   await expect(page.locator("#root")).toHaveAttribute("inert", "");
   await page.keyboard.press("Tab");
   expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
@@ -512,6 +540,30 @@ test("paints a stable splash icon before delayed app and desktop assets", async 
   await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="sparkle"]'), "sparkle");
   await page.keyboard.press("Tab");
   await expect(page.getByRole("menuitem", { name: "Open tienOS menu" })).toBeFocused();
+
+  await page.unroute(/\/assets\/.*\.js$/);
+  let releaseWarmApplication!: () => void;
+  const warmApplicationMayLoad = new Promise<void>((resolve) => {
+    releaseWarmApplication = resolve;
+  });
+  let warmApplicationIntercepted = false;
+  await page.route(/\/assets\/.*\.js$/, async (route) => {
+    warmApplicationIntercepted = true;
+    await warmApplicationMayLoad;
+    await route.continue();
+  });
+
+  const warmNavigation = page.reload({ waitUntil: "domcontentloaded" });
+  await expect.poll(() => warmApplicationIntercepted).toBe(true);
+  await expect(bootScreen).toBeVisible();
+  const warmGeometry = await expectBootIconToPaint(bootIcon);
+  expect(warmGeometry).toEqual(coldGeometry);
+  await page.waitForTimeout(100);
+  expect(await expectBootIconToPaint(bootIcon)).toEqual(warmGeometry);
+  await expect(page.locator("#root")).toHaveAttribute("inert", "");
+  releaseWarmApplication();
+  await warmNavigation;
+  await expect(bootScreen).toBeHidden();
 });
 
 test("releases the static desktop when a critical asset stalls", async ({ page }) => {
@@ -534,22 +586,29 @@ test("releases the static desktop when a critical asset stalls", async ({ page }
 });
 
 test("reveals the static desktop when the application module fails", async ({ page }) => {
-  await page.addInitScript(() => {
-    localStorage.setItem("tienos-appearance", JSON.stringify("light"));
-    (window as typeof window & { bootIconObserved?: boolean }).bootIconObserved = false;
-    new MutationObserver(() => {
-      if (document.querySelector("[data-boot-icon] path")) {
-        (window as typeof window & { bootIconObserved?: boolean }).bootIconObserved = true;
-      }
-    }).observe(document, { childList: true, subtree: true });
+  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("light")));
+  let rejectApplication!: () => void;
+  const applicationRejected = new Promise<void>((resolve) => {
+    rejectApplication = resolve;
   });
-  await page.route(/\/assets\/.*\.js$/, (route) => route.abort("failed"));
+  let applicationIntercepted = false;
+  await page.route(/\/assets\/.*\.js$/, async (route) => {
+    applicationIntercepted = true;
+    await applicationRejected;
+    await route.abort("failed");
+  });
 
-  await page.goto("/", { waitUntil: "domcontentloaded" });
+  const navigation = page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect.poll(() => applicationIntercepted).toBe(true);
 
-  expect(
-    await page.evaluate(() => (window as typeof window & { bootIconObserved?: boolean }).bootIconObserved),
-  ).toBe(true);
+  const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
+  const bootIcon = page.locator("[data-boot-icon]");
+  await expect(bootScreen).toBeVisible();
+  const initialGeometry = await expectBootIconToPaint(bootIcon);
+  await page.waitForTimeout(100);
+  expect(await expectBootIconToPaint(bootIcon)).toEqual(initialGeometry);
+  rejectApplication();
+  await navigation;
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
   await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
@@ -603,13 +662,19 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
 });
 
 test("reveals the static desktop without JavaScript", async ({ browser }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false, reducedMotion: "reduce" });
+  const context = await browser.newContext({
+    javaScriptEnabled: false,
+    reducedMotion: "no-preference",
+  });
   const page = await context.newPage();
 
-  await page.goto("/");
+  await page.goto("/", { waitUntil: "domcontentloaded" });
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
-  await expect(page.locator("[data-boot-icon] path")).toHaveCount(1);
   await expect(bootScreen).toBeVisible();
+  const bootIcon = page.locator("[data-boot-icon]");
+  const initialGeometry = await expectBootIconToPaint(bootIcon);
+  await page.waitForTimeout(100);
+  expect(await expectBootIconToPaint(bootIcon)).toEqual(initialGeometry);
   await expect(bootScreen).toBeHidden();
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
