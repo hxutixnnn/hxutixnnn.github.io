@@ -8,9 +8,16 @@ assets:
     modified: Downloaded at 3840x2160 for the default tienOS wallpaper; no visual edits.
     sha256: 86f9adf694d568da6c16be855fbfe3ceeaea5f297d4f284756401ac58b09e35c
   - path: public/favicon.svg
-    author: tienOS contributors
-    source: Original project asset
-    license: MIT
-    copyright: Copyright 2026 Nguyễn Hữu Tiền
-    modified: Original system-symbol favicon using the approved ✦ mark.
-    sha256: f0487db5e918685b3b87b7604090429f92d0e05e5223b70ace80c82c313e792c
+    author: Fonticons, Inc.; tienOS contributors
+    source: Font Awesome Pro 7.3.1 sparkle icon with original project framing
+    license: Font Awesome Pro Commercial License; MIT for original framing
+    copyright: Icon Copyright 2026 Fonticons, Inc.; framing Copyright 2026 Nguyễn Hữu Tiền
+    modified: Scaled the Font Awesome sparkle path inside the existing tienOS rounded-square frame.
+    sha256: 3197d2a5304d0c0e0d9e0f8f9c8c3e853918c9d342ca866fd52646c8c5e52fe2
+  - path: public/fontawesome/fontawesome-pro-solid.svg
+    author: Fonticons, Inc.
+    source: Font Awesome Pro 7.3.1 web distribution supplied by the repository owner; https://fontawesome.com
+    license: Font Awesome Pro Commercial License
+    copyright: Copyright 2026 Fonticons, Inc.
+    modified: Combined the 34 required Classic Solid SVG icons into one local symbol sprite; paths are unchanged.
+    sha256: 2239f1a8108cb8dcfb81c8165fc70dbf74f8199abea0873d5d04780b59d9d99b

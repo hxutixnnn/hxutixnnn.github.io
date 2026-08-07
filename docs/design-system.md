@@ -104,4 +104,4 @@ Any new component must be reviewed in its default state and under these preferen
 
 The desktop canvas is dark and scroll-locked because it models a bounded operating-system workspace.
 Desktop labels remain non-selectable by the captain's product decision; content that users may need to copy must explicitly restore selection.
-The `✦` symbol is the tienOS system identity and replaces platform-vendor marks.
+The sparkle system mark is the tienOS identity and replaces platform-vendor marks.

@@ -2,6 +2,7 @@ import { Menu } from "@base-ui/react/menu";
 import { Menubar } from "@base-ui/react/menubar";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useEffect, useState } from "react";
+import { FontAwesomeIcon } from "./FontAwesomeIcon";
 
 type MenuBarProps = {
   onAction?: (label: string) => void;
@@ -62,7 +63,7 @@ export function MenuBar({ onAction }: MenuBarProps) {
             aria-keyshortcuts="Meta+Shift+O"
             className={`${triggerClassName} px-2 text-base leading-none`}
           >
-            <span aria-hidden="true">✦</span>
+            <FontAwesomeIcon name="sparkle" className="tienos-system-mark" />
           </Menu.Trigger>
           <MenuPopup>
             <Menu.Item className={itemClassName} onClick={() => announce("About This OS")}>
@@ -80,9 +81,7 @@ export function MenuBar({ onAction }: MenuBarProps) {
             <Menu.SubmenuRoot>
               <Menu.SubmenuTrigger className={itemClassName}>
                 <span>Recent Items</span>
-                <span className="ml-auto text-base leading-none text-white/50" aria-hidden="true">
-                  ›
-                </span>
+                <FontAwesomeIcon name="chevron-right" className="tienos-submenu-chevron" />
               </Menu.SubmenuTrigger>
               <Menu.Portal>
                 <Menu.Positioner side="right" align="start" sideOffset={3} className="z-50 outline-none">
@@ -136,8 +135,12 @@ export function MenuBar({ onAction }: MenuBarProps) {
         </Menu.Root>
       </Menubar>
       <div className="flex items-center gap-2 px-2 text-[13px] font-medium text-white/75">
-        <span aria-label="Wi-Fi connected">⌁</span>
-        <span aria-label="Battery full">▰</span>
+        <span role="img" aria-label="Wi-Fi connected">
+          <FontAwesomeIcon name="wifi" className="tienos-status-icon" />
+        </span>
+        <span role="img" aria-label="Battery full">
+          <FontAwesomeIcon name="battery-full" className="tienos-status-icon" />
+        </span>
         <time className="whitespace-nowrap" dateTime={now.toISOString()}>
           {formatDateTime(now)}
         </time>
