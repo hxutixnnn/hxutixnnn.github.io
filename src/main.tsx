@@ -9,23 +9,30 @@ if (!root) {
   throw new Error("tienOS root element is missing.");
 }
 
-const bootScreen = document.getElementById("tienos-boot");
-const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const bootDuration = reducedMotion ? 120 : 420;
-const fadeDuration = reducedMotion ? 80 : 160;
+type BootController = {
+  started: () => void;
+  ready: () => void;
+};
 
-function revealDesktop() {
-  if (!bootScreen) return;
+const bootController = (window as Window & { tienosBoot?: BootController }).tienosBoot;
+bootController?.started();
 
-  const remainingBootTime = Math.max(0, bootDuration - performance.now());
-  window.setTimeout(() => {
-    bootScreen.setAttribute("data-complete", "");
-    window.setTimeout(() => bootScreen.remove(), fadeDuration);
-  }, remainingBootTime);
+async function loadWallpaper() {
+  const wallpaper = new Image();
+  wallpaper.src = "/wallpapers/tienos-default.jpg";
+  await wallpaper.decode();
 }
+
+async function loadIconSprite() {
+  const response = await fetch("/fontawesome/fontawesome-pro-solid.svg");
+  if (!response.ok) throw new Error(`Icon sprite failed to load: ${response.status}`);
+  await response.arrayBuffer();
+}
+
+const desktopAssetsReady = Promise.allSettled([loadWallpaper(), loadIconSprite()]).then(() => undefined);
 
 createRoot(root).render(
   <StrictMode>
-    <App onDesktopReady={revealDesktop} />
+    <App desktopAssetsReady={desktopAssetsReady} onDesktopReady={bootController?.ready} />
   </StrictMode>,
 );

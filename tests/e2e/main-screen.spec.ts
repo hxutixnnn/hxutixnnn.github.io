@@ -177,7 +177,56 @@ test("keeps the splash over the desktop until delayed styles are ready", async (
   await navigation;
   await expect(bootScreen).toBeHidden();
   await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
+});
+
+test("keeps the splash over the desktop until paint-critical assets are ready", async ({ page }) => {
+  let releaseWallpaper!: () => void;
+  const wallpaperMayLoad = new Promise<void>((resolve) => {
+    releaseWallpaper = resolve;
+  });
+  let releaseSprite!: () => void;
+  const spriteMayLoad = new Promise<void>((resolve) => {
+    releaseSprite = resolve;
+  });
+  let wallpaperIntercepted = false;
+  let spriteIntercepted = false;
+
+  await page.route("**/wallpapers/tienos-default.jpg", async (route) => {
+    wallpaperIntercepted = true;
+    await wallpaperMayLoad;
+    await route.continue();
+  });
+  await page.route("**/fontawesome/fontawesome-pro-solid.svg", async (route) => {
+    spriteIntercepted = true;
+    await spriteMayLoad;
+    await route.continue();
+  });
+
+  const navigation = page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect.poll(() => wallpaperIntercepted).toBe(true);
+  await expect.poll(() => spriteIntercepted).toBe(true);
+  await page.waitForTimeout(700);
+
+  const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
+  await expect(bootScreen).toBeVisible();
+
+  releaseWallpaper();
+  await expect(bootScreen).toBeVisible();
+  releaseSprite();
+  await navigation;
+  await expect(bootScreen).toBeHidden();
+  await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
   await expect(page.locator(".tienos-wallpaper")).not.toHaveCSS("background-image", "none");
+  await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="sparkle"]'), "sparkle");
+});
+
+test("reveals the static desktop when the application module fails", async ({ page }) => {
+  await page.route(/\/assets\/.*\.js$/, (route) => route.abort("failed"));
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
 });
 
 test("renders the tienOS main screen and system menu", async ({ page }) => {

@@ -104,6 +104,42 @@
         }
       </style>
     </noscript>
+    <script>
+      (() => {
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        const bootDuration = reducedMotion ? 120 : 420;
+        const fadeDuration = reducedMotion ? 80 : 160;
+        let finished = false;
+
+        const dismiss = (respectBootDuration) => {
+          if (finished) return;
+          finished = true;
+          window.clearTimeout(startupTimeout);
+          window.removeEventListener("error", handleError, true);
+          window.removeEventListener("unhandledrejection", release);
+
+          const delay = respectBootDuration ? Math.max(0, bootDuration - performance.now()) : 0;
+          window.setTimeout(() => {
+            const bootScreen = document.getElementById("tienos-boot");
+            if (!bootScreen) return;
+            bootScreen.setAttribute("data-complete", "");
+            window.setTimeout(() => bootScreen.remove(), fadeDuration);
+          }, delay);
+        };
+        const release = () => dismiss(false);
+        const handleError = (event) => {
+          if (event.target === window || event.target instanceof HTMLScriptElement) release();
+        };
+        const startupTimeout = window.setTimeout(release, 8000);
+
+        window.addEventListener("error", handleError, true);
+        window.addEventListener("unhandledrejection", release);
+        window.tienosBoot = {
+          started: () => window.clearTimeout(startupTimeout),
+          ready: () => dismiss(true),
+        };
+      })();
+    </script>
     <title>tienOS</title>
   </head>
   <body>
