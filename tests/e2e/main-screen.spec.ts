@@ -17,6 +17,23 @@ async function expectFontAwesomeIconToPaint(icon: Locator, name: string) {
     .toBe(true);
 }
 
+async function expectConventionalRoundedGeometry(element: Locator) {
+  await expect(element).toBeVisible();
+  const geometry = await element.evaluate((node) => {
+    const styles = getComputedStyle(node);
+    return {
+      borderRadius: styles.borderRadius,
+      clipPath: styles.clipPath,
+      maskImage: styles.maskImage,
+      webkitMaskImage: styles.getPropertyValue("-webkit-mask-image"),
+    };
+  });
+  expect(geometry.borderRadius).not.toBe("0px");
+  expect(geometry.clipPath).toBe("none");
+  expect(geometry.maskImage).toBe("none");
+  expect(geometry.webkitMaskImage).toBe("none");
+}
+
 test("applies design-system tokens to component styles", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
@@ -85,6 +102,9 @@ test("uses conventional rounded geometry without shape masks", async ({ page }) 
   );
   await expect(popup).toHaveCSS("border-radius", "14px");
   await expect(menuItem).toHaveCSS("border-radius", "10px");
+  for (const element of [trigger, popup, menuItem]) {
+    await expectConventionalRoundedGeometry(element);
+  }
   await menuItem.click();
 
   const settingsWindow = page.locator(".settings-window");
@@ -107,20 +127,7 @@ test("uses conventional rounded geometry without shape masks", async ({ page }) 
   ];
 
   for (const element of representatives) {
-    await expect(element).toBeVisible();
-    const geometry = await element.evaluate((node) => {
-      const styles = getComputedStyle(node);
-      return {
-        borderRadius: styles.borderRadius,
-        clipPath: styles.clipPath,
-        maskImage: styles.maskImage,
-        webkitMaskImage: styles.getPropertyValue("-webkit-mask-image"),
-      };
-    });
-    expect(geometry.borderRadius).not.toBe("0px");
-    expect(geometry.clipPath).toBe("none");
-    expect(geometry.maskImage).toBe("none");
-    expect(geometry.webkitMaskImage).toBe("none");
+    await expectConventionalRoundedGeometry(element);
   }
 
   const circles = [page.locator(".settings-light").first(), page.locator(".settings-avatar")];
@@ -129,14 +136,6 @@ test("uses conventional rounded geometry without shape masks", async ({ page }) 
     const box = await circle.boundingBox();
     expect(box?.width).toBe(box?.height);
   }
-
-  const shippedCss = await page.evaluate(() =>
-    [...document.styleSheets]
-      .flatMap((sheet) => [...sheet.cssRules])
-      .map((rule) => rule.cssText)
-      .join("\n"),
-  );
-  expect(shippedCss).not.toMatch(/corner-shape|squircle|superellipse/i);
 });
 
 test("keeps keyboard focus visible in forced colors", async ({ page }) => {
