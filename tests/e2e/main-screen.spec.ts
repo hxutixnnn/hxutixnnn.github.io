@@ -599,7 +599,11 @@ test.describe("appearance modes", () => {
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
 
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
-    await page.getByRole("menuitem", { name: "System Settings…" }).click();
+    const settingsMenuItem = page.getByRole("menuitem", { name: "System Settings…" });
+    await settingsMenuItem.hover();
+    await expect(settingsMenuItem).toHaveCSS("color", "rgb(255, 255, 255)");
+    await expect(settingsMenuItem.locator("kbd")).toHaveCSS("color", "rgb(255, 255, 255)");
+    await settingsMenuItem.click();
     await page.getByRole("button", { name: "Appearance" }).click();
     const modes = page.getByRole("group", { name: "Appearance mode" });
 
@@ -639,22 +643,18 @@ test.describe("appearance modes", () => {
       if (localStorage.getItem("tienos-appearance") === null) {
         localStorage.setItem("tienos-appearance", JSON.stringify("light"));
       }
-      const paints: Array<{ name: string; theme?: string; splashBackground: string }> = [];
-      new PerformanceObserver((entries) => {
-        for (const entry of entries.getEntries()) {
-          const splash = document.getElementById("tienos-boot");
-          paints.push({
-            name: entry.name,
-            theme: document.documentElement.dataset.theme,
-            splashBackground: splash ? getComputedStyle(splash).backgroundColor : "missing",
-          });
+      const themeApplications: Array<{ theme?: string; bodyPresent: boolean }> = [];
+      new MutationObserver((records) => {
+        for (const record of records) {
+          if (record.target === document.documentElement && record.attributeName === "data-theme") {
+            themeApplications.push({
+              theme: document.documentElement.dataset.theme,
+              bodyPresent: document.body !== null,
+            });
+          }
         }
-      }).observe({ type: "paint", buffered: true });
-      Object.defineProperty(window, "tienosPaintEvidence", { value: paints });
-    });
-    await page.route("**/*", async (route) => {
-      if (route.request().resourceType() === "script") await route.abort();
-      else await route.continue();
+      }).observe(document, { attributes: true, attributeFilter: ["data-theme"], subtree: true });
+      Object.defineProperty(window, "tienosThemeApplications", { value: themeApplications });
     });
     await page.goto("/", { waitUntil: "domcontentloaded" });
     await expect
@@ -662,15 +662,13 @@ test.describe("appearance modes", () => {
         page.evaluate(() =>
           (
             window as Window & {
-              tienosPaintEvidence: Array<{ name: string; theme?: string; splashBackground: string }>;
+              tienosThemeApplications: Array<{ theme?: string; bodyPresent: boolean }>;
             }
-          ).tienosPaintEvidence.find(({ name }) => name === "first-paint"),
+          ).tienosThemeApplications.at(0),
         ),
       )
-      .toEqual({ name: "first-paint", theme: "light", splashBackground: "rgb(248, 250, 252)" });
+      .toEqual({ theme: "light", bodyPresent: false });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
-
-    await page.unroute("**/*");
 
     await page.evaluate(() => localStorage.setItem("tienos-appearance", "{broken"));
     await page.emulateMedia({ colorScheme: "dark" });

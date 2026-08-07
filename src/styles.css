@@ -166,8 +166,15 @@ button {
 .tienos-menu-item[data-highlighted],
 .tienos-menu-item:hover:not([data-disabled]) {
   background: var(--tienos-color-accent);
-  color: white;
+  color: var(--tienos-color-text-on-accent);
   outline: none;
+}
+
+.tienos-menu-item[data-highlighted] .tienos-menu-shortcut,
+.tienos-menu-item[data-highlighted] .tienos-submenu-chevron,
+.tienos-menu-item:hover:not([data-disabled]) .tienos-menu-shortcut,
+.tienos-menu-item:hover:not([data-disabled]) .tienos-submenu-chevron {
+  color: var(--tienos-color-text-on-accent);
 }
 
 .tienos-menu-item[data-disabled] {
