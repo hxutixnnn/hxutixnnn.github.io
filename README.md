@@ -30,3 +30,9 @@ pnpm build
 
 The default wallpaper is documented in [`src/assets/provenance.yml`](src/assets/provenance.yml).
 UI foundations, semantic tokens, component rules, and accessibility behavior are documented in the [`tienOS design system`](docs/design-system.md).
+
+## Loading contract
+
+The splash covers the desktop until its production styles are applied, the wallpaper is decoded, and an initial Font Awesome icon has rendered geometry. An eight-second failure escape remains active throughout startup and asset readiness so errors or stalled requests reveal the useful static desktop fallback; no-script and reduced-motion paths must remain usable.
+
+Future paint-critical assets must participate in this readiness gate, while non-critical assets must load progressively without delaying the first desktop frame. Browser coverage for this contract runs against the built `dist/` output through `vite preview`.
