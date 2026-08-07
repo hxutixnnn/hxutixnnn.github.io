@@ -9,12 +9,19 @@ test("applies design-system tokens to component styles", async ({ page }) => {
     return {
       space1: styles.getPropertyValue("--tienos-space-1").trim(),
       accent: styles.getPropertyValue("--tienos-color-accent").trim(),
+      accentHover: styles.getPropertyValue("--tienos-color-accent-hover").trim(),
       menuRadius: styles.getPropertyValue("--tienos-radius-menu").trim(),
       windowRadius: styles.getPropertyValue("--tienos-radius-window").trim(),
     };
   });
 
-  expect(tokens).toEqual({ space1: "4px", accent: "#2863d7", menuRadius: "14px", windowRadius: "26px" });
+  expect(tokens).toEqual({
+    space1: "4px",
+    accent: "#2863d7",
+    accentHover: "#326edc",
+    menuRadius: "14px",
+    windowRadius: "26px",
+  });
   await page.keyboard.press("Tab");
   await expect(page.getByRole("menuitem", { name: "Open tienOS menu" })).not.toHaveCSS("box-shadow", "none");
 
@@ -54,6 +61,16 @@ test("keeps keyboard focus visible in forced colors", async ({ page }) => {
   const trigger = page.getByRole("menuitem", { name: "Open tienOS menu" });
   await expect(trigger).toHaveCSS("outline-style", "solid");
   await expect(trigger).toHaveCSS("outline-width", "2px");
+
+  await trigger.click();
+  await page.getByRole("menuitem", { name: "System Settings…" }).click();
+  const settingsRow = page.locator(".settings-row").first();
+  await page.keyboard.press("Tab");
+  await settingsRow.focus();
+  await expect(settingsRow).toBeFocused();
+  await expect(settingsRow).toHaveCSS("outline-style", "solid");
+  await expect(settingsRow).toHaveCSS("outline-width", "2px");
+  await expect(settingsRow).toHaveCSS("outline-offset", "-2px");
 });
 
 test("uses opaque menu surfaces with reduced transparency", async ({ page }) => {
@@ -79,7 +96,16 @@ test("adds visible row boundaries with increased contrast", async ({ page }) => 
   const menuItem = page.getByRole("menuitem", { name: "System Settings…" });
   await expect(menuItem).not.toHaveCSS("box-shadow", "none");
   await menuItem.click();
-  await expect(page.locator(".settings-row").first()).not.toHaveCSS("box-shadow", "none");
+  const settingsRow = page.locator(".settings-row").first();
+  await expect(settingsRow).not.toHaveCSS("box-shadow", "none");
+  await expect(settingsRow).toHaveCSS("outline-style", "none");
+
+  await page.keyboard.press("Tab");
+  await settingsRow.focus();
+  await expect(settingsRow).toBeFocused();
+  await expect(settingsRow).toHaveCSS("outline-style", "solid");
+  await expect(settingsRow).toHaveCSS("outline-width", "2px");
+  await expect(settingsRow).toHaveCSS("outline-offset", "-2px");
 });
 
 test("renders the tienOS main screen and system menu", async ({ page }) => {

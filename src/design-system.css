@@ -16,7 +16,8 @@
   --tienos-leading-body: 1.35;
 
   --tienos-color-accent: #2863d7;
-  --tienos-color-accent-hover: #3475e8;
+  --tienos-color-accent-hover: #326edc;
+  --tienos-color-focus: #0a84ff;
   --tienos-color-hover: rgb(255 255 255 / 0.06);
   --tienos-color-text-primary: rgb(255 255 255 / 0.9);
   --tienos-color-text-secondary: rgb(255 255 255 / 0.55);
@@ -39,7 +40,7 @@
   --tienos-motion-fast: 120ms;
   --tienos-motion-standard: 200ms;
   --tienos-shadow-window: 0 42px 120px rgb(0 0 0 / 0.58);
-  --tienos-focus-ring: 0 0 0 2px #0a84ff, 0 0 0 4px rgb(10 132 255 / 0.3);
+  --tienos-focus-ring: 0 0 0 2px var(--tienos-color-focus), 0 0 0 4px rgb(10 132 255 / 0.3);
 }
 
 @media (prefers-contrast: more) {
@@ -66,6 +67,7 @@
   :root {
     --tienos-color-accent: Highlight;
     --tienos-color-accent-hover: Highlight;
+    --tienos-color-focus: Highlight;
     --tienos-color-hover: Canvas;
     --tienos-color-text-primary: CanvasText;
     --tienos-color-text-secondary: CanvasText;

@@ -577,13 +577,28 @@ button {
   .settings-search {
     border-color: var(--tienos-color-border);
   }
+
+  .settings-nav-item:focus-visible,
+  .settings-row:focus-visible,
+  .settings-family:focus-visible,
+  .tienos-menu-item:focus-visible {
+    outline: 2px solid var(--tienos-color-focus);
+    outline-offset: -2px;
+  }
 }
 
 @media (forced-colors: active) {
   *:focus-visible {
-    outline: 2px solid Highlight !important;
+    outline: 2px solid var(--tienos-color-focus) !important;
     outline-offset: 2px;
     box-shadow: none;
+  }
+
+  .settings-nav-item:focus-visible,
+  .settings-row:focus-visible,
+  .settings-family:focus-visible,
+  .tienos-menu-item:focus-visible {
+    outline-offset: -2px;
   }
 
   .settings-icon,
