@@ -70,15 +70,41 @@ test("applies design-system tokens to component styles", async ({ page }) => {
     styles.setProperty("--tienos-motion-fast", "777ms");
     styles.setProperty("--tienos-motion-standard", "888ms");
   });
+  await expect(menuItem).toHaveCSS("transition-property", "background-color");
   await expect(menuItem).toHaveCSS("transition-duration", "0.777s");
-  expect(
-    await popup.evaluate((element) => {
-      element.setAttribute("data-ending-style", "");
-      const duration = getComputedStyle(element).transitionDuration;
-      element.removeAttribute("data-ending-style");
-      return duration;
-    }),
-  ).toBe("0.777s, 0.888s");
+  await expect(menuItem).toHaveCSS("transition-timing-function", "ease");
+  const popupState = await popup.evaluate((element) => {
+    element.setAttribute("data-ending-style", "");
+    const styles = getComputedStyle(element);
+    const transition = {
+      duration: styles.transitionDuration,
+      timing: styles.transitionTimingFunction,
+    };
+    element.removeAttribute("data-ending-style");
+    element.style.transition = "none";
+    const transforms = ["data-starting-style", "data-ending-style"].map((attribute) => {
+      element.setAttribute(attribute, "");
+      const stateStyles = getComputedStyle(element);
+      const matrix = new DOMMatrixReadOnly(stateStyles.transform);
+      const state = {
+        matrix: { a: matrix.a, d: matrix.d, f: matrix.f },
+        scale: stateStyles.scale,
+        translate: stateStyles.translate,
+      };
+      element.removeAttribute(attribute);
+      return state;
+    });
+    element.style.removeProperty("transition");
+    return { transition, transforms };
+  });
+  expect(popupState.transition).toEqual({ duration: "0.777s, 0.888s", timing: "ease, ease" });
+  for (const state of popupState.transforms) {
+    expect(state.scale).toBe("none");
+    expect(state.translate).toBe("none");
+    expect(state.matrix.a).toBeCloseTo(0.96);
+    expect(state.matrix.d).toBeCloseTo(0.96);
+    expect(state.matrix.f).toBeCloseTo(-3.84);
+  }
 
   await menuItem.click();
   await page.locator(":root").evaluate((root) => {
@@ -87,6 +113,21 @@ test("applies design-system tokens to component styles", async ({ page }) => {
   const selectedNavItem = page.locator(".settings-nav-item[data-selected]");
   await selectedNavItem.hover();
   await expect(selectedNavItem).toHaveCSS("background-color", "rgb(1, 2, 3)");
+
+  await page.locator(":root").evaluate((root) => {
+    const styles = (root as HTMLElement).style;
+    styles.setProperty("--tienos-radius-window", "26px");
+    styles.setProperty("--tienos-radius-content", "16px");
+  });
+  await expect(page.locator(".settings-window")).toHaveCSS("border-radius", "26px");
+  await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("border-radius", "18px");
+  await expect(page.locator(".settings-hero")).toHaveCSS("border-radius", "16px");
+  await expect(page.locator(".settings-group").first()).toHaveCSS("border-radius", "16px");
+  const detailsViewport = page.locator('.settings-scroll-viewport[aria-label="Settings details"]');
+  await detailsViewport.focus();
+  await expect(detailsViewport).toHaveCSS("border-radius", "16px");
+  await page.getByRole("button", { name: "Appearance" }).click();
+  await expect(page.getByRole("region", { name: "Appearance style" })).toHaveCSS("border-radius", "16px");
 });
 
 test("uses conventional rounded geometry without shape masks", async ({ page }) => {
@@ -151,6 +192,15 @@ test("keeps keyboard focus visible in forced colors", async ({ page }) => {
   await expect(trigger).toHaveCSS("outline-width", "2px");
 
   await trigger.click();
+  await page.keyboard.press("ArrowDown");
+  const highlightedMenuItem = page.locator(".tienos-menu-item[data-highlighted]");
+  await highlightedMenuItem.focus();
+  const highlightedColors = await highlightedMenuItem.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    return { background: styles.backgroundColor, outline: styles.outlineColor };
+  });
+  expect(highlightedColors.outline).not.toBe(highlightedColors.background);
+
   await page.getByRole("menuitem", { name: "System Settings…" }).click();
   const settingsRow = page.locator(".settings-row").first();
   await page.keyboard.press("Tab");
@@ -189,6 +239,73 @@ test("uses opaque menu surfaces with reduced transparency", async ({ page }) => 
   const popup = page.locator(".tienos-menu-popup").first();
   await expect(popup).toHaveCSS("background-color", "rgb(20, 27, 36)");
   await expect(popup).toHaveCSS("backdrop-filter", "none");
+  await page.getByRole("menuitem", { name: "System Settings…" }).click();
+  await expect(page.locator(".settings-window")).toHaveCSS("backdrop-filter", "none");
+  await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("backdrop-filter", "none");
+});
+
+test("preserves migrated System Settings selection and separators", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
+  await page.emulateMedia({ colorScheme: "light" });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+  expect(
+    await page
+      .getByPlaceholder("Search")
+      .evaluate((element) => getComputedStyle(element, "::placeholder").color),
+  ).toBe("rgba(255, 255, 255, 0.55)");
+  await expect(page.getByText("tienOS Account", { exact: true })).toHaveCSS("margin-top", "2px");
+  await expect(page.locator(".settings-family")).toHaveCSS("column-gap", "9px");
+  await expect(page.locator(".settings-family > span").first()).toHaveCSS("font-size", "15px");
+
+  const selectedNavigation = page.locator(".settings-nav-item[data-selected]");
+  await selectedNavigation.focus();
+  await expect(selectedNavigation).toHaveCSS("outline-style", "solid");
+  await expect(selectedNavigation).toHaveCSS("outline-width", "2px");
+  await expect(selectedNavigation).toHaveCSS("outline-offset", "-2px");
+  await expect(selectedNavigation).toHaveCSS("outline-color", "rgb(255, 255, 255)");
+
+  const iconShadows = await Promise.all(
+    [
+      page.locator(".settings-icon").first(),
+      page.locator(".settings-hero-icon"),
+      page.locator(".settings-row-icon").first(),
+    ].map((icon) => icon.evaluate((element) => getComputedStyle(element).boxShadow)),
+  );
+  for (const shadow of iconShadows) {
+    expect(shadow).toContain("inset");
+    expect(shadow).toContain("rgba(255, 255, 255, 0.2)");
+    expect(shadow).toContain("rgba(0, 0, 0, 0.4)");
+  }
+
+  const hero = page.locator(".settings-hero");
+  await expect(hero).toHaveCSS("padding-bottom", "19px");
+  expect(
+    await hero.locator("h2").evaluate((element) => parseFloat(getComputedStyle(element).letterSpacing)),
+  ).toBeCloseTo(-0.69);
+
+  await page.getByRole("button", { name: "Appearance" }).click();
+
+  const settingsColor = await page
+    .locator(".settings-window")
+    .evaluate((element) => getComputedStyle(element).color);
+  for (const select of await page.getByRole("combobox").all()) {
+    await expect(select).toHaveCSS("color", settingsColor);
+  }
+
+  const darkWidget = page.getByRole("button", { name: "Dark", exact: true }).last();
+  await darkWidget.click();
+  await expect(darkWidget).toHaveCSS("font-weight", "700");
+  await expect(darkWidget).toHaveCSS("color", "rgba(255, 255, 255, 0.9)");
+  await expect(darkWidget.locator("span")).toHaveCSS("border-color", "rgb(40, 99, 215)");
+  await expect(darkWidget.locator("span")).not.toHaveCSS("box-shadow", "none");
+
+  await page.getByRole("button", { name: "General" }).click();
+  const separator = page.locator(".settings-row").first();
+  expect(await separator.evaluate((element) => getComputedStyle(element, "::after").backgroundColor)).toBe(
+    "rgba(255, 255, 255, 0.1)",
+  );
 });
 
 test("adds visible row boundaries with increased contrast", async ({ page }) => {
@@ -354,6 +471,7 @@ test("reveals the static desktop when the application module fails", async ({ pa
 });
 
 test("renders the tienOS main screen and system menu", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
 
   await expect(page).toHaveTitle("tienOS");
@@ -361,6 +479,13 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
   await expect(bootScreen).toBeVisible();
   await expect(bootScreen).toBeHidden();
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
+  const wallpaperState = await page.locator(".tienos-wallpaper").evaluate((element) => {
+    const styles = getComputedStyle(element);
+    const matrix = new DOMMatrixReadOnly(styles.transform);
+    return { scale: styles.scale, transformScale: matrix.a };
+  });
+  expect(wallpaperState.scale).toBe("none");
+  expect(wallpaperState.transformScale).toBeCloseTo(1.02);
   await expect(page.locator("html")).toHaveCSS("overflow-x", "hidden");
   await expect(page.locator("html")).toHaveCSS("overflow-y", "hidden");
   await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
@@ -382,7 +507,7 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
 });
 
 test("reveals the static desktop without JavaScript", async ({ browser }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false });
+  const context = await browser.newContext({ javaScriptEnabled: false, reducedMotion: "reduce" });
   const page = await context.newPage();
 
   await page.goto("/");
@@ -392,6 +517,22 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
   await expect(page.getByRole("img", { name: "Battery full" })).toBeVisible();
+  const wallpaper = page.locator(".tienos-wallpaper");
+  const vignette = page.locator(".tienos-vignette");
+  await expect(wallpaper).toHaveCSS("filter", "saturate(1.08)");
+  await expect(wallpaper).not.toHaveCSS("transform", "none");
+  const wallpaperState = await wallpaper.evaluate((element) => {
+    const styles = getComputedStyle(element);
+    const matrix = new DOMMatrixReadOnly(styles.transform);
+    return { scale: styles.scale, transformScale: matrix.a };
+  });
+  expect(wallpaperState.scale).toBe("none");
+  expect(wallpaperState.transformScale).toBeCloseTo(1.02);
+  await expect(vignette).toHaveCSS("background-image", /linear-gradient.*radial-gradient/);
+  await expect(page.getByRole("navigation", { name: "tienOS menu bar" })).toHaveCSS(
+    "text-shadow",
+    "rgba(0, 0, 0, 0.4) 0px 1px 3px",
+  );
 
   await context.close();
 });
@@ -585,6 +726,14 @@ test("fits and fixes an open System Settings window on compact screens", async (
   await page.setViewportSize({ width: 320, height: 320 });
   await expect(settingsWindow).toHaveCSS("border-radius", "18px");
   await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("border-radius", "11px");
+  await expect(page.locator(".settings-hero h2")).toHaveCSS("font-size", "22px");
+  await expect(page.locator(".settings-search")).toHaveCSS("padding-left", "8px");
+  await expect(page.locator(".settings-search")).toHaveCSS("padding-right", "8px");
+  const history = page.locator(".settings-history");
+  await expect(history).toHaveCSS("align-items", "center");
+  await expect(history).toHaveCSS("height", "36px");
+  await expect(history.getByRole("button", { name: "Back" })).toHaveCSS("width", "38px");
+  await expect(history.getByRole("button", { name: "Back" })).toHaveCSS("font-size", "12px");
 
   await expect
     .poll(async () => {

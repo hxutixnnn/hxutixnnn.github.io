@@ -11,24 +11,24 @@ type SystemSettingsProps = {
 type SettingCategory = {
   icon: FontAwesomeIconName;
   label: string;
-  color: string;
+  colorClass: string;
 };
 
 type GeneralSetting = [icon: FontAwesomeIconName, label: string];
 
 const categories: SettingCategory[] = [
-  { icon: "gear", label: "General", color: "#8c8c91" },
-  { icon: "circle-half-stroke", label: "Appearance", color: "#a4a4a8" },
-  { icon: "desktop", label: "Desktop & Dock", color: "#85858a" },
-  { icon: "display", label: "Displays", color: "#258cff" },
-  { icon: "bars", label: "Menu Bar", color: "#85858a" },
-  { icon: "magnifying-glass", label: "Spotlight", color: "#307ed2" },
-  { icon: "image", label: "Wallpaper", color: "#31a6c8" },
-  { icon: "sparkles", label: "Notifications", color: "#ec5965" },
-  { icon: "volume-high", label: "Sound", color: "#ec5965" },
-  { icon: "key", label: "Lock Screen", color: "#85858a" },
-  { icon: "keyboard", label: "Keyboard", color: "#85858a" },
-  { icon: "computer-mouse", label: "Trackpad", color: "#85858a" },
+  { icon: "gear", label: "General", colorClass: "bg-[#8c8c91]" },
+  { icon: "circle-half-stroke", label: "Appearance", colorClass: "bg-[#a4a4a8]" },
+  { icon: "desktop", label: "Desktop & Dock", colorClass: "bg-[#85858a]" },
+  { icon: "display", label: "Displays", colorClass: "bg-[#258cff]" },
+  { icon: "bars", label: "Menu Bar", colorClass: "bg-[#85858a]" },
+  { icon: "magnifying-glass", label: "Spotlight", colorClass: "bg-[#307ed2]" },
+  { icon: "image", label: "Wallpaper", colorClass: "bg-[#31a6c8]" },
+  { icon: "sparkles", label: "Notifications", colorClass: "bg-[#ec5965]" },
+  { icon: "volume-high", label: "Sound", colorClass: "bg-[#ec5965]" },
+  { icon: "key", label: "Lock Screen", colorClass: "bg-[#85858a]" },
+  { icon: "keyboard", label: "Keyboard", colorClass: "bg-[#85858a]" },
+  { icon: "computer-mouse", label: "Trackpad", colorClass: "bg-[#85858a]" },
 ];
 
 const generalGroups: GeneralSetting[][] = [
@@ -74,24 +74,35 @@ type SettingsScrollAreaProps = {
   children: ReactNode;
   className: string;
   label: string;
+  contentClassName?: string;
   viewportRef?: RefObject<HTMLDivElement | null>;
 };
 
-function SettingsScrollArea({ children, className, label, viewportRef }: SettingsScrollAreaProps) {
+function SettingsScrollArea({
+  children,
+  className,
+  contentClassName = "",
+  label,
+  viewportRef,
+}: SettingsScrollAreaProps) {
   return (
-    <ScrollArea.Root className={`settings-base-scroll-area ${className}`}>
+    <ScrollArea.Root className={`group/scroll relative overflow-hidden ${className}`}>
       <ScrollArea.Viewport
         ref={(element) => {
           if (viewportRef) viewportRef.current = element;
         }}
-        className="settings-scroll-viewport"
+        className="settings-scroll-viewport h-full w-full overscroll-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden focus-visible:-outline-offset-2 focus-visible:rounded-[var(--tienos-radius-content)] focus-visible:outline-2 focus-visible:outline-[var(--tienos-color-focus)]"
         aria-label={label}
         tabIndex={0}
       >
-        <ScrollArea.Content className="settings-scroll-content">{children}</ScrollArea.Content>
+        <ScrollArea.Content className={contentClassName}>{children}</ScrollArea.Content>
       </ScrollArea.Viewport>
-      <ScrollArea.Scrollbar className="settings-scrollbar" orientation="vertical" keepMounted>
-        <ScrollArea.Thumb className="settings-scroll-thumb" />
+      <ScrollArea.Scrollbar
+        className="settings-scrollbar absolute inset-y-[5px] right-[3px] z-[2] w-2 rounded-full bg-[var(--tienos-color-scrollbar-track)] opacity-0 transition-opacity duration-[180ms] ease-out data-[has-overflow-y]:data-[scrolling]:opacity-100 data-[has-overflow-y]:hover:opacity-100 data-[has-overflow-y]:active:opacity-100 group-has-[:focus]/scroll:data-[has-overflow-y]:opacity-100 motion-reduce:transition-none"
+        orientation="vertical"
+        keepMounted
+      >
+        <ScrollArea.Thumb className="settings-scroll-thumb min-h-6 w-full rounded-[inherit] border-2 border-transparent bg-[var(--tienos-color-scrollbar-thumb)] bg-clip-padding" />
       </ScrollArea.Scrollbar>
     </ScrollArea.Root>
   );
@@ -190,7 +201,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
 
   return (
     <Rnd
-      className="settings-rnd"
+      className="settings-rnd z-30"
       size={{ width: frame.width, height: frame.height }}
       position={{ x: frame.x, y: frame.y }}
       bounds="window"
@@ -219,49 +230,75 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
         )
       }
     >
-      <section className="settings-window" aria-label="System Settings">
-        <aside className="settings-sidebar" data-floating-panel="">
-          <div className="settings-sidebar-panel">
-            <div className="settings-traffic-lights" aria-label="Window controls">
+      <section
+        className="settings-window relative grid h-full w-full grid-cols-[30.8%_69.2%] overflow-hidden rounded-[var(--tienos-radius-window)] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-window)] text-[var(--tienos-color-text-primary)] shadow-[var(--tienos-shadow-window),inset_0_1px_rgb(255_255_255/0.05)] backdrop-blur-[28px] backdrop-saturate-[1.15] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none max-[700px]:grid-cols-[112px_1fr] max-[700px]:rounded-[18px]"
+        aria-label="System Settings"
+      >
+        <aside
+          className="settings-sidebar min-h-0 min-w-0 p-[8px_4px_8px_8px] max-[700px]:p-[7px_3px_7px_7px]"
+          data-floating-panel=""
+        >
+          <div
+            data-sidebar-panel=""
+            className="settings-sidebar-panel flex h-full min-h-0 flex-col overflow-hidden rounded-[calc(var(--tienos-radius-window)_-_8px)] border border-[var(--tienos-color-border)] bg-[color-mix(in_srgb,var(--tienos-color-sidebar)_84%,transparent)] p-[10px_9px_8px] shadow-[0_8px_24px_rgb(0_0_0/0.17),inset_0_1px_rgb(255_255_255/0.08)] backdrop-blur-[24px] backdrop-saturate-[1.2] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
+          >
+            <div
+              className="mx-0.5 mb-[29px] flex gap-2.5 max-[700px]:mb-5 max-[700px]:gap-[7px]"
+              aria-label="Window controls"
+            >
               <button
-                className="settings-light settings-light-close"
+                className="settings-light size-[13px] rounded-[50%] border-0 bg-[#ff5f57] max-[700px]:size-[11px]"
                 aria-label="Close System Settings"
                 onClick={onClose}
               />
               <button
-                className="settings-light settings-light-minimize"
+                className="settings-light size-[13px] rounded-full border-0 bg-[#febc2e] max-[700px]:size-[11px]"
                 aria-label="Minimize System Settings"
               />
-              <button className="settings-light settings-light-expand" aria-label="Expand System Settings" />
+              <button
+                className="settings-light size-[13px] rounded-full border-0 bg-[#28c840] max-[700px]:size-[11px]"
+                aria-label="Expand System Settings"
+              />
             </div>
 
-            <label className="settings-search">
-              <FontAwesomeIcon name="magnifying-glass" className="settings-search-icon" />
+            <label
+              data-settings-search=""
+              className="settings-search flex h-7 items-center gap-[7px] rounded-[11px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-[10px] text-[var(--tienos-color-text-secondary)] [&_input]:min-w-0 [&_input]:w-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:text-[var(--tienos-color-text-primary)] [&_input::placeholder]:text-[var(--tienos-color-text-secondary)] max-[700px]:px-[8px]"
+            >
+              <FontAwesomeIcon name="magnifying-glass" className="text-xs" />
               <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
             </label>
 
-            <div className="settings-account">
-              <div className="settings-avatar">T</div>
+            <div className="flex items-center gap-[11px] p-[13px_7px_10px] max-[700px]:hidden [&_strong]:block [&_span]:mt-[2px] [&_span]:block [&_span]:text-xs [&_span]:text-[var(--tienos-color-text-secondary)]">
+              <div className="settings-avatar grid size-[34px] place-items-center rounded-[50%] bg-[linear-gradient(145deg,#59677c,#192334)] text-[17px] font-bold">
+                T
+              </div>
               <div>
                 <strong>Tien Nguyen</strong>
                 <span>tienOS Account</span>
               </div>
             </div>
 
-            <button className="settings-family">
-              <span className="settings-family-avatars">
+            <button
+              data-inset-focus=""
+              className="settings-family flex h-8 w-full items-center gap-[9px] border-0 bg-transparent px-[7px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:hidden"
+            >
+              <span className="grid h-[22px] w-[42px] place-items-center rounded-lg bg-[#465268] text-[15px] text-white">
                 <FontAwesomeIcon name="people-group" />
               </span>
               <span>Family</span>
             </button>
 
-            <SettingsScrollArea className="settings-navigation" label="Settings categories">
+            <SettingsScrollArea
+              className="settings-navigation mt-2.5 min-h-0 flex-1 max-[700px]:mt-3"
+              label="Settings categories"
+            >
               <nav aria-label="Settings categories">
                 {filteredCategoryGroups.map(
                   (group, groupIndex) =>
                     group.length > 0 && (
                       <div
-                        className="settings-nav-group"
+                        className="[&+&]:mt-3 [&+&]:border-t [&+&]:border-[var(--tienos-color-separator)] [&+&]:pt-3"
                         role="group"
                         aria-label={groupIndex === 0 ? "System" : "Personal"}
                         key={groupIndex}
@@ -269,12 +306,15 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                         {group.map((category) => (
                           <button
                             key={category.label}
-                            className="settings-nav-item"
+                            data-inset-focus=""
+                            className="settings-nav-item flex min-h-[33.5px] w-full items-center gap-2.5 rounded-[10px] border-0 bg-transparent p-[4px_8px] text-left text-[var(--tienos-color-text-primary)] hover:bg-[var(--tienos-color-hover)] data-[selected]:bg-[var(--tienos-color-accent)] data-[selected]:text-white data-[selected]:hover:bg-[var(--tienos-color-accent-hover)] data-[selected]:focus-visible:outline-2 data-[selected]:focus-visible:-outline-offset-2 data-[selected]:focus-visible:outline-solid data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] contrast-more:data-[selected]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] max-[700px]:justify-center max-[700px]:p-1 max-[700px]:[&>span:last-child]:hidden"
                             aria-label={category.label}
                             data-selected={selected === category.label || undefined}
                             onClick={() => setSelected(category.label)}
                           >
-                            <span className="settings-icon" style={{ background: category.color }}>
+                            <span
+                              className={`settings-icon grid size-5 shrink-0 place-items-center rounded-[7px] border border-white/20 text-[11px] text-white shadow-[inset_0_1px_rgb(255_255_255/0.2),0_1px_2px_rgb(0_0_0/0.4)] ${category.colorClass}`}
+                            >
                               <FontAwesomeIcon name={category.icon} />
                             </span>
                             <span>{category.label}</span>
@@ -288,8 +328,11 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
           </div>
         </aside>
 
-        <div className="settings-content">
-          <div className="settings-history" aria-label="Navigation history">
+        <div className="flex min-h-0 min-w-0 flex-col p-[8px_20px_0] max-[700px]:p-[12px_10px_0]">
+          <div
+            className="settings-history -ml-3 mb-[9px] flex h-[35px] shrink-0 items-center self-start overflow-hidden rounded-[22px] border border-[var(--tienos-color-border)] [&_button]:grid [&_button]:h-full [&_button]:w-[36px] [&_button]:place-items-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[12px] [&_button]:text-[var(--tienos-color-text-tertiary)] [&>span]:h-6 [&>span]:w-px [&>span]:bg-[var(--tienos-color-separator)] max-[700px]:h-[36px] max-[700px]:[&_button]:w-[38px]"
+            aria-label="Navigation history"
+          >
             <button aria-label="Back" disabled>
               <FontAwesomeIcon name="chevron-left" />
             </button>
@@ -300,13 +343,16 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
           </div>
 
           <SettingsScrollArea
-            className="settings-scroll-area"
+            className="settings-scroll-area min-h-0 flex-1"
+            contentClassName="pb-6"
             label="Settings details"
             viewportRef={detailsViewportRef}
           >
             {selected !== "Appearance" && (
-              <header className="settings-hero">
-                <span className="settings-hero-icon" style={{ background: selectedCategory.color }}>
+              <header className="settings-hero rounded-[var(--tienos-radius-content)] border border-white/[.015] bg-[var(--tienos-color-content)] p-[23px_32px_19px] text-center max-[700px]:p-[24px_14px] max-[700px]:[&_h2]:text-[22px] [&_h2]:m-0 [&_h2]:text-[23px] [&_h2]:leading-none [&_h2]:tracking-[-0.03em] [&_p]:mx-auto [&_p]:mt-px [&_p]:mb-0 [&_p]:max-w-[600px] [&_p]:text-[var(--tienos-color-text-secondary)] [&_p]:leading-[var(--tienos-leading-body)]">
+                <span
+                  className={`settings-hero-icon mx-auto mb-[4px] grid size-[54px] place-items-center rounded-[18px] border border-white/20 text-[28px] text-white shadow-[inset_0_1px_rgb(255_255_255/0.2),0_1px_2px_rgb(0_0_0/0.4)] ${selectedCategory.colorClass}`}
+                >
                   <FontAwesomeIcon name={selectedCategory.icon} />
                 </span>
                 <h2>{selectedCategory.label}</h2>
@@ -319,14 +365,21 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
             )}
 
             {selected === "Appearance" ? (
-              <div className="appearance-settings">
+              <div className="grid gap-3 [&_h2]:m-0 [&_h2]:text-[22px] [&_h3]:m-0 [&_h3]:p-[10px_12px_0] [&_h3]:text-[17px]">
                 <h2>Appearance</h2>
-                <section className="appearance-panel appearance-overview" aria-label="Appearance style">
-                  <div className="appearance-choice-row" role="group" aria-label="Appearance mode">
+                <section
+                  className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
+                  aria-label="Appearance style"
+                >
+                  <div
+                    className="flex justify-end gap-3 max-[520px]:flex-col max-[520px]:items-start"
+                    role="group"
+                    aria-label="Appearance mode"
+                  >
                     {(["auto", "light", "dark"] satisfies AppearanceMode[]).map((mode) => (
                       <button
                         key={mode}
-                        className={`appearance-preview appearance-preview-${mode}`}
+                        className={`grid gap-1 border-0 bg-transparent text-center text-[var(--tienos-color-text-secondary)] aria-pressed:font-bold aria-pressed:text-[var(--tienos-color-text-primary)] [&>span]:h-[54px] [&>span]:w-[86px] [&>span]:rounded-lg [&>span]:border-2 [&>span]:border-transparent aria-pressed:[&>span]:border-[var(--tienos-color-accent)] aria-pressed:[&>span]:shadow-[0_0_0_2px_var(--tienos-color-accent)] ${mode === "auto" ? "[&>span]:bg-[linear-gradient(145deg,#70bde8,#20386f_55%,#15181e_56%)]" : mode === "light" ? "[&>span]:bg-[linear-gradient(145deg,#aee6ff,#f5f5f5)]" : "[&>span]:bg-[linear-gradient(145deg,#253f9b,#080b18)]"}`}
                         aria-pressed={appearanceMode === mode}
                         onClick={() => setAppearanceMode(mode)}
                       >
@@ -335,16 +388,20 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                       </button>
                     ))}
                   </div>
-                  <div className="appearance-liquid-glass">
+                  <div className="mt-3.5 flex items-center justify-between border-t border-[var(--tienos-color-separator)] pt-3.5 max-[520px]:flex-col max-[520px]:items-start [&_strong]:block [&_span]:block [&>div>span]:text-[var(--tienos-color-text-secondary)]">
                     <div>
                       <strong>Liquid Glass</strong>
                       <span>Choose your preferred look for Liquid Glass.</span>
                     </div>
-                    <div className="appearance-choice-row" role="group" aria-label="Liquid Glass style">
+                    <div
+                      className="flex justify-end gap-3 max-[520px]:flex-col max-[520px]:items-start"
+                      role="group"
+                      aria-label="Liquid Glass style"
+                    >
                       {["Clear", "Tinted"].map((style) => (
                         <button
                           key={style}
-                          className="appearance-glass-choice"
+                          className="grid gap-1 border-0 bg-transparent text-center text-[var(--tienos-color-text-secondary)] aria-pressed:font-bold aria-pressed:text-[var(--tienos-color-text-primary)] [&>span]:h-[50px] [&>span]:w-[88px] [&>span]:rounded-[9px] [&>span]:border-2 [&>span]:border-transparent [&>span]:bg-[linear-gradient(135deg,rgb(255_240_180/.8),rgb(69_181_255/.55))] aria-pressed:[&>span]:border-[var(--tienos-color-accent)] aria-pressed:[&>span]:shadow-[0_0_0_2px_var(--tienos-color-accent)]"
                           aria-pressed={glassStyle === style}
                           onClick={() => setGlassStyle(style)}
                         >
@@ -357,10 +414,17 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                 </section>
 
                 <h3>Theme</h3>
-                <section className="appearance-panel appearance-theme" aria-label="Theme">
-                  <div className="appearance-setting-row">
+                <section
+                  className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
+                  aria-label="Theme"
+                >
+                  <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px]">
                     <span>Color</span>
-                    <div className="appearance-colors" role="group" aria-label="Accent color">
+                    <div
+                      className="flex flex-wrap gap-2.5 max-[520px]:py-2"
+                      role="group"
+                      aria-label="Accent color"
+                    >
                       {[
                         "Multicolor",
                         "Blue",
@@ -374,7 +438,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                       ].map((color) => (
                         <button
                           key={color}
-                          className={`appearance-color appearance-color-${color.toLowerCase()}`}
+                          className={`size-[30px] rounded-full border-[3px] border-transparent aria-pressed:outline aria-pressed:outline-3 aria-pressed:outline-offset-2 aria-pressed:outline-[var(--tienos-color-accent)] ${color === "Multicolor" ? "bg-[conic-gradient(#f33,#fc3,#3c6,#08f,#b3c,#f33)]" : color === "Blue" ? "bg-[#1686ff]" : color === "Purple" ? "bg-[#9d3ba1]" : color === "Pink" ? "bg-[#ef3d91]" : color === "Red" ? "bg-[#e2343c]" : color === "Orange" ? "bg-[#f57814]" : color === "Yellow" ? "bg-[#ffbd22]" : color === "Green" ? "bg-[#55b83e]" : color === "Gray" ? "bg-[#999]" : ""}`}
                           aria-label={color}
                           aria-pressed={accentColor === color}
                           onClick={() => setAccentColor(color)}
@@ -382,7 +446,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                       ))}
                     </div>
                   </div>
-                  <label className="appearance-setting-row">
+                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
                     <span>Text highlight color</span>
                     <select
                       aria-label="Text highlight color"
@@ -397,23 +461,29 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                     </select>
                   </label>
                 </section>
-                <section className="appearance-panel" aria-label="Icon and widget style">
-                  <div className="appearance-setting-row appearance-widget-row">
+                <section
+                  className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
+                  aria-label="Icon and widget style"
+                >
+                  <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&>[role=group]]:flex [&>[role=group]]:gap-3 max-[520px]:[&>[role=group]]:flex-wrap">
                     <span>Icon &amp; widget style</span>
                     <div role="group" aria-label="Icon and widget style">
                       {["Default", "Dark", "Clear", "Tinted"].map((style) => (
                         <button
                           key={style}
+                          className="grid gap-1 border-0 bg-transparent text-center text-[var(--tienos-color-text-secondary)] aria-pressed:font-bold aria-pressed:text-[var(--tienos-color-text-primary)] aria-pressed:[&>span]:border-[var(--tienos-color-accent)] aria-pressed:[&>span]:shadow-[0_0_0_2px_var(--tienos-color-accent)]"
                           aria-pressed={widgetStyle === style}
                           onClick={() => setWidgetStyle(style)}
                         >
-                          <span className={`appearance-widget appearance-widget-${style.toLowerCase()}`} />
+                          <span
+                            className={`block size-[34px] rounded-[9px] border-2 border-transparent ${style === "Default" ? "bg-[#1686ff]" : style === "Dark" ? "bg-[#222]" : style === "Clear" ? "bg-[#aaa]" : style === "Tinted" ? "bg-[#35b9ef]" : ""}`}
+                          />
                           {style}
                         </button>
                       ))}
                     </div>
                   </div>
-                  <label className="appearance-setting-row">
+                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
                     <span>Folder color</span>
                     <select
                       aria-label="Folder color"
@@ -429,8 +499,11 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                   </label>
                 </section>
                 <h3>Windows</h3>
-                <section className="appearance-panel" aria-label="Windows">
-                  <label className="appearance-setting-row">
+                <section
+                  className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
+                  aria-label="Windows"
+                >
+                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
                     <span>Sidebar icon size</span>
                     <select
                       aria-label="Sidebar icon size"
@@ -442,7 +515,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                       ))}
                     </select>
                   </label>
-                  <label className="appearance-setting-row">
+                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px]">
                     <span>Tint window background with wallpaper color</span>
                     <input
                       type="checkbox"
@@ -453,24 +526,36 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                 </section>
               </div>
             ) : selected === "General" ? (
-              <div className="settings-groups">
+              <div className="grid gap-[10px] pt-[10px]">
                 {generalGroups.map((group, groupIndex) => (
-                  <div className="settings-group" key={groupIndex}>
+                  <div
+                    className="settings-group overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.018] bg-[var(--tienos-color-content)]"
+                    key={groupIndex}
+                  >
                     {group.map(([icon, label]) => (
-                      <button className="settings-row" key={label}>
-                        <span className="settings-row-icon">
+                      <button
+                        data-inset-focus=""
+                        className="settings-row relative flex h-[42px] w-full items-center gap-3 border-0 bg-transparent p-[8px_18px] text-left text-[var(--tienos-color-text-primary)] after:absolute after:right-[18px] after:bottom-0 after:left-[50px] after:h-px after:bg-[var(--tienos-color-separator)] after:content-[''] last:after:hidden hover:bg-[var(--tienos-color-hover)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] [@media(forced-colors:active)]:focus-visible:-outline-offset-2 max-[700px]:p-[8px_12px]"
+                        key={label}
+                      >
+                        <span className="settings-row-icon grid size-[22px] place-items-center rounded-md border border-white/20 bg-[#292a2c] text-xs text-white shadow-[inset_0_1px_rgb(255_255_255/0.2),0_1px_2px_rgb(0_0_0/0.4)]">
                           <FontAwesomeIcon name={icon} />
                         </span>
                         <span>{label}</span>
-                        <FontAwesomeIcon name="chevron-right" className="settings-chevron" />
+                        <FontAwesomeIcon
+                          name="chevron-right"
+                          className="settings-chevron ml-auto text-[10px] text-[var(--tienos-color-text-tertiary)]"
+                        />
                       </button>
                     ))}
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="settings-empty-panel">
-                <span className="settings-icon" style={{ background: selectedCategory.color }}>
+              <div className="mt-3.5 grid min-h-60 content-center place-items-center gap-3.5 rounded-[15px] bg-[var(--tienos-color-content)] text-[var(--tienos-color-text-secondary)]">
+                <span
+                  className={`settings-icon grid size-5 shrink-0 place-items-center rounded-[7px] border border-white/20 text-[11px] text-white shadow-[inset_0_1px_rgb(255_255_255/0.2),0_1px_2px_rgb(0_0_0/0.4)] ${selectedCategory.colorClass}`}
+                >
                   <FontAwesomeIcon name={selectedCategory.icon} />
                 </span>
                 <p>{selectedCategory.label} controls are ready for configuration.</p>

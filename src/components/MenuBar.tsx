@@ -9,13 +9,19 @@ type MenuBarProps = {
 };
 
 const triggerClassName =
-  "tienos-menu-trigger rounded-full px-2 py-0.5 text-left font-medium transition-colors";
-const itemClassName = "tienos-menu-item flex min-h-7 w-full items-center gap-3 px-2 py-1 text-left";
-const popupClassName = "tienos-menu-popup min-w-60";
-const separatorClassName = "tienos-menu-separator my-0.5";
+  "tienos-menu-trigger rounded-full px-2 py-0.5 text-left font-medium transition-colors hover:bg-white/16 focus-visible:bg-white/16 data-[popup-open]:bg-white/16";
+const itemClassName =
+  "tienos-menu-item group flex min-h-7 w-full cursor-default items-center gap-3 rounded-[var(--tienos-radius-menu-item)] px-2 py-1 text-left text-[var(--tienos-color-text-primary)] transition-[background-color] duration-[var(--tienos-motion-fast)] ease-[ease] hover:not-data-disabled:bg-[var(--tienos-color-accent)] hover:not-data-disabled:text-[var(--tienos-color-text-on-accent)] data-[disabled]:text-[var(--tienos-color-text-tertiary)] data-[highlighted]:bg-[var(--tienos-color-accent)] data-[highlighted]:text-[var(--tienos-color-text-on-accent)] data-[highlighted]:outline-none data-[highlighted]:focus-visible:outline-2 data-[highlighted]:focus-visible:-outline-offset-2 data-[highlighted]:focus-visible:outline-[var(--tienos-color-focus-on-accent)] contrast-more:shadow-[inset_0_0_0_1px_var(--tienos-color-border)] contrast-more:focus-visible:outline-2 contrast-more:focus-visible:-outline-offset-2 contrast-more:focus-visible:outline-[var(--tienos-color-focus)] [@media(forced-colors:active)]:data-[highlighted]:focus-visible:!outline-[var(--tienos-color-focus-on-accent)]";
+const popupClassName =
+  "tienos-menu-popup min-w-60 origin-[var(--transform-origin)] overflow-hidden rounded-[var(--tienos-radius-menu)] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-menu)] p-[var(--tienos-space-1)] shadow-[0_22px_50px_rgb(0_0_0/0.3),inset_0_1px_rgb(255_255_255/0.12)] backdrop-blur-[24px] backdrop-saturate-[1.3] data-[starting-style]:[transform:scale(.96)_translateY(-4px)] data-[starting-style]:opacity-0 data-[ending-style]:[transform:scale(.96)_translateY(-4px)] data-[ending-style]:opacity-0 data-[ending-style]:transition-[opacity,transform] data-[ending-style]:[transition-duration:var(--tienos-motion-fast),var(--tienos-motion-standard)] data-[ending-style]:[transition-timing-function:ease,ease] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none";
+const separatorClassName = "my-0.5 h-px border-0 bg-[var(--tienos-color-separator)]";
 
 function Shortcut({ children }: { children: string }) {
-  return <kbd className="tienos-menu-shortcut ml-auto pl-6 text-[11px]">{children}</kbd>;
+  return (
+    <kbd className="ml-auto pl-6 text-[11px] text-[var(--tienos-color-text-tertiary)] group-data-[highlighted]:text-[var(--tienos-color-text-on-accent)] group-hover:text-[var(--tienos-color-text-on-accent)]">
+      {children}
+    </kbd>
+  );
 }
 
 function MenuPopup({ children }: { children: React.ReactNode }) {
@@ -54,7 +60,10 @@ export function MenuBar({ onAction }: MenuBarProps) {
 
   return (
     <header className="fixed inset-x-0 top-0 z-40 flex items-center px-2 pt-[env(safe-area-inset-top)] sm:px-3">
-      <Menubar aria-label="tienOS menu bar" className="tienos-menubar flex h-9 flex-1 items-center gap-0.5">
+      <Menubar
+        aria-label="tienOS menu bar"
+        className="flex h-9 flex-1 items-center gap-0.5 bg-transparent text-[var(--tienos-color-text-on-wallpaper)] [text-shadow:0_1px_3px_rgb(0_0_0/0.4)]"
+      >
         <Menu.Root open={systemMenuOpen} onOpenChange={setSystemMenuOpen} triggerId={systemMenuTriggerId}>
           <Menu.Trigger
             id={systemMenuTriggerId}
@@ -62,7 +71,7 @@ export function MenuBar({ onAction }: MenuBarProps) {
             aria-keyshortcuts="Meta+Shift+O"
             className={`${triggerClassName} px-2 text-base leading-none`}
           >
-            <FontAwesomeIcon name="sparkle" className="tienos-system-mark" />
+            <FontAwesomeIcon name="sparkle" className="text-[15px]" />
           </Menu.Trigger>
           <MenuPopup>
             <Menu.Item className={itemClassName} onClick={() => announce("About This OS")}>
@@ -80,7 +89,10 @@ export function MenuBar({ onAction }: MenuBarProps) {
             <Menu.SubmenuRoot>
               <Menu.SubmenuTrigger className={itemClassName}>
                 <span>Recent Items</span>
-                <FontAwesomeIcon name="chevron-right" className="tienos-submenu-chevron" />
+                <FontAwesomeIcon
+                  name="chevron-right"
+                  className="ml-auto text-[10px] text-[var(--tienos-color-text-secondary)] group-data-[highlighted]:text-[var(--tienos-color-text-on-accent)] group-hover:text-[var(--tienos-color-text-on-accent)]"
+                />
               </Menu.SubmenuTrigger>
               <Menu.Portal>
                 <Menu.Positioner side="right" align="start" sideOffset={3} className="z-50 outline-none">
@@ -135,10 +147,10 @@ export function MenuBar({ onAction }: MenuBarProps) {
       </Menubar>
       <div className="flex items-center gap-2 px-2 text-[13px] font-medium text-white/75">
         <span role="img" aria-label="Wi-Fi connected">
-          <FontAwesomeIcon name="wifi" className="tienos-status-icon" />
+          <FontAwesomeIcon name="wifi" className="text-[13px]" />
         </span>
         <span role="img" aria-label="Battery full">
-          <FontAwesomeIcon name="battery-full" className="tienos-status-icon" />
+          <FontAwesomeIcon name="battery-full" className="text-[13px]" />
         </span>
         <time className="whitespace-nowrap" dateTime={now.toISOString()}>
           {formatDateTime(now)}
