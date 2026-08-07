@@ -426,7 +426,14 @@ test("keeps the splash over the desktop until delayed styles are ready", async (
   await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
 });
 
-test("keeps the splash over the desktop until paint-critical assets are ready", async ({ page }) => {
+test("paints a stable splash icon before delayed app and desktop assets", async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.emulateMedia({ reducedMotion: "reduce", colorScheme: "dark" });
+
+  let releaseApplication!: () => void;
+  const applicationMayLoad = new Promise<void>((resolve) => {
+    releaseApplication = resolve;
+  });
   let releaseWallpaper!: () => void;
   const wallpaperMayLoad = new Promise<void>((resolve) => {
     releaseWallpaper = resolve;
@@ -435,11 +442,15 @@ test("keeps the splash over the desktop until paint-critical assets are ready", 
   const spriteMayLoad = new Promise<void>((resolve) => {
     releaseSprite = resolve;
   });
-  let wallpaperIntercepted = false;
+  let applicationIntercepted = false;
   let spriteIntercepted = false;
 
+  await page.route(/\/assets\/.*\.js$/, async (route) => {
+    applicationIntercepted = true;
+    await applicationMayLoad;
+    await route.continue();
+  });
   await page.route("**/wallpapers/tienos-default.jpg", async (route) => {
-    wallpaperIntercepted = true;
     await wallpaperMayLoad;
     await route.continue();
   });
@@ -450,12 +461,25 @@ test("keeps the splash over the desktop until paint-critical assets are ready", 
   });
 
   const navigation = page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect.poll(() => wallpaperIntercepted).toBe(true);
+  await expect.poll(() => applicationIntercepted).toBe(true);
   await expect.poll(() => spriteIntercepted).toBe(true);
-  await page.waitForTimeout(700);
 
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
+  const bootIcon = page.locator("[data-boot-icon]");
   await expect(bootScreen).toBeVisible();
+  await expect(bootIcon).toBeVisible();
+  const bootIconBounds = await bootIcon.boundingBox();
+  expect(bootIconBounds?.x).toBeCloseTo(104, 0);
+  expect(bootIconBounds).toMatchObject({ y: 190, width: 112, height: 112 });
+  expect(
+    await bootIcon.locator("path").evaluate((path) => {
+      const bounds = (path as SVGGraphicsElement).getBBox();
+      return bounds.width > 0 && bounds.height > 0;
+    }),
+  ).toBe(true);
+  await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+  await page.waitForTimeout(700);
+  await expect(bootIcon).toBeVisible();
   await expect(page.locator("#root")).toHaveAttribute("inert", "");
   await page.keyboard.press("Tab");
   expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
@@ -474,6 +498,7 @@ test("keeps the splash over the desktop until paint-critical assets are ready", 
   releaseWallpaper();
   await expect(bootScreen).toBeVisible();
   releaseSprite();
+  releaseApplication();
   await navigation;
   await expect(bootScreen).toBeHidden();
   await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
@@ -509,11 +534,22 @@ test("releases the static desktop when a critical asset stalls", async ({ page }
 });
 
 test("reveals the static desktop when the application module fails", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("light")));
+  await page.addInitScript(() => {
+    localStorage.setItem("tienos-appearance", JSON.stringify("light"));
+    (window as typeof window & { bootIconObserved?: boolean }).bootIconObserved = false;
+    new MutationObserver(() => {
+      if (document.querySelector("[data-boot-icon] path")) {
+        (window as typeof window & { bootIconObserved?: boolean }).bootIconObserved = true;
+      }
+    }).observe(document, { childList: true, subtree: true });
+  });
   await page.route(/\/assets\/.*\.js$/, (route) => route.abort("failed"));
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
 
+  expect(
+    await page.evaluate(() => (window as typeof window & { bootIconObserved?: boolean }).bootIconObserved),
+  ).toBe(true);
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
   await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
@@ -572,6 +608,7 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
 
   await page.goto("/");
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
+  await expect(page.locator("[data-boot-icon] path")).toHaveCount(1);
   await expect(bootScreen).toBeVisible();
   await expect(bootScreen).toBeHidden();
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
