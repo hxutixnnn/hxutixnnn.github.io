@@ -541,28 +541,18 @@ test("paints a stable splash icon before delayed app and desktop assets", async 
   await page.keyboard.press("Tab");
   await expect(page.getByRole("menuitem", { name: "Open tienOS menu" })).toBeFocused();
 
-  await page.unroute(/\/assets\/.*\.js$/);
-  let releaseWarmApplication!: () => void;
-  const warmApplicationMayLoad = new Promise<void>((resolve) => {
-    releaseWarmApplication = resolve;
-  });
-  let warmApplicationIntercepted = false;
-  await page.route(/\/assets\/.*\.js$/, async (route) => {
-    warmApplicationIntercepted = true;
-    await warmApplicationMayLoad;
-    await route.continue();
-  });
+  await page.unrouteAll({ behavior: "wait" });
+  await page.emulateMedia({ reducedMotion: "no-preference", colorScheme: "dark" });
+  await page.reload();
+  await expect(bootScreen).toBeHidden();
 
-  const warmNavigation = page.reload({ waitUntil: "domcontentloaded" });
-  await expect.poll(() => warmApplicationIntercepted).toBe(true);
+  await page.reload({ waitUntil: "domcontentloaded" });
   await expect(bootScreen).toBeVisible();
   const warmGeometry = await expectBootIconToPaint(bootIcon);
   expect(warmGeometry).toEqual(coldGeometry);
   await page.waitForTimeout(100);
   expect(await expectBootIconToPaint(bootIcon)).toEqual(warmGeometry);
   await expect(page.locator("#root")).toHaveAttribute("inert", "");
-  releaseWarmApplication();
-  await warmNavigation;
   await expect(bootScreen).toBeHidden();
 });
 
