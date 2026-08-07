@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { MenuBar } from "./components/MenuBar";
+import { SystemSettings } from "./components/SystemSettings";
 
 export function App() {
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
   return (
     <main
       aria-label="tienOS desktop"
@@ -8,7 +12,13 @@ export function App() {
     >
       <div className="tienos-wallpaper" aria-hidden="true" />
       <div className="tienos-vignette" aria-hidden="true" />
-      <MenuBar />
+      <MenuBar onAction={(action) => action === "System Settings…" && setSettingsOpen(true)} />
+      {settingsOpen && (
+        <>
+          <div className="settings-backdrop" aria-hidden="true" />
+          <SystemSettings onClose={() => setSettingsOpen(false)} />
+        </>
+      )}
     </main>
   );
 }
