@@ -267,7 +267,18 @@ test("uses independently accessible Base UI scroll areas with transient scrollba
   await expect(detailScrollbar).toHaveAttribute("data-scrolling", "");
   await expect(detailScrollbar).toHaveCSS("opacity", "1");
   await expect(detailScrollbar).not.toHaveAttribute("data-scrolling", "", { timeout: 1500 });
-  await page.mouse.move(0, 0);
+  await expect(detailScrollbar).toHaveCSS("opacity", "0");
+
+  await detailScrollbar.hover();
+  await expect(detailScrollbar).toHaveCSS("opacity", "1");
+  const thumb = detailScrollbar.locator(".settings-scroll-thumb");
+  const thumbBounds = await thumb.boundingBox();
+  await page.mouse.move(thumbBounds!.x + thumbBounds!.width / 2, thumbBounds!.y + 4);
+  await page.mouse.down();
+  await page.mouse.move(thumbBounds!.x + thumbBounds!.width / 2, thumbBounds!.y + 24);
+  await expect(detailScrollbar).toHaveCSS("opacity", "1");
+  await page.mouse.up();
+  await details.hover({ position: { x: 20, y: 20 } });
   await expect(detailScrollbar).toHaveCSS("opacity", "0");
 
   await details.focus();
