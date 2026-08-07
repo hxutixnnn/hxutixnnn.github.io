@@ -19,6 +19,15 @@ export function readPersistedAppearance(storage?: Pick<Storage, "getItem">): App
   }
 }
 
+export function readBrowserAppearance(): AppearanceMode {
+  if (typeof window === "undefined") return "auto";
+  try {
+    return readPersistedAppearance(window.localStorage);
+  } catch {
+    return "auto";
+  }
+}
+
 function systemTheme(): ResolvedTheme {
   return typeof window !== "undefined" && window.matchMedia?.("(prefers-color-scheme: dark)").matches
     ? "dark"
@@ -39,7 +48,7 @@ function applyTheme(mode: AppearanceMode, resolvedTheme: ResolvedTheme) {
     ?.setAttribute("content", resolvedTheme === "dark" ? "#07121d" : "#dbeafe");
 }
 
-const initialMode = readPersistedAppearance(typeof window === "undefined" ? undefined : window.localStorage);
+const initialMode = readBrowserAppearance();
 const initialTheme = resolveTheme(initialMode);
 applyTheme(initialMode, initialTheme);
 

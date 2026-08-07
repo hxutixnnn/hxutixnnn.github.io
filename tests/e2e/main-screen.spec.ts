@@ -595,6 +595,9 @@ test.describe("appearance modes", () => {
     await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
 
+    await page.emulateMedia({ colorScheme: "light" });
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
     await page.getByRole("menuitem", { name: "System Settings…" }).click();
     await page.getByRole("button", { name: "Appearance" }).click();
@@ -617,8 +620,16 @@ test.describe("appearance modes", () => {
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
 
     await page.getByRole("group", { name: "Appearance mode" }).getByRole("button", { name: "Dark" }).click();
+    await page.emulateMedia({ colorScheme: "dark" });
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
     await page.emulateMedia({ colorScheme: "light" });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+    await page.reload();
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "dark");
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem("tienos-appearance")))
+      .toBe(JSON.stringify("dark"));
   });
 
   test("bootstraps a persisted theme before the first desktop paint and rejects malformed storage", async ({
@@ -628,17 +639,38 @@ test.describe("appearance modes", () => {
       if (localStorage.getItem("tienos-appearance") === null) {
         localStorage.setItem("tienos-appearance", JSON.stringify("light"));
       }
+      const paints: Array<{ name: string; theme?: string; splashBackground: string }> = [];
+      new PerformanceObserver((entries) => {
+        for (const entry of entries.getEntries()) {
+          const splash = document.getElementById("tienos-boot");
+          paints.push({
+            name: entry.name,
+            theme: document.documentElement.dataset.theme,
+            splashBackground: splash ? getComputedStyle(splash).backgroundColor : "missing",
+          });
+        }
+      }).observe({ type: "paint", buffered: true });
+      Object.defineProperty(window, "tienosPaintEvidence", { value: paints });
+    });
+    await page.route("**/*", async (route) => {
+      if (route.request().resourceType() === "script") await route.abort();
+      else await route.continue();
     });
     await page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          (
+            window as Window & {
+              tienosPaintEvidence: Array<{ name: string; theme?: string; splashBackground: string }>;
+            }
+          ).tienosPaintEvidence.find(({ name }) => name === "first-paint"),
+        ),
+      )
+      .toEqual({ name: "first-paint", theme: "light", splashBackground: "rgb(248, 250, 252)" });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
-    await expect(page.getByRole("status", { name: "Starting tienOS" })).toHaveCSS(
-      "background-color",
-      "rgb(248, 250, 252)",
-    );
-    await expect(page.locator("main[aria-label='tienOS desktop']")).toHaveCSS(
-      "background-color",
-      "rgb(219, 234, 254)",
-    );
+
+    await page.unroute("**/*");
 
     await page.evaluate(() => localStorage.setItem("tienos-appearance", "{broken"));
     await page.emulateMedia({ colorScheme: "dark" });

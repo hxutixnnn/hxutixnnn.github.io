@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { appearanceStorageKey, readPersistedAppearance, useAppearanceStore } from "./appearance";
+import {
+  appearanceStorageKey,
+  readBrowserAppearance,
+  readPersistedAppearance,
+  useAppearanceStore,
+} from "./appearance";
 
 describe("appearance store", () => {
   beforeEach(() => {
@@ -20,6 +25,15 @@ describe("appearance store", () => {
         }),
       }),
     ).toBe("auto");
+  });
+
+  it("safely falls back to Auto when browser storage acquisition is blocked", () => {
+    const storage = vi.spyOn(window, "localStorage", "get").mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+
+    expect(readBrowserAppearance()).toBe("auto");
+    storage.mockRestore();
   });
 
   it("persists explicit modes and applies their resolved theme", () => {
