@@ -17,11 +17,13 @@
 
   --tienos-color-accent: #2863d7;
   --tienos-color-accent-hover: #3475e8;
+  --tienos-color-hover: rgb(255 255 255 / 0.06);
   --tienos-color-text-primary: rgb(255 255 255 / 0.9);
   --tienos-color-text-secondary: rgb(255 255 255 / 0.55);
   --tienos-color-text-tertiary: rgb(255 255 255 / 0.38);
   --tienos-color-separator: rgb(255 255 255 / 0.1);
   --tienos-color-border: rgb(255 255 255 / 0.2);
+  --tienos-color-menu: rgb(20 27 36 / 0.78);
   --tienos-color-window: rgb(29 29 31 / 0.97);
   --tienos-color-sidebar: rgb(24 24 25 / 0.86);
   --tienos-color-content: rgb(255 255 255 / 0.04);
@@ -51,6 +53,7 @@
 
 @media (prefers-reduced-transparency: reduce) {
   :root {
+    --tienos-color-menu: #141b24;
     --tienos-color-window: #1d1d1f;
     --tienos-color-sidebar: #181819;
     --tienos-color-content: #28282a;
@@ -63,11 +66,13 @@
   :root {
     --tienos-color-accent: Highlight;
     --tienos-color-accent-hover: Highlight;
+    --tienos-color-hover: Canvas;
     --tienos-color-text-primary: CanvasText;
     --tienos-color-text-secondary: CanvasText;
     --tienos-color-text-tertiary: GrayText;
     --tienos-color-separator: CanvasText;
     --tienos-color-border: CanvasText;
+    --tienos-color-menu: Canvas;
     --tienos-color-window: Canvas;
     --tienos-color-sidebar: Canvas;
     --tienos-color-content: Canvas;
