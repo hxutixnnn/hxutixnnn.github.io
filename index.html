@@ -21,11 +21,13 @@
         background: #050505;
         color: #fff;
         opacity: 1;
+        animation: tienos-boot-dismiss 240ms ease 1.05s forwards;
         transition: opacity 240ms ease;
       }
       #tienos-boot[data-complete] {
         pointer-events: none;
         opacity: 0;
+        animation: none;
       }
       .tienos-boot-content {
         display: flex;
@@ -69,8 +71,20 @@
           transform: scaleX(1);
         }
       }
+      @keyframes tienos-boot-dismiss {
+        from {
+          opacity: 1;
+          visibility: visible;
+        }
+        to {
+          opacity: 0;
+          visibility: hidden;
+        }
+      }
       @media (prefers-reduced-motion: reduce) {
         #tienos-boot {
+          animation-delay: 180ms;
+          animation-duration: 80ms;
           transition-duration: 80ms;
         }
         .tienos-boot-progress {

@@ -21,6 +21,19 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
   await expect(page.getByText("About This OS", { exact: true })).toBeVisible();
 });
 
+test("reveals the static desktop without JavaScript", async ({ browser }) => {
+  const context = await browser.newContext({ javaScriptEnabled: false });
+  const page = await context.newPage();
+
+  await page.goto("/");
+  const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
+  await expect(bootScreen).toBeVisible();
+  await expect(bootScreen).toBeHidden();
+  await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
+
+  await context.close();
+});
+
 test("opens System Settings from the system menu", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
@@ -85,6 +98,42 @@ test("drags and resizes the System Settings window with react-rnd", async ({ pag
   const resized = await settingsWindow.boundingBox();
   expect(Math.round(resized!.width - dragged!.width)).toBe(40);
   expect(Math.round(resized!.height - dragged!.height)).toBe(30);
+});
+
+test("fits and fixes an open System Settings window on compact screens", async ({ page }) => {
+  await page.setViewportSize({ width: 1100, height: 900 });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+  await page.getByRole("menuitem", { name: "System Settings…" }).click();
+
+  const settingsWindow = page.getByRole("region", { name: "System Settings" });
+  await page.setViewportSize({ width: 320, height: 320 });
+
+  await expect
+    .poll(async () => {
+      const bounds = await settingsWindow.boundingBox();
+      return (
+        bounds && {
+          x: Math.round(bounds.x),
+          y: Math.round(bounds.y),
+          width: Math.round(bounds.width),
+          height: Math.round(bounds.height),
+        }
+      );
+    })
+    .toEqual({ x: 8, y: 46, width: 304, height: 266 });
+
+  const compactBounds = await settingsWindow.boundingBox();
+  await page.mouse.move(compactBounds!.x + compactBounds!.width * 0.7, compactBounds!.y + 16);
+  await page.mouse.down();
+  await page.mouse.move(compactBounds!.x + compactBounds!.width * 0.7 - 40, compactBounds!.y - 20, {
+    steps: 4,
+  });
+  await page.mouse.up();
+
+  const fixedBounds = await settingsWindow.boundingBox();
+  expect(fixedBounds).toEqual(compactBounds);
 });
 
 test("keeps the default menu corners on a small viewport", async ({ page }) => {

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Rnd } from "react-rnd";
 
 type SystemSettingsProps = {
@@ -51,18 +51,96 @@ const generalGroups = [
   ],
 ];
 
+const compactBreakpoint = 700;
+const desktopMinimum = { width: 680, height: 520 };
+
+type Viewport = {
+  width: number;
+  height: number;
+};
+
+type SettingsFrame = Viewport & {
+  x: number;
+  y: number;
+};
+
+function readViewport(): Viewport {
+  return { width: window.innerWidth, height: window.innerHeight };
+}
+
+function clamp(value: number, minimum: number, maximum: number) {
+  return Math.min(Math.max(value, minimum), maximum);
+}
+
+function compactFrame(viewport: Viewport): SettingsFrame {
+  return {
+    x: 8,
+    y: 46,
+    width: Math.max(0, viewport.width - 16),
+    height: Math.max(0, viewport.height - 54),
+  };
+}
+
+function desktopFrame(viewport: Viewport): SettingsFrame {
+  const width = Math.min(
+    viewport.width,
+    Math.max(Math.min(desktopMinimum.width, viewport.width), viewport.width * 0.788),
+    1120,
+  );
+  const height = Math.min(
+    viewport.height,
+    Math.max(Math.min(desktopMinimum.height, viewport.height), viewport.height * 0.727),
+    860,
+  );
+
+  return {
+    x: clamp(viewport.width * 0.106, 0, viewport.width - width),
+    y: clamp(viewport.height * 0.105, 0, viewport.height - height),
+    width,
+    height,
+  };
+}
+
+function clampFrame(frame: SettingsFrame, viewport: Viewport): SettingsFrame {
+  const width = clamp(frame.width, Math.min(desktopMinimum.width, viewport.width), viewport.width);
+  const height = clamp(frame.height, Math.min(desktopMinimum.height, viewport.height), viewport.height);
+
+  return {
+    x: clamp(frame.x, 0, viewport.width - width),
+    y: clamp(frame.y, 0, viewport.height - height),
+    width,
+    height,
+  };
+}
+
 export function SystemSettings({ onClose }: SystemSettingsProps) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("General");
-  const compact = window.innerWidth <= 700;
-  const initialFrame = compact
-    ? { x: 8, y: 46, width: window.innerWidth - 16, height: window.innerHeight - 54 }
-    : {
-        x: window.innerWidth * 0.106,
-        y: window.innerHeight * 0.105,
-        width: Math.min(1120, window.innerWidth * 0.788),
-        height: Math.min(860, window.innerHeight * 0.727),
-      };
+  const [viewport, setViewport] = useState(readViewport);
+  const compact = viewport.width <= compactBreakpoint;
+  const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport) : desktopFrame(viewport)));
+  const compactRef = useRef(compact);
+
+  useEffect(() => {
+    const updateViewport = () => {
+      const nextViewport = readViewport();
+      const nextCompact = nextViewport.width <= compactBreakpoint;
+      const modeChanged = compactRef.current !== nextCompact;
+      compactRef.current = nextCompact;
+
+      setViewport(nextViewport);
+      setFrame((currentFrame) => {
+        if (nextCompact) {
+          return compactFrame(nextViewport);
+        }
+
+        return modeChanged ? desktopFrame(nextViewport) : clampFrame(currentFrame, nextViewport);
+      });
+    };
+
+    window.addEventListener("resize", updateViewport);
+    return () => window.removeEventListener("resize", updateViewport);
+  }, []);
   const filteredCategories = useMemo(
     () => categories.filter(({ label }) => label.toLowerCase().includes(query.toLowerCase())),
     [query],
@@ -72,14 +150,33 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
   return (
     <Rnd
       className="settings-rnd"
-      default={initialFrame}
+      size={{ width: frame.width, height: frame.height }}
+      position={{ x: frame.x, y: frame.y }}
       bounds="window"
-      minWidth={compact ? 304 : 680}
-      minHeight={compact ? 360 : 520}
+      minWidth={compact ? frame.width : Math.min(desktopMinimum.width, viewport.width)}
+      minHeight={compact ? frame.height : Math.min(desktopMinimum.height, viewport.height)}
+      maxWidth={viewport.width}
+      maxHeight={viewport.height}
       disableDragging={compact}
       enableResizing={!compact}
       dragHandleClassName="settings-window"
       cancel=".settings-navigation,.settings-scroll-area,button,input"
+      onDragStop={(_, position) =>
+        setFrame((currentFrame) => clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport))
+      }
+      onResizeStop={(_, __, element, ___, position) =>
+        setFrame(
+          clampFrame(
+            {
+              x: position.x,
+              y: position.y,
+              width: element.offsetWidth,
+              height: element.offsetHeight,
+            },
+            viewport,
+          ),
+        )
+      }
     >
       <section className="settings-window" aria-label="System Settings">
         <aside className="settings-sidebar">
