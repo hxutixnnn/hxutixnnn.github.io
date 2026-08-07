@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { ScrollArea } from "@base-ui/react/scroll-area";
 import { Rnd } from "react-rnd";
 import { FontAwesomeIcon, type FontAwesomeIconName } from "./FontAwesomeIcon";
 
@@ -15,25 +16,18 @@ type SettingCategory = {
 type GeneralSetting = [icon: FontAwesomeIconName, label: string];
 
 const categories: SettingCategory[] = [
-  { icon: "wifi", label: "Wi-Fi", color: "#2f8cff" },
-  { icon: "bluetooth", label: "Bluetooth", color: "#1686ff" },
-  { icon: "network-wired", label: "Network", color: "#1997ff" },
-  { icon: "shield-halved", label: "VPN", color: "#1488de" },
-  { icon: "battery-half", label: "Battery", color: "#55c760" },
   { icon: "gear", label: "General", color: "#8c8c91" },
-  { icon: "universal-access", label: "Accessibility", color: "#238dff" },
   { icon: "circle-half-stroke", label: "Appearance", color: "#a4a4a8" },
-  { icon: "sparkles", label: "Intelligence", color: "#ae72e8" },
   { icon: "desktop", label: "Desktop & Dock", color: "#85858a" },
   { icon: "display", label: "Displays", color: "#258cff" },
   { icon: "bars", label: "Menu Bar", color: "#85858a" },
   { icon: "magnifying-glass", label: "Spotlight", color: "#307ed2" },
   { icon: "image", label: "Wallpaper", color: "#31a6c8" },
+  { icon: "sparkles", label: "Notifications", color: "#ec5965" },
   { icon: "volume-high", label: "Sound", color: "#ec5965" },
+  { icon: "key", label: "Lock Screen", color: "#85858a" },
   { icon: "keyboard", label: "Keyboard", color: "#85858a" },
   { icon: "computer-mouse", label: "Trackpad", color: "#85858a" },
-  { icon: "scanner", label: "Printers & Scanners", color: "#85858a" },
-  { icon: "shield-halved", label: "Privacy & Security", color: "#4389e9" },
 ];
 
 const generalGroups: GeneralSetting[][] = [
@@ -73,6 +67,25 @@ function readViewport(): Viewport {
 
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
+}
+
+type SettingsScrollAreaProps = {
+  children: ReactNode;
+  className: string;
+  label: string;
+};
+
+function SettingsScrollArea({ children, className, label }: SettingsScrollAreaProps) {
+  return (
+    <ScrollArea.Root className={`settings-base-scroll-area ${className}`}>
+      <ScrollArea.Viewport className="settings-scroll-viewport" aria-label={label} tabIndex={0}>
+        <ScrollArea.Content className="settings-scroll-content">{children}</ScrollArea.Content>
+      </ScrollArea.Viewport>
+      <ScrollArea.Scrollbar className="settings-scrollbar" orientation="vertical" keepMounted>
+        <ScrollArea.Thumb className="settings-scroll-thumb" />
+      </ScrollArea.Scrollbar>
+    </ScrollArea.Root>
+  );
 }
 
 function compactFrame(viewport: Viewport): SettingsFrame {
@@ -119,6 +132,11 @@ function clampFrame(frame: SettingsFrame, viewport: Viewport): SettingsFrame {
 export function SystemSettings({ onClose }: SystemSettingsProps) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("General");
+  const [appearanceMode, setAppearanceMode] = useState("Auto");
+  const [glassStyle, setGlassStyle] = useState("Clear");
+  const [accentColor, setAccentColor] = useState("Multicolor");
+  const [widgetStyle, setWidgetStyle] = useState("Default");
+  const [wallpaperTint, setWallpaperTint] = useState(true);
   const [viewport, setViewport] = useState(readViewport);
   const compact = viewport.width <= compactBreakpoint;
   const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport) : desktopFrame(viewport)));
@@ -144,11 +162,14 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
     window.addEventListener("resize", updateViewport);
     return () => window.removeEventListener("resize", updateViewport);
   }, []);
-  const filteredCategories = useMemo(
-    () => categories.filter(({ label }) => label.toLowerCase().includes(query.toLowerCase())),
+  const filteredCategoryGroups = useMemo(
+    () =>
+      [categories.slice(0, 7), categories.slice(7)].map((group) =>
+        group.filter(({ label }) => label.toLowerCase().includes(query.toLowerCase())),
+      ),
     [query],
   );
-  const selectedCategory = categories.find(({ label }) => label === selected) ?? categories[5];
+  const selectedCategory = categories.find(({ label }) => label === selected) ?? categories[0];
 
   return (
     <Rnd
@@ -182,55 +203,71 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
       }
     >
       <section className="settings-window" aria-label="System Settings">
-        <aside className="settings-sidebar">
-          <div className="settings-traffic-lights" aria-label="Window controls">
-            <button
-              className="settings-light settings-light-close"
-              aria-label="Close System Settings"
-              onClick={onClose}
-            />
-            <button
-              className="settings-light settings-light-minimize"
-              aria-label="Minimize System Settings"
-            />
-            <button className="settings-light settings-light-expand" aria-label="Expand System Settings" />
-          </div>
-
-          <label className="settings-search">
-            <FontAwesomeIcon name="magnifying-glass" className="settings-search-icon" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
-          </label>
-
-          <div className="settings-account">
-            <div className="settings-avatar">T</div>
-            <div>
-              <strong>Tien Nguyen</strong>
-              <span>tienOS Account</span>
-            </div>
-          </div>
-
-          <button className="settings-family">
-            <span className="settings-family-avatars">
-              <FontAwesomeIcon name="people-group" />
-            </span>
-            <span>Family</span>
-          </button>
-
-          <nav className="settings-navigation" aria-label="Settings categories">
-            {filteredCategories.map((category) => (
+        <aside className="settings-sidebar" data-floating-panel="">
+          <div className="settings-sidebar-panel">
+            <div className="settings-traffic-lights" aria-label="Window controls">
               <button
-                key={category.label}
-                className="settings-nav-item"
-                data-selected={selected === category.label || undefined}
-                onClick={() => setSelected(category.label)}
-              >
-                <span className="settings-icon" style={{ background: category.color }}>
-                  <FontAwesomeIcon name={category.icon} />
-                </span>
-                <span>{category.label}</span>
-              </button>
-            ))}
-          </nav>
+                className="settings-light settings-light-close"
+                aria-label="Close System Settings"
+                onClick={onClose}
+              />
+              <button
+                className="settings-light settings-light-minimize"
+                aria-label="Minimize System Settings"
+              />
+              <button className="settings-light settings-light-expand" aria-label="Expand System Settings" />
+            </div>
+
+            <label className="settings-search">
+              <FontAwesomeIcon name="magnifying-glass" className="settings-search-icon" />
+              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
+            </label>
+
+            <div className="settings-account">
+              <div className="settings-avatar">T</div>
+              <div>
+                <strong>Tien Nguyen</strong>
+                <span>tienOS Account</span>
+              </div>
+            </div>
+
+            <button className="settings-family">
+              <span className="settings-family-avatars">
+                <FontAwesomeIcon name="people-group" />
+              </span>
+              <span>Family</span>
+            </button>
+
+            <SettingsScrollArea className="settings-navigation" label="Settings categories">
+              <nav aria-label="Settings categories">
+                {filteredCategoryGroups.map(
+                  (group, groupIndex) =>
+                    group.length > 0 && (
+                      <div
+                        className="settings-nav-group"
+                        role="group"
+                        aria-label={groupIndex === 0 ? "System" : "Personal"}
+                        key={groupIndex}
+                      >
+                        {group.map((category) => (
+                          <button
+                            key={category.label}
+                            className="settings-nav-item"
+                            data-selected={selected === category.label || undefined}
+                            onClick={() => setSelected(category.label)}
+                          >
+                            <span className="settings-icon" style={{ background: category.color }}>
+                              <FontAwesomeIcon name={category.icon} />
+                            </span>
+                            <span>{category.label}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ),
+                )}
+              </nav>
+            </SettingsScrollArea>
+          </div>
         </aside>
 
         <div className="settings-content">
@@ -244,20 +281,128 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
             </button>
           </div>
 
-          <div className="settings-scroll-area">
-            <header className="settings-hero">
-              <span className="settings-hero-icon" style={{ background: selectedCategory.color }}>
-                <FontAwesomeIcon name={selectedCategory.icon} />
-              </span>
-              <h2>{selectedCategory.label}</h2>
-              <p>
-                {selected === "General"
-                  ? "Manage your overall setup and preferences for tienOS, including updates, language, sharing, and more."
-                  : `Manage ${selectedCategory.label.toLowerCase()} preferences for this tienOS desktop.`}
-              </p>
-            </header>
+          <SettingsScrollArea className="settings-scroll-area" label="Settings details">
+            {selected !== "Appearance" && (
+              <header className="settings-hero">
+                <span className="settings-hero-icon" style={{ background: selectedCategory.color }}>
+                  <FontAwesomeIcon name={selectedCategory.icon} />
+                </span>
+                <h2>{selectedCategory.label}</h2>
+                <p>
+                  {selected === "General"
+                    ? "Manage your overall setup and preferences for tienOS, including updates, language, sharing, and more."
+                    : `Manage ${selectedCategory.label.toLowerCase()} preferences for this tienOS desktop.`}
+                </p>
+              </header>
+            )}
 
-            {selected === "General" ? (
+            {selected === "Appearance" ? (
+              <div className="appearance-settings">
+                <h2>Appearance</h2>
+                <section className="appearance-panel appearance-overview" aria-label="Appearance style">
+                  <div className="appearance-choice-row" role="group" aria-label="Appearance mode">
+                    {["Auto", "Light", "Dark"].map((mode) => (
+                      <button
+                        key={mode}
+                        className={`appearance-preview appearance-preview-${mode.toLowerCase()}`}
+                        aria-pressed={appearanceMode === mode}
+                        onClick={() => setAppearanceMode(mode)}
+                      >
+                        <span aria-hidden="true" />
+                        {mode}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="appearance-liquid-glass">
+                    <div>
+                      <strong>Liquid Glass</strong>
+                      <span>Choose your preferred look for Liquid Glass.</span>
+                    </div>
+                    <div className="appearance-choice-row" role="group" aria-label="Liquid Glass style">
+                      {["Clear", "Tinted"].map((style) => (
+                        <button
+                          key={style}
+                          className="appearance-glass-choice"
+                          aria-pressed={glassStyle === style}
+                          onClick={() => setGlassStyle(style)}
+                        >
+                          <span aria-hidden="true" />
+                          {style}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </section>
+
+                <h3>Theme</h3>
+                <section className="appearance-panel appearance-theme" aria-label="Theme">
+                  <div className="appearance-setting-row">
+                    <span>Color</span>
+                    <div className="appearance-colors" role="group" aria-label="Accent color">
+                      {[
+                        "Multicolor",
+                        "Blue",
+                        "Purple",
+                        "Pink",
+                        "Red",
+                        "Orange",
+                        "Yellow",
+                        "Green",
+                        "Gray",
+                      ].map((color) => (
+                        <button
+                          key={color}
+                          className={`appearance-color appearance-color-${color.toLowerCase()}`}
+                          aria-label={color}
+                          aria-pressed={accentColor === color}
+                          onClick={() => setAccentColor(color)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div className="appearance-setting-row">
+                    <span>Text highlight color</span>
+                    <button>Automatic</button>
+                  </div>
+                </section>
+                <section className="appearance-panel" aria-label="Icon and widget style">
+                  <div className="appearance-setting-row appearance-widget-row">
+                    <span>Icon &amp; widget style</span>
+                    <div role="group" aria-label="Icon and widget style">
+                      {["Default", "Dark", "Clear", "Tinted"].map((style) => (
+                        <button
+                          key={style}
+                          aria-pressed={widgetStyle === style}
+                          onClick={() => setWidgetStyle(style)}
+                        >
+                          <span className={`appearance-widget appearance-widget-${style.toLowerCase()}`} />
+                          {style}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="appearance-setting-row">
+                    <span>Folder color</span>
+                    <button>Automatic</button>
+                  </div>
+                </section>
+                <h3>Windows</h3>
+                <section className="appearance-panel" aria-label="Windows">
+                  <div className="appearance-setting-row">
+                    <span>Sidebar icon size</span>
+                    <button>Medium</button>
+                  </div>
+                  <label className="appearance-setting-row">
+                    <span>Tint window background with wallpaper color</span>
+                    <input
+                      type="checkbox"
+                      checked={wallpaperTint}
+                      onChange={(event) => setWallpaperTint(event.target.checked)}
+                    />
+                  </label>
+                </section>
+              </div>
+            ) : selected === "General" ? (
               <div className="settings-groups">
                 {generalGroups.map((group, groupIndex) => (
                   <div className="settings-group" key={groupIndex}>
@@ -281,7 +426,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                 <p>{selectedCategory.label} controls are ready for configuration.</p>
               </div>
             )}
-          </div>
+          </SettingsScrollArea>
         </div>
       </section>
     </Rnd>
