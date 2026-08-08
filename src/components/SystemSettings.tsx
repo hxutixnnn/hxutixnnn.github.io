@@ -383,11 +383,17 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
       dragHandleClassName="settings-drag-handle"
       cancel=".settings-navigation,.settings-scroll-area,button,input,select,label"
       resizeHandleStyles={resizeHandleStyles}
-      onDrag={(_, position) =>
-        setFrame((currentFrame) =>
-          clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom, bottomBoundary),
-        )
-      }
+      onDrag={(_, position) => {
+        const nextFrame = clampFrame(
+          { ...frame, x: position.x, y: position.y },
+          viewport,
+          menuBottom,
+          bottomBoundary,
+        );
+        position.node.style.transform = `translate(${nextFrame.x}px, ${nextFrame.y}px)`;
+        setFrame(nextFrame);
+        return false;
+      }}
       onDragStop={(_, position) =>
         setFrame((currentFrame) =>
           clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom, bottomBoundary),

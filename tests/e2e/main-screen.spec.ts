@@ -300,7 +300,12 @@ async function expectConventionalRoundedGeometry(element: Locator) {
   expect(geometry.webkitMaskImage).toBe("none");
 }
 
-async function touchDrag(session: CDPSession, from: { x: number; y: number }, to: { x: number; y: number }) {
+async function touchDrag(
+  session: CDPSession,
+  from: { x: number; y: number },
+  to: { x: number; y: number },
+  whileDragging?: () => Promise<void>,
+) {
   await session.send("Input.dispatchTouchEvent", {
     type: "touchStart",
     touchPoints: [{ x: from.x, y: from.y }],
@@ -313,7 +318,11 @@ async function touchDrag(session: CDPSession, from: { x: number; y: number }, to
     type: "touchMove",
     touchPoints: [{ x: to.x, y: to.y }],
   });
-  await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  try {
+    await whileDragging?.();
+  } finally {
+    await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  }
 }
 
 async function readCenterPixel(element: Locator) {
@@ -2291,17 +2300,46 @@ test("Dock supports touch and compact viewport boundaries", async ({ browser }, 
   await page.setViewportSize({ width: 844, height: 390 });
   await expectCompactBounds(21);
 
+  const session = await context.newCDPSession(page);
+  const expectLiveWindowClamp = async () => {
+    const [menuBounds, windowBounds, dockBounds] = await Promise.all([
+      page.locator("[data-menu-bar-surface]").boundingBox(),
+      settingsWindow.boundingBox(),
+      dock.boundingBox(),
+    ]);
+    expect(windowBounds!.y).toBeGreaterThanOrEqual(menuBounds!.y + menuBounds!.height);
+    expect(windowBounds!.y + windowBounds!.height).toBeLessThanOrEqual(dockBounds!.y);
+  };
+  const beforeDrag = await settingsWindow.boundingBox();
   const dragHandle = await page.locator(".settings-sidebar-panel").boundingBox();
-  await page.mouse.move(dragHandle!.x + dragHandle!.width - 12, dragHandle!.y + 20);
-  await page.mouse.down();
-  await page.mouse.move(dragHandle!.x + dragHandle!.width - 12, 390, { steps: 4 });
-  await page.mouse.up();
+  await touchDrag(
+    session,
+    { x: dragHandle!.x + dragHandle!.width - 12, y: dragHandle!.y + 20 },
+    { x: dragHandle!.x + dragHandle!.width - 12, y: 389 },
+    expectLiveWindowClamp,
+  );
+  const afterDrag = await settingsWindow.boundingBox();
+  expect(Math.round(afterDrag!.x)).toBe(Math.round(beforeDrag!.x));
+  expect(Math.round(afterDrag!.y)).toBe(Math.round(beforeDrag!.y));
+  await expectLiveWindowClamp();
+
   const resizeHandle = await page.locator('.settings-rnd div[style*="se-resize"]').boundingBox();
-  await page.mouse.move(resizeHandle!.x + 5, resizeHandle!.y + 5);
-  await page.mouse.down();
-  await page.mouse.move(844, 390, { steps: 4 });
-  await page.mouse.up();
+  const beforeResize = await settingsWindow.boundingBox();
+  await touchDrag(
+    session,
+    { x: resizeHandle!.x + 5, y: resizeHandle!.y + 5 },
+    { x: 843, y: 389 },
+    expectLiveWindowClamp,
+  );
+  const afterResize = await settingsWindow.boundingBox();
+  expect(afterResize!.width).toBeGreaterThan(beforeResize!.width);
+  expect(Math.round(afterResize!.height)).toBe(Math.round(beforeResize!.height));
+  expect(Math.round(afterResize!.x)).toBe(Math.round(beforeResize!.x));
+  expect(Math.round(afterResize!.y)).toBe(Math.round(beforeResize!.y));
   await expectCompactBounds(21);
+  await expect(dock.getByRole("button")).toHaveCount(1);
+  await expect(app).toHaveAccessibleName("System Settings");
+  await expect(app).toHaveAttribute("title", "System Settings");
   await expect(page.getByRole("button", { name: "Close System Settings" })).toBeVisible();
   await expect(page.locator('.settings-scroll-viewport[aria-label="Settings details"]')).toBeVisible();
   await page.screenshot({ animations: "disabled", path: testInfo.outputPath("dock-iphone-landscape.png") });
