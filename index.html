@@ -71,6 +71,91 @@
         height: 1em;
         fill: currentColor;
       }
+      /* Release-safe static shell: remains useful when the application stylesheet/module fails. */
+      @layer tienos-fallback {
+        html,
+        body,
+        #root {
+          min-height: 100%;
+          margin: 0;
+          overflow: hidden;
+        }
+        body {
+          min-width: 320px;
+          background: #07121d;
+          color: #fff;
+          font:
+            13px/1.4 ui-sans-serif,
+            system-ui,
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+        }
+        :root[data-theme="light"] body {
+          background: #dbeafe;
+          color: #0f172a;
+        }
+        .tienos-desktop {
+          position: relative;
+          min-height: 100vh;
+          overflow: hidden;
+          background: #07121d;
+          color: #fff;
+        }
+        :root[data-theme="light"] .tienos-desktop {
+          background: #dbeafe;
+          color: #0f172a;
+        }
+        .tienos-wallpaper,
+        .tienos-vignette {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+        }
+        .tienos-wallpaper {
+          background: url("/wallpapers/tienos-default.jpg") center / cover;
+        }
+        .tienos-vignette {
+          background: linear-gradient(180deg, rgb(0 0 0 / 0.35), rgb(0 0 0 / 0.2));
+        }
+        .tienos-desktop > h1 {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+        }
+        .tienos-desktop > header {
+          position: fixed;
+          z-index: 40;
+          top: max(6px, env(safe-area-inset-top));
+          right: 6px;
+          left: 6px;
+          display: flex;
+          height: 40px;
+          align-items: center;
+          padding: 0 8px;
+          border: 1px solid rgb(255 255 255 / 0.2);
+          border-radius: 14px;
+          background: rgb(7 18 29 / 0.72);
+          color: rgb(255 255 255 / 0.9);
+        }
+        .tienos-menubar,
+        .tienos-desktop > header > div {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .tienos-menubar {
+          flex: 1;
+        }
+        .tienos-menu-trigger {
+          display: inline-flex;
+          align-items: center;
+          padding: 2px 8px;
+        }
+      }
       .tienos-boot-track {
         width: min(184px, 52vw);
         height: 4px;

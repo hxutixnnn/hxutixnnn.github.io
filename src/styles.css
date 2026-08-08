@@ -6,6 +6,7 @@
 @layer base {
   /* Global document contract: utilities cannot target the pre-React document/root consistently. */
   :root {
+    --tienos-app-styles-ready: 1;
     color-scheme: light dark;
     font-size: 13px;
     font-family:
@@ -52,6 +53,11 @@
   body {
     min-width: 320px;
     background: #07121d;
+  }
+  [data-menu-bar-surface] {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
   }
   :root[data-theme="light"] body {
     background: #dbeafe;

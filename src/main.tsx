@@ -8,6 +8,7 @@ const root = document.getElementById("root");
 if (!root) {
   throw new Error("tienOS root element is missing.");
 }
+const applicationRoot = root;
 
 type BootController = {
   failed: () => void;
@@ -28,6 +29,22 @@ async function loadIconSprite() {
   const response = await fetch("/fontawesome/fontawesome-pro-solid.svg");
   if (!response.ok) throw new Error(`Icon sprite failed to load: ${response.status}`);
   await response.arrayBuffer();
+}
+
+function waitForApplicationStyles() {
+  return new Promise<void>((resolve) => {
+    const check = () => {
+      if (
+        getComputedStyle(document.documentElement).getPropertyValue("--tienos-app-styles-ready").trim() ===
+        "1"
+      ) {
+        resolve();
+        return;
+      }
+      if (!bootController?.isFinished()) window.requestAnimationFrame(check);
+    };
+    check();
+  });
 }
 
 function waitForIconPaint() {
@@ -56,15 +73,26 @@ function waitForIconPaint() {
   });
 }
 
-const assetReadiness = Promise.all([loadWallpaper(), loadIconSprite()])
+const applicationStylesReady = waitForApplicationStyles();
+const assetReadiness = Promise.all([applicationStylesReady, loadWallpaper(), loadIconSprite()])
   .then(waitForIconPaint)
   .catch(() => bootController?.failed());
 const desktopAssetsReady = bootController
   ? Promise.race([assetReadiness, bootController.released])
   : assetReadiness;
 
-createRoot(root).render(
-  <StrictMode>
-    <App desktopAssetsReady={desktopAssetsReady} onDesktopReady={bootController?.ready} />
-  </StrictMode>,
-);
+async function mountApplication() {
+  const stylesReady = bootController
+    ? await Promise.race([applicationStylesReady.then(() => true), bootController.released.then(() => false)])
+    : await applicationStylesReady.then(() => true);
+
+  if (!stylesReady || bootController?.isFinished()) return;
+
+  createRoot(applicationRoot).render(
+    <StrictMode>
+      <App desktopAssetsReady={desktopAssetsReady} onDesktopReady={bootController?.ready} />
+    </StrictMode>,
+  );
+}
+
+void mountApplication();
