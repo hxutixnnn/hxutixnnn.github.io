@@ -1,4 +1,4 @@
-import { expect, test, type CDPSession, type Locator, type Page } from "@playwright/test";
+import { expect, test, type CDPSession, type Locator, type Page, type TestInfo } from "@playwright/test";
 import sharp from "sharp";
 
 const spriteUrl = "/fontawesome/fontawesome-pro-solid.svg";
@@ -33,6 +33,118 @@ function createDelayGate() {
     release = resolve;
   });
   return { blocked, release };
+}
+
+async function captureNativeThemeTransition(
+  page: Page,
+  testInfo: TestInfo,
+  name: string,
+  expectedTheme: "light" | "dark",
+  changeTheme: () => Promise<unknown>,
+) {
+  await page.locator(":root").evaluate((root) => {
+    (root as HTMLElement).style.setProperty("--tienos-motion-theme", "1200ms");
+  });
+  await testInfo.attach(`${name}-start.png`, {
+    body: await page.screenshot(),
+    contentType: "image/png",
+  });
+
+  await changeTheme();
+  await expect(page.locator(":root")).toHaveAttribute("data-theme", expectedTheme);
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .getAnimations()
+            .filter((animation) =>
+              (
+                animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
+              )?.pseudoElement?.startsWith("::view-transition"),
+            ).length,
+      ),
+    )
+    .toBeGreaterThanOrEqual(2);
+
+  const midpoint = await page.evaluate(async () => {
+    const animations = document
+      .getAnimations()
+      .filter((animation) =>
+        (
+          animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
+        )?.pseudoElement?.startsWith("::view-transition"),
+      );
+    for (const animation of animations) {
+      animation.pause();
+      animation.currentTime = 600;
+    }
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+    const opacity = (pseudo: string) =>
+      Number.parseFloat(getComputedStyle(document.documentElement, pseudo).opacity);
+    const visibleSurfaces = [
+      ".tienos-wallpaper",
+      "[data-menu-bar-surface]",
+      "[data-dock-surface]",
+      ".settings-window",
+      ".tienos-menu-popup",
+      "[role=listbox]",
+    ].filter((selector) => {
+      const element = document.querySelector<HTMLElement>(selector);
+      return element && element.getBoundingClientRect().width > 0;
+    });
+    return {
+      oldOpacity: opacity("::view-transition-old(root)"),
+      newOpacity: opacity("::view-transition-new(root)"),
+      theme: document.documentElement.dataset.theme,
+      transactionOpen: document.documentElement.hasAttribute("data-theme-transaction"),
+      visibleSurfaces,
+    };
+  });
+  expect(midpoint.theme).toBe(expectedTheme);
+  expect(midpoint.oldOpacity).toBeGreaterThan(0);
+  expect(midpoint.oldOpacity).toBeLessThan(1);
+  expect(midpoint.newOpacity).toBeGreaterThan(0);
+  expect(midpoint.newOpacity).toBeLessThan(1);
+  expect(midpoint.transactionOpen).toBe(false);
+  expect(midpoint.visibleSurfaces).toEqual(
+    expect.arrayContaining([".tienos-wallpaper", "[data-menu-bar-surface]", "[data-dock-surface]"]),
+  );
+  await testInfo.attach(`${name}-midpoint.png`, {
+    body: await page.screenshot(),
+    contentType: "image/png",
+  });
+
+  await page.evaluate(() => {
+    for (const animation of document.getAnimations()) {
+      if (
+        (
+          animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
+        )?.pseudoElement?.startsWith("::view-transition")
+      )
+        animation.finish();
+    }
+    document.documentElement.style.removeProperty("--tienos-motion-theme");
+  });
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          document
+            .getAnimations()
+            .filter((animation) =>
+              (
+                animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
+              )?.pseudoElement?.startsWith("::view-transition"),
+            ).length,
+      ),
+    )
+    .toBe(0);
+  await expect(page.locator('[data-theme-transition-layer="old"]')).toHaveCount(0);
+  await testInfo.attach(`${name}-final.png`, {
+    body: await page.screenshot(),
+    contentType: "image/png",
+  });
 }
 
 async function expectFontAwesomeIconToPaint(icon: Locator, name: string) {
@@ -1533,6 +1645,19 @@ for (const startupViewport of startupViewports) {
     await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
     await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator('[data-theme-transition-layer="old"]')).toHaveCount(0);
+    expect(
+      await page.evaluate(
+        () =>
+          document
+            .getAnimations()
+            .filter((animation) =>
+              (
+                animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
+              )?.pseudoElement?.startsWith("::view-transition"),
+            ).length,
+      ),
+    ).toBe(0);
     const staticDock = page.getByRole("complementary", { name: "Dock preview (non-interactive)" });
     await expect(staticDock).toBeVisible();
     await expect(staticDock.getByRole("button")).toHaveCount(0);
@@ -2023,6 +2148,19 @@ test("supports adopted Appearance controls across input and accessibility modes"
   await expect(darkMode).toHaveAttribute("aria-checked", "true");
   await darkMode.press("ArrowLeft");
   await expect(groups.appearance.getByRole("radio", { name: "Light" })).toBeChecked();
+  await expect(page.locator('[data-theme-transition-layer="old"]')).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () =>
+        document
+          .getAnimations()
+          .filter((animation) =>
+            (
+              animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
+            )?.pseudoElement?.startsWith("::view-transition"),
+          ).length,
+    ),
+  ).toBe(0);
 
   const tintedGlass = groups.glass.getByRole("radio", { name: "Tinted" });
   await tintedGlass.tap();
@@ -2499,7 +2637,11 @@ test("Dock renders, reports, focuses, and layers the single Settings window", as
 
 test("Dock supports touch and compact viewport boundaries", async ({ browser }, testInfo) => {
   test.slow();
-  const context = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } });
+  const context = await browser.newContext({
+    hasTouch: true,
+    viewport: { width: 390, height: 844 },
+    colorScheme: "dark",
+  });
   const page = await context.newPage();
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
@@ -2555,6 +2697,9 @@ test("Dock supports touch and compact viewport boundaries", async ({ browser }, 
   await expect(page.getByRole("button", { name: "Close System Settings" })).toBeVisible();
   await expect(page.getByPlaceholder("Search")).toBeVisible();
   await page.screenshot({ animations: "disabled", path: testInfo.outputPath("dock-iphone-portrait.png") });
+  await captureNativeThemeTransition(page, testInfo, "iphone-auto-dark-to-light", "light", () =>
+    page.emulateMedia({ colorScheme: "light" }),
+  );
   await page.evaluate(() => {
     document.documentElement.style.setProperty("--tienos-safe-area-bottom", "21px");
   });
@@ -2636,15 +2781,17 @@ test("keeps the default menu corners on a small viewport", async ({ page }) => {
 });
 
 test.describe("appearance modes", () => {
-  test("persists Light and Dark while Auto follows live system changes", async ({ page }) => {
+  test("persists Light and Dark while Auto follows live system changes", async ({ page }, testInfo) => {
+    test.slow();
     await page.emulateMedia({ colorScheme: "dark" });
     await page.goto("/");
     await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
     await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-default\.jpg/);
 
-    await page.emulateMedia({ colorScheme: "light" });
-    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await captureNativeThemeTransition(page, testInfo, "auto-live-dark-to-light", "light", () =>
+      page.emulateMedia({ colorScheme: "light" }),
+    );
     await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-light\.jpg/);
 
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
@@ -2656,8 +2803,81 @@ test.describe("appearance modes", () => {
     await page.getByRole("button", { name: "Appearance" }).click();
     const modes = page.getByRole("radiogroup", { name: "Appearance mode" });
 
+    await captureNativeThemeTransition(page, testInfo, "explicit-light-to-dark", "dark", () =>
+      modes.getByRole("radio", { name: "Dark" }).click(),
+    );
+    await expect(modes.getByRole("radio", { name: "Dark" })).toBeFocused();
+    await captureNativeThemeTransition(page, testInfo, "explicit-dark-to-light", "light", () =>
+      modes.getByRole("radio", { name: "Light" }).click(),
+    );
+    await page.locator(":root").evaluate((root) => {
+      (root as HTMLElement).style.setProperty("--tienos-motion-theme", "1200ms");
+    });
+    await modes.getByRole("radio", { name: "Dark" }).click();
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
     await modes.getByRole("radio", { name: "Light" }).click();
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            document
+              .getAnimations()
+              .filter((animation) =>
+                (
+                  animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
+                )?.pseudoElement?.startsWith("::view-transition"),
+              ).length,
+        ),
+      )
+      .toBeGreaterThanOrEqual(2);
+    await page.evaluate(async () => {
+      for (const animation of document.getAnimations()) {
+        if (
+          (
+            animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
+          )?.pseudoElement?.startsWith("::view-transition")
+        ) {
+          animation.pause();
+          animation.currentTime = 600;
+        }
+      }
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+    });
+    await testInfo.attach("rapid-light-dark-light-midpoint.png", {
+      body: await page.screenshot(),
+      contentType: "image/png",
+    });
+    await page.evaluate(() => {
+      for (const animation of document.getAnimations()) {
+        if (
+          (
+            animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
+          )?.pseudoElement?.startsWith("::view-transition")
+        )
+          animation.finish();
+      }
+      document.documentElement.style.removeProperty("--tienos-motion-theme");
+    });
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem("tienos-appearance")))
+      .toBe(JSON.stringify("light"));
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator('[data-theme-transition-layer="old"]')).toHaveCount(0);
+    expect(
+      await page.evaluate(
+        () =>
+          document
+            .getAnimations()
+            .filter((animation) =>
+              (
+                animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
+              )?.pseudoElement?.startsWith("::view-transition"),
+            ).length,
+      ),
+    ).toBe(0);
     await expect(modes.getByRole("radio", { name: "Light" })).toBeFocused();
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
@@ -2668,18 +2888,54 @@ test.describe("appearance modes", () => {
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
     await page.getByRole("menuitem", { name: "System Settings…" }).click();
     await page.getByRole("button", { name: "Appearance" }).click();
-    await page
-      .getByRole("radiogroup", { name: "Appearance mode" })
-      .getByRole("radio", { name: "Auto" })
-      .click();
-    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
-    await page.emulateMedia({ colorScheme: "light" });
-    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    const reopenedModes = page.getByRole("radiogroup", { name: "Appearance mode" });
+    await captureNativeThemeTransition(page, testInfo, "auto-entry-light-to-dark", "dark", () =>
+      reopenedModes.getByRole("radio", { name: "Auto" }).click(),
+    );
+    const details = page.locator('.settings-scroll-viewport[aria-label="Settings details"]');
+    await page.setViewportSize({ width: 700, height: 520 });
+    await details.evaluate((node) => {
+      node.scrollTop = 80;
+    });
+    await page.getByPlaceholder("Search").fill("appearance");
+    await page.getByPlaceholder("Search").evaluate((input: HTMLInputElement) => {
+      input.setSelectionRange(2, 7);
+    });
+    const highlight = page.getByRole("combobox", { name: "Text highlight color" });
+    await highlight.click();
+    await expect(page.getByRole("listbox")).toBeVisible();
+    const preservedState = await page.evaluate(() => ({
+      activeLabel: document.activeElement?.getAttribute("aria-label"),
+      scrollTop: document.querySelector<HTMLElement>(
+        '.settings-scroll-viewport[aria-label="Settings details"]',
+      )?.scrollTop,
+      selection: (() => {
+        const input = document.querySelector<HTMLInputElement>('[placeholder="Search"]');
+        return { start: input?.selectionStart, end: input?.selectionEnd, value: input?.value };
+      })(),
+      geometry: document.querySelector<HTMLElement>(".settings-window")?.getBoundingClientRect().toJSON(),
+    }));
+    expect(preservedState.scrollTop).toBeGreaterThan(0);
+    await captureNativeThemeTransition(page, testInfo, "auto-live-dark-to-light-with-portal", "light", () =>
+      page.emulateMedia({ colorScheme: "light" }),
+    );
+    await expect(page.getByRole("listbox")).toBeVisible();
+    expect(
+      await page.evaluate(() => ({
+        activeLabel: document.activeElement?.getAttribute("aria-label"),
+        scrollTop: document.querySelector<HTMLElement>(
+          '.settings-scroll-viewport[aria-label="Settings details"]',
+        )?.scrollTop,
+        selection: (() => {
+          const input = document.querySelector<HTMLInputElement>('[placeholder="Search"]');
+          return { start: input?.selectionStart, end: input?.selectionEnd, value: input?.value };
+        })(),
+        geometry: document.querySelector<HTMLElement>(".settings-window")?.getBoundingClientRect().toJSON(),
+      })),
+    ).toEqual(preservedState);
+    await page.keyboard.press("Escape");
 
-    await page
-      .getByRole("radiogroup", { name: "Appearance mode" })
-      .getByRole("radio", { name: "Dark" })
-      .click();
+    await reopenedModes.getByRole("radio", { name: "Dark" }).click();
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
     await page.emulateMedia({ colorScheme: "light" });
@@ -2692,17 +2948,64 @@ test.describe("appearance modes", () => {
       .toBe(JSON.stringify("dark"));
   });
 
-  test("keeps the painted theme consistent when a wallpaper cannot decode", async ({ page }) => {
-    await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("auto")));
+  test("keeps the painted theme consistent when a wallpaper cannot decode", async ({ page }, testInfo) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("tienos-appearance", JSON.stringify("auto"));
+      Object.defineProperty(document, "startViewTransition", { configurable: true, value: undefined });
+      const animate = HTMLElement.prototype.animate;
+      HTMLElement.prototype.animate = function (keyframes, options) {
+        if (this.dataset.themeTransitionLayer && typeof options === "object") {
+          return animate.call(this, keyframes, { ...options, duration: 1200 });
+        }
+        return animate.call(this, keyframes, options);
+      };
+    });
     await page.route("**/wallpapers/tienos-light.jpg", (route) => route.abort("failed"));
     const unhandledRejections: string[] = [];
     page.on("pageerror", (error) => unhandledRejections.push(error.message));
     await page.emulateMedia({ colorScheme: "dark" });
     await page.goto("/");
     await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+    const oldWallpaperTransform = await page.locator(".tienos-wallpaper").evaluate(async (node) => {
+      node.getAnimations()[0]?.pause();
+      await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      return getComputedStyle(node).transform;
+    });
     await page.emulateMedia({ colorScheme: "light" });
     await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    const fallbackLayer = page.locator('[data-theme-transition-layer="old"]');
+    await expect(fallbackLayer).toBeVisible();
+    const fallbackFrame = await fallbackLayer.evaluate(async (layer) => {
+      const animation = layer.getAnimations()[0];
+      animation.pause();
+      animation.currentTime = 600;
+      await new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      );
+      const wallpaper = layer.querySelector<HTMLElement>(".tienos-wallpaper")!;
+      const styles = getComputedStyle(wallpaper);
+      return {
+        animationName: styles.animationName,
+        opacity: Number.parseFloat(getComputedStyle(layer).opacity),
+        transform: styles.transform,
+        transitionProperty: styles.transitionProperty,
+      };
+    });
+    expect(fallbackFrame.animationName).toBe("none");
+    expect(fallbackFrame.transitionProperty).toBe("none");
+    expect(fallbackFrame.transform).toBe(oldWallpaperTransform);
+    expect(fallbackFrame.opacity).toBeGreaterThan(0);
+    expect(fallbackFrame.opacity).toBeLessThan(1);
+    await testInfo.attach("fallback-wallpaper-failure-midpoint.png", {
+      body: await page.screenshot(),
+      contentType: "image/png",
+    });
+    await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+    await expect(page.locator(".tienos-menu-popup")).toBeVisible();
+    await page.keyboard.press("Escape");
+    await fallbackLayer.evaluate((layer) => layer.getAnimations()[0].finish());
+    await expect(fallbackLayer).toHaveCount(0);
     await expect(page.locator(":root")).toHaveAttribute("data-wallpaper-fallback", "light");
     await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", "none");
     await expect(page.getByRole("main", { name: "tienOS desktop" })).toHaveCSS(
@@ -2729,6 +3032,10 @@ test.describe("appearance modes", () => {
     await expect
       .poll(() => page.evaluate(() => localStorage.getItem("tienos-appearance")))
       .toBe(JSON.stringify("auto"));
+    await testInfo.attach("fallback-wallpaper-failure-final.png", {
+      body: await page.screenshot(),
+      contentType: "image/png",
+    });
     expect(unhandledRejections).toEqual([]);
   });
 
@@ -2880,6 +3187,19 @@ test.describe("appearance modes", () => {
       )
       .toEqual({ theme: "light", bodyPresent: false });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator('[data-theme-transition-layer="old"]')).toHaveCount(0);
+    expect(
+      await page.evaluate(
+        () =>
+          document
+            .getAnimations()
+            .filter((animation) =>
+              (
+                animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
+              )?.pseudoElement?.startsWith("::view-transition"),
+            ).length,
+      ),
+    ).toBe(0);
     await expect(page.locator("link[rel=preload][as=image]")).toHaveAttribute(
       "href",
       "/wallpapers/tienos-light.jpg",

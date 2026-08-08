@@ -35,6 +35,9 @@ function freezeRenderedStyles(source: Element, copy: Element) {
       (property) => `${property}:${computed.getPropertyValue(property)};`,
     );
     target.setAttribute("style", declarations.join(""));
+    target.style.setProperty("animation", "none", "important");
+    target.style.setProperty("animation-name", "none", "important");
+    target.style.setProperty("transition", "none", "important");
   });
 }
 

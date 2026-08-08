@@ -83,7 +83,7 @@ describe("resolved theme transitions", () => {
   it("preserves property-backed state in the inert fallback snapshot", async () => {
     document.body.innerHTML = `
       <main aria-label="tienOS desktop">
-        <div id="viewport"><input><textarea></textarea><select><option>A</option><option>B</option></select></div>
+        <div id="viewport" style="animation: drift 2s infinite; transition: opacity 2s"><input><textarea></textarea><select><option>A</option><option>B</option></select></div>
       </main>`;
     const viewport = document.querySelector<HTMLElement>("#viewport")!;
     const input = document.querySelector<HTMLInputElement>("input")!;
@@ -109,6 +109,10 @@ describe("resolved theme transitions", () => {
     expect(layer).toHaveAttribute("aria-hidden", "true");
     expect(layer).toHaveAttribute("inert");
     expect(snapshotViewport).toMatchObject({ scrollTop: 84, scrollLeft: 12 });
+    expect(snapshotViewport.style.getPropertyValue("animation")).toBe("none");
+    expect(snapshotViewport.style.getPropertyPriority("animation")).toBe("important");
+    expect(snapshotViewport.style.getPropertyValue("animation-name")).toBe("none");
+    expect(snapshotViewport.style.getPropertyValue("transition")).toBe("none");
     expect(snapshotInput).toMatchObject({ value: "draft", checked: true, indeterminate: true });
     expect(layer.querySelector<HTMLTextAreaElement>("textarea")).toHaveValue("notes");
     expect(layer.querySelector<HTMLSelectElement>("select")).toHaveValue("B");
