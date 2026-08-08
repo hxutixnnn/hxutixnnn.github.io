@@ -4,6 +4,23 @@ export type AppearanceMode = "auto" | "light" | "dark";
 export type ResolvedTheme = "light" | "dark";
 
 export const appearanceStorageKey = "tienos-appearance";
+export const wallpaperByTheme = {
+  dark: "/wallpapers/tienos-default.jpg",
+  light: "/wallpapers/tienos-light.jpg",
+} as const satisfies Record<ResolvedTheme, string>;
+
+let themeRequest = 0;
+const decodedWallpapers = new Set<ResolvedTheme>();
+
+function decodeWallpaper(theme: ResolvedTheme) {
+  if (typeof Image === "undefined" || decodedWallpapers.has(theme)) return Promise.resolve();
+  const image = new Image();
+  image.src = wallpaperByTheme[theme];
+  if (typeof image.decode !== "function") return Promise.resolve();
+  return image.decode().then(() => {
+    decodedWallpapers.add(theme);
+  });
+}
 
 function isAppearanceMode(value: unknown): value is AppearanceMode {
   return value === "auto" || value === "light" || value === "dark";
@@ -64,18 +81,37 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
   resolvedTheme: initialTheme,
   setMode: (mode) => {
     const resolvedTheme = resolveTheme(mode);
+    const request = ++themeRequest;
     try {
       window.localStorage.setItem(appearanceStorageKey, JSON.stringify(mode));
     } catch {
       // The preference still works for this session when storage is unavailable.
     }
-    applyTheme(mode, resolvedTheme);
-    set({ mode, resolvedTheme });
+    set({ mode });
+    if (typeof Image === "undefined" || !("decode" in Image.prototype)) {
+      applyTheme(mode, resolvedTheme);
+      set({ resolvedTheme });
+      return;
+    }
+    void decodeWallpaper(resolvedTheme).then(() => {
+      if (request !== themeRequest || get().mode !== mode) return;
+      applyTheme(mode, resolvedTheme);
+      set({ resolvedTheme });
+    });
   },
   syncSystemTheme: () => {
     if (get().mode !== "auto") return;
     const resolvedTheme = systemTheme();
-    applyTheme("auto", resolvedTheme);
-    set({ resolvedTheme });
+    const request = ++themeRequest;
+    if (typeof Image === "undefined" || !("decode" in Image.prototype)) {
+      applyTheme("auto", resolvedTheme);
+      set({ resolvedTheme });
+      return;
+    }
+    void decodeWallpaper(resolvedTheme).then(() => {
+      if (request !== themeRequest || get().mode !== "auto") return;
+      applyTheme("auto", resolvedTheme);
+      set({ resolvedTheme });
+    });
   },
 }));

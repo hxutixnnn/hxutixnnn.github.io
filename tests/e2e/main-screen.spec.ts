@@ -2402,9 +2402,11 @@ test.describe("appearance modes", () => {
     await page.goto("/");
     await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-default\.jpg/);
 
     await page.emulateMedia({ colorScheme: "light" });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-light\.jpg/);
 
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
     const settingsMenuItem = page.getByRole("menuitem", { name: "System Settings…" });
@@ -2483,6 +2485,11 @@ test.describe("appearance modes", () => {
       )
       .toEqual({ theme: "light", bodyPresent: false });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator("link[rel=preload][as=image]")).toHaveAttribute(
+      "href",
+      "/wallpapers/tienos-light.jpg",
+    );
+    await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-light\.jpg/);
 
     await page.evaluate(() => localStorage.setItem("tienos-appearance", "{broken"));
     await page.emulateMedia({ colorScheme: "dark" });

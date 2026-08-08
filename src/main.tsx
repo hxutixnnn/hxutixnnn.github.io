@@ -2,6 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import "./styles.css";
+import { wallpaperByTheme, type ResolvedTheme } from "./stores/appearance";
 
 const root = document.getElementById("root");
 
@@ -20,8 +21,9 @@ type BootController = {
 const bootController = (window as Window & { tienosBoot?: BootController }).tienosBoot;
 
 async function loadWallpaper() {
+  const resolvedTheme: ResolvedTheme = document.documentElement.dataset.theme === "light" ? "light" : "dark";
   const wallpaper = new Image();
-  wallpaper.src = "/wallpapers/tienos-default.jpg";
+  wallpaper.src = wallpaperByTheme[resolvedTheme];
   await wallpaper.decode();
 }
 

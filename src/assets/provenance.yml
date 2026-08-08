@@ -7,6 +7,13 @@ assets:
     copyright: Copyright Kunal Patil; used under the Unsplash License.
     modified: Downloaded at 3840x2160 for the default tienOS wallpaper; no visual edits.
     sha256: 86f9adf694d568da6c16be855fbfe3ceeaea5f297d4f284756401ac58b09e35c
+  - path: public/wallpapers/tienos-light.jpg
+    author: Paweł Czerwiński
+    source: https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik
+    license: Unsplash License (https://unsplash.com/license)
+    copyright: Copyright Paweł Czerwiński; used under the Unsplash License.
+    modified: Cropped by the Unsplash image service to 2400x1500, JPEG quality 36; delivery metadata stripped by the service.
+    sha256: 7af8ef6cc5d0c69eab834a2f3831461e1718ec0be23a9cbb6ad6232f0ef60b28
   - path: public/favicon.svg
     author: Fonticons, Inc.; tienOS contributors
     source: Font Awesome Pro 7.3.1 sparkle icon with original project framing
