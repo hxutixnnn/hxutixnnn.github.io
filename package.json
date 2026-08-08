@@ -14,6 +14,7 @@
     "dev": "vite",
     "start": "vite",
     "build": "pnpm validate:assets && vite build && pnpm check:output",
+    "generate:brand": "node scripts/generate-brand-assets.mjs",
     "preview": "vite preview",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
