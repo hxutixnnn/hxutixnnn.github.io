@@ -68,11 +68,12 @@ Desktop windows support pointer dragging, eight-direction resizing, viewport bou
 Window frames adapt reactively to the available workspace between the rendered menu-bar edge and Dock. Both surfaces are measured and observed for geometry changes rather than duplicated as spacing constants, and the safe-area inset further constrains the bottom boundary.
 Compact layouts remain fully visible and fixed rather than scaling their contents.
 The Settings window supports one-finger dragging from its intended chrome and touch resizing through its `react-rnd` handles; interactive content and independently scrollable panes remain excluded from window dragging.
+Its named traffic-light buttons close the app, minimize it to the measured live Dock item, and toggle an app-contained fullscreen frame within the measured workspace. Fullscreen disables drag and resize and restores the exact prior frame; closing always discards fullscreen and reopens at the default frame. The minimize transition preserves the window frame and focus target, becomes noninteractive while in flight, and reduces to a short opacity transition when reduced motion is requested.
 Preserve a meaningful accessible window name.
 
 ### Dock
 
-The bottom-centered Dock contains one System Settings app item. Activating it opens the single Settings window when closed or focuses the existing window when open; its running indicator follows that lifecycle without adding a minimize action.
+The bottom-centered Dock contains one System Settings app item and exposes running and minimized state separately from its launcher button. Activating it opens the single Settings window when closed, restores it when minimized, raises it when open but inactive, and minimizes it when already frontmost. Repeated activation must preserve exactly one window and settle in the state requested by the latest activation.
 Keep the Dock inside horizontal viewport and bottom safe-area bounds, above windows and below portaled menus. Its app item retains a visible focus indicator, an explicit accessible name and tooltip, and a 56px mouse and touch target.
 The Dock uses wallpaper-dependent layered glass with conventional radii, restrained transform feedback, opaque reduced-transparency and increased-contrast fallbacks, and native forced-color mappings. The static pre-JavaScript desktop mirrors its running appearance without exposing a deceptive launcher control.
 

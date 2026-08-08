@@ -2,11 +2,12 @@ import { FontAwesomeIcon } from "./FontAwesomeIcon";
 
 type DockProps = {
   settingsOpen: boolean;
+  settingsMinimized?: boolean;
   onActivateSettings: () => void;
 };
 
 /** The single-app tienOS Dock. App activation opens or raises its one window. */
-export function Dock({ settingsOpen, onActivateSettings }: DockProps) {
+export function Dock({ settingsOpen, settingsMinimized = false, onActivateSettings }: DockProps) {
   const statusId = "system-settings-dock-status";
 
   return (
@@ -17,6 +18,7 @@ export function Dock({ settingsOpen, onActivateSettings }: DockProps) {
     >
       <button
         type="button"
+        data-dock-settings
         aria-label="System Settings"
         aria-describedby={statusId}
         title="System Settings"
@@ -31,7 +33,8 @@ export function Dock({ settingsOpen, onActivateSettings }: DockProps) {
         />
       </button>
       <span id={statusId} role="status" className="sr-only">
-        System Settings is {settingsOpen ? "running" : "not running"}
+        System Settings is{" "}
+        {settingsOpen ? (settingsMinimized ? "running and minimized" : "running") : "not running"}
       </span>
     </nav>
   );
