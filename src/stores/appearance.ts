@@ -104,6 +104,10 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
     const request = ++themeRequest;
     const commit = () => {
       if (request !== themeRequest) return false;
+      if (mode === "auto" && resolvedTheme !== resolveTheme("auto")) {
+        void get().setMode("auto");
+        return false;
+      }
       persistAppearance(mode);
       applyTheme(mode, resolvedTheme);
       set({ mode, pendingMode: null, resolvedTheme, wallpaperReady: true });
@@ -125,7 +129,10 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
     return decodeWallpaper(resolvedTheme).then(commit, rollback);
   },
   syncSystemTheme: () => {
-    if (get().mode !== "auto") return;
+    if (get().mode !== "auto") {
+      if (get().pendingMode === "auto") void get().setMode("auto");
+      return;
+    }
     const resolvedTheme = systemTheme();
     const request = ++themeRequest;
     if (typeof Image === "undefined" || !("decode" in Image.prototype)) {

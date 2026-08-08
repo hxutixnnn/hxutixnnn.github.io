@@ -2544,6 +2544,78 @@ test.describe("appearance modes", () => {
     expect(unhandledRejections).toEqual([]);
   });
 
+  test("retargets a pending Auto transition when the system theme changes", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("tienos-appearance", JSON.stringify("light"));
+      const nativeDecode = Image.prototype.decode;
+      let finishDarkDecode!: () => void;
+      const darkWallpaperDecode: { finished: Promise<void>; release?: () => void; started: boolean } = {
+        finished: new Promise((resolve) => {
+          finishDarkDecode = resolve;
+        }),
+        started: false,
+      };
+      Image.prototype.decode = function () {
+        const decoded = nativeDecode.call(this);
+        if (!this.src.endsWith("/wallpapers/tienos-default.jpg")) return decoded;
+        darkWallpaperDecode.started = true;
+        return new Promise((resolve, reject) => {
+          darkWallpaperDecode.release = () =>
+            void decoded.then((value) => {
+              resolve(value);
+              queueMicrotask(finishDarkDecode);
+            }, reject);
+        });
+      };
+      Object.defineProperty(window, "darkWallpaperDecode", { value: darkWallpaperDecode });
+    });
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/");
+    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+    await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+    await page.getByRole("menuitem", { name: "System Settings…" }).click();
+    await page.getByRole("button", { name: "Appearance" }).click();
+    const autoMode = page
+      .getByRole("radiogroup", { name: "Appearance mode" })
+      .getByRole("radio", { name: "Auto" });
+
+    await autoMode.click();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            (window as typeof window & { darkWallpaperDecode: { started: boolean } }).darkWallpaperDecode
+              .started,
+        ),
+      )
+      .toBe(true);
+    await expect(autoMode).toBeFocused();
+    await page.emulateMedia({ colorScheme: "light" });
+
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-light\.jpg/);
+    await expect(autoMode).toBeChecked();
+    await expect(autoMode).toBeFocused();
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem("tienos-appearance")))
+      .toBe(JSON.stringify("auto"));
+
+    await page.evaluate(async () => {
+      const darkWallpaperDecode = (
+        window as typeof window & {
+          darkWallpaperDecode: { finished: Promise<void>; release?: () => void };
+        }
+      ).darkWallpaperDecode;
+      darkWallpaperDecode.release?.();
+      await darkWallpaperDecode.finished;
+    });
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-light\.jpg/);
+    await expect(autoMode).toBeFocused();
+  });
+
   test("bootstraps a persisted theme before the first desktop paint and rejects malformed storage", async ({
     page,
   }) => {
