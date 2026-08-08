@@ -86,11 +86,16 @@ async function touchDrag(session: CDPSession, from: { x: number; y: number }, to
   await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
 }
 
-async function readCenterPixel(element: Locator) {
+async function readHorizontalPixels(element: Locator, distanceFromCenter: number) {
   const screenshot = await element.screenshot({ animations: "disabled" });
   const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
-  const offset = (Math.floor(info.height / 2) * info.width + Math.floor(info.width / 2)) * info.channels;
-  return Array.from(data.subarray(offset, offset + 3));
+  const y = Math.max(1, info.height - 7);
+  const center = Math.floor(info.width / 2);
+  return [-distanceFromCenter, distanceFromCenter].map((offsetFromCenter) => {
+    const x = center + offsetFromCenter;
+    const offset = (y * info.width + x) * info.channels;
+    return Array.from(data.subarray(offset, offset + 3));
+  });
 }
 
 type Rgba = { red: number; green: number; blue: number; alpha: number };
@@ -126,6 +131,10 @@ function contrastRatio(first: Rgba, second: Rgba) {
   const lighter = Math.max(luminance(first), luminance(second));
   const darker = Math.min(luminance(first), luminance(second));
   return (lighter + 0.05) / (darker + 0.05);
+}
+
+function pixelColor([red, green, blue]: number[]): Rgba {
+  return { red, green, blue, alpha: 1 };
 }
 
 async function expectColorContrast(
@@ -358,14 +367,13 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
     const sampleAgainstWallpapers = async (popup: Locator, family: string) => {
       const bounds = await popup.boundingBox();
       expect(bounds).not.toBeNull();
-      const pattern =
-        "repeating-linear-gradient(90deg, rgb(8 16 28) 0 176px, rgb(68 116 148) 176px 220px, rgb(232 242 250) 220px 396px, rgb(140 88 128) 396px 440px)";
+      const pattern = "repeating-linear-gradient(90deg, rgb(8 16 28) 0 220px, rgb(232 242 250) 220px 440px)";
       const centerX = bounds!.x + bounds!.width / 2;
       const regions = [
-        { name: "dark-structured", position: centerX - 88 },
-        { name: "bright-structured", position: centerX - 308 },
+        { name: "dark-to-bright", position: centerX - 220, direction: 1 },
+        { name: "bright-to-dark", position: centerX - 440, direction: -1 },
       ];
-      const samples: number[][] = [];
+      const samples: number[][][] = [];
       for (const region of regions) {
         await wallpaper.evaluate(
           (node, values) => {
@@ -378,41 +386,87 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
           },
           { pattern, position: region.position },
         );
-        samples.push(await readCenterPixel(popup));
+        const boundaryPixels = await readHorizontalPixels(popup, 55);
+        samples.push(boundaryPixels);
+        const [leftBrightness, rightBrightness] = boundaryPixels.map((pixel) =>
+          pixel.reduce((sum, channel) => sum + channel, 0),
+        );
+        expect(
+          (rightBrightness - leftBrightness) * region.direction,
+          `${theme} ${family} should render the ${region.name} wallpaper boundary`,
+        ).toBeGreaterThan(20);
         await page.screenshot({
           animations: "disabled",
           path: testInfo.outputPath(`popup-${theme}-${family}-${region.name}.png`),
         });
       }
-      const structuredRegionResponse = samples[1].reduce(
-        (sum, channel, index) => sum + Math.abs(channel - samples[0][index]),
-        0,
+      return pixelColor(
+        samples
+          .flat()
+          .reduce((brightest, pixel) =>
+            pixel.reduce((sum, channel) => sum + channel, 0) >
+            brightest.reduce((sum, channel) => sum + channel, 0)
+              ? pixel
+              : brightest,
+          ),
       );
-      expect(
-        structuredRegionResponse,
-        `${theme} ${family} should transmit dark and bright wallpaper structure`,
-      ).toBeGreaterThan(45);
     };
 
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
     const systemPopup = page.locator(".tienos-menu-popup:visible").first();
-    const expectedBackground = theme === "dark" ? "rgba(20, 27, 36, 0.58)" : "rgba(245, 248, 252, 0.62)";
+    const expectedBackground = theme === "dark" ? "rgba(20, 27, 36, 0.62)" : "rgba(245, 248, 252, 0.62)";
     await expect(systemPopup).toHaveCSS("background-color", expectedBackground);
     await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
-    await sampleAgainstWallpapers(systemPopup, "system");
+    const systemBrightBackground = await sampleAgainstWallpapers(systemPopup, "system");
+    await expectColorContrast(
+      page.getByRole("menuitem", { name: "About This OS" }),
+      "color",
+      systemBrightBackground,
+      4.5,
+    );
+    await expectColorContrast(
+      page.getByRole("menuitem", { name: "System Settings…" }).locator("kbd"),
+      "color",
+      systemBrightBackground,
+      4.5,
+    );
+    await expectColorContrast(
+      page.getByRole("menuitem", { name: "Recent Items" }).locator("svg"),
+      "color",
+      systemBrightBackground,
+      3,
+    );
 
     await page.getByRole("menuitem", { name: "Recent Items" }).hover();
     const submenuPopup = page.locator(".tienos-menu-popup:visible").last();
     await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
     await expect(submenuPopup).toHaveCSS("background-color", expectedBackground);
-    await sampleAgainstWallpapers(submenuPopup, "submenu");
+    const submenuBrightBackground = await sampleAgainstWallpapers(submenuPopup, "submenu");
+    await expectColorContrast(
+      page.getByRole("menuitem", { name: "No Recent Items" }),
+      "color",
+      submenuBrightBackground,
+      3,
+    );
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
 
     await page.getByRole("menuitem", { name: "Navigator" }).click();
     const navigatorPopup = page.locator(".tienos-menu-popup:visible");
     await expect(navigatorPopup).toHaveCSS("background-color", expectedBackground);
-    await sampleAgainstWallpapers(navigatorPopup, "navigator");
+    const navigatorBrightBackground = await sampleAgainstWallpapers(navigatorPopup, "navigator");
+    await expectColorContrast(
+      page.getByRole("menuitem", { name: "About Navigator" }),
+      "color",
+      navigatorBrightBackground,
+      4.5,
+    );
+    await expectColorContrast(
+      page.getByRole("menuitem", { name: "Preferences…" }).locator("kbd"),
+      "color",
+      navigatorBrightBackground,
+      4.5,
+    );
     await page.keyboard.press("Escape");
   }
 });
