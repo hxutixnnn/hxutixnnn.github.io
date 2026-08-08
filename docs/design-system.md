@@ -80,8 +80,8 @@ The Dock uses wallpaper-dependent layered glass with conventional radii, restrai
 
 Use one icon, one title, and optional secondary text.
 Rows remain plain and use one native-style selection highlight rather than individual cards.
-Settings sidebars use an inset rounded material panel that remains visually separate from the primary content.
-The Settings sidebar defaults to about 31% on desktop and 40% in compact layouts. Its vertical separator supports mouse and touch dragging plus Left/Right, Home, and End keyboard controls, exposes current and clamped percentage bounds, and recomputes safely with the window width.
+Settings panes share one continuous window field without a contrasting gutter, hard edge, or separate detail background. The inset rounded sidebar remains distinguishable through its local translucent material, border, shadow, highlight, and spacing.
+The Settings sidebar defaults to about 31% on desktop and 40% in compact layouts. Its visually transparent separator supports mouse and touch dragging plus Left/Right, Home, and End keyboard controls, exposes current and clamped percentage bounds, and recomputes safely with the window width. Hover, active, and keyboard focus reveal only a short localized grip; reduced transparency, increased contrast, and forced colors must not restore a full-height seam.
 Sidebar navigation and detail content scroll independently when required. In normal themes their scrollbar tracks are transparent and their thumbs fill the track width; scrollbars stay hidden at rest and appear for active scrolling, focus, hover, or dragging. Increased contrast and forced colors provide explicit track and thumb colors.
 
 ### Content groups
