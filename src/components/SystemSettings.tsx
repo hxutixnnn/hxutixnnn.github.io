@@ -11,9 +11,15 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { Field } from "@base-ui/react/field";
+import { Input } from "@base-ui/react/input";
+import { Radio } from "@base-ui/react/radio";
+import { RadioGroup } from "@base-ui/react/radio-group";
 import { ScrollArea } from "@base-ui/react/scroll-area";
+import { Switch } from "@base-ui/react/switch";
 import { Rnd, type RndResizeCallback } from "react-rnd";
 import { FontAwesomeIcon, type FontAwesomeIconName } from "./FontAwesomeIcon";
+import { SettingsSelect } from "./SettingsControls";
 import { useAppearanceStore, type AppearanceMode } from "../stores/appearance";
 
 type SystemSettingsProps = {
@@ -391,13 +397,14 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
               />
             </div>
 
-            <label
+            <Field.Root
               data-settings-search=""
-              className="settings-search flex h-7 items-center gap-[7px] rounded-[11px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-[10px] text-[var(--tienos-color-text-secondary)] [&_input]:min-w-0 [&_input]:w-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:text-[var(--tienos-color-text-primary)] [&_input::placeholder]:text-[var(--tienos-color-text-secondary)] max-[700px]:px-[8px]"
+              className="settings-search flex h-7 items-center gap-[7px] rounded-[11px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-[10px] text-[var(--tienos-color-text-secondary)] data-[focused]:outline data-[focused]:outline-2 data-[focused]:outline-[var(--tienos-color-focus)] [&_input]:min-w-0 [&_input]:w-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:text-[var(--tienos-color-text-primary)] [&_input]:outline-none [&_input::placeholder]:text-[var(--tienos-color-text-secondary)] max-[700px]:px-[8px]"
             >
               <FontAwesomeIcon name="magnifying-glass" className="text-xs" />
-              <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
-            </label>
+              <Field.Label className="sr-only">Search settings</Field.Label>
+              <Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" />
+            </Field.Root>
 
             <div className="flex items-center gap-[11px] p-[13px_7px_10px] max-[700px]:hidden [&_strong]:block [&_span]:mt-[2px] [&_span]:block [&_span]:text-xs [&_span]:text-[var(--tienos-color-text-secondary)]">
               <div className="settings-avatar grid size-[34px] place-items-center rounded-[50%] bg-[linear-gradient(145deg,#59677c,#192334)] text-[17px] font-bold">
@@ -518,45 +525,47 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                   className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
                   aria-label="Appearance style"
                 >
-                  <div
+                  <RadioGroup
                     className="flex justify-end gap-3 max-[520px]:flex-col max-[520px]:items-start"
-                    role="group"
                     aria-label="Appearance mode"
+                    value={appearanceMode}
+                    onValueChange={setAppearanceMode}
                   >
                     {(["auto", "light", "dark"] satisfies AppearanceMode[]).map((mode) => (
-                      <button
+                      <Radio.Root
                         key={mode}
-                        className={`grid gap-1 border-0 bg-transparent text-center text-[var(--tienos-color-text-secondary)] aria-pressed:font-bold aria-pressed:text-[var(--tienos-color-text-primary)] [&>span]:h-[54px] [&>span]:w-[86px] [&>span]:rounded-lg [&>span]:border-2 [&>span]:border-transparent aria-pressed:[&>span]:border-[var(--tienos-color-accent)] aria-pressed:[&>span]:shadow-[0_0_0_2px_var(--tienos-color-accent)] ${mode === "auto" ? "[&>span]:bg-[linear-gradient(145deg,#70bde8,#20386f_55%,#15181e_56%)]" : mode === "light" ? "[&>span]:bg-[linear-gradient(145deg,#aee6ff,#f5f5f5)]" : "[&>span]:bg-[linear-gradient(145deg,#253f9b,#080b18)]"}`}
-                        aria-pressed={appearanceMode === mode}
-                        onClick={() => setAppearanceMode(mode)}
+                        value={mode}
+                        aria-label={mode[0].toUpperCase() + mode.slice(1)}
+                        className={`grid cursor-default gap-1 bg-transparent text-center text-[var(--tienos-color-text-secondary)] data-[checked]:font-bold data-[checked]:text-[var(--tienos-color-text-primary)] focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)] [&>span]:h-[54px] [&>span]:w-[86px] [&>span]:rounded-lg [&>span]:border-2 [&>span]:border-transparent data-[checked]:[&>span]:border-[var(--tienos-color-accent)] data-[checked]:[&>span]:shadow-[0_0_0_2px_var(--tienos-color-accent)] ${mode === "auto" ? "[&>span]:bg-[linear-gradient(145deg,#70bde8,#20386f_55%,#15181e_56%)]" : mode === "light" ? "[&>span]:bg-[linear-gradient(145deg,#aee6ff,#f5f5f5)]" : "[&>span]:bg-[linear-gradient(145deg,#253f9b,#080b18)]"}`}
                       >
                         <span aria-hidden="true" />
                         {mode[0].toUpperCase() + mode.slice(1)}
-                      </button>
+                      </Radio.Root>
                     ))}
-                  </div>
+                  </RadioGroup>
                   <div className="mt-3.5 flex items-center justify-between border-t border-[var(--tienos-color-separator)] pt-3.5 max-[520px]:flex-col max-[520px]:items-start [&_strong]:block [&_span]:block [&>div>span]:text-[var(--tienos-color-text-secondary)]">
                     <div>
                       <strong>Liquid Glass</strong>
                       <span>Choose your preferred look for Liquid Glass.</span>
                     </div>
-                    <div
+                    <RadioGroup
                       className="flex justify-end gap-3 max-[520px]:flex-col max-[520px]:items-start"
-                      role="group"
                       aria-label="Liquid Glass style"
+                      value={glassStyle}
+                      onValueChange={setGlassStyle}
                     >
                       {["Clear", "Tinted"].map((style) => (
-                        <button
+                        <Radio.Root
                           key={style}
-                          className="grid gap-1 border-0 bg-transparent text-center text-[var(--tienos-color-text-secondary)] aria-pressed:font-bold aria-pressed:text-[var(--tienos-color-text-primary)] [&>span]:h-[50px] [&>span]:w-[88px] [&>span]:rounded-[9px] [&>span]:border-2 [&>span]:border-transparent [&>span]:bg-[linear-gradient(135deg,rgb(255_240_180/.8),rgb(69_181_255/.55))] aria-pressed:[&>span]:border-[var(--tienos-color-accent)] aria-pressed:[&>span]:shadow-[0_0_0_2px_var(--tienos-color-accent)]"
-                          aria-pressed={glassStyle === style}
-                          onClick={() => setGlassStyle(style)}
+                          value={style}
+                          aria-label={style}
+                          className="grid cursor-default gap-1 bg-transparent text-center text-[var(--tienos-color-text-secondary)] data-[checked]:font-bold data-[checked]:text-[var(--tienos-color-text-primary)] focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)] [&>span]:h-[50px] [&>span]:w-[88px] [&>span]:rounded-[9px] [&>span]:border-2 [&>span]:border-transparent [&>span]:bg-[linear-gradient(135deg,rgb(255_240_180/.8),rgb(69_181_255/.55))] data-[checked]:[&>span]:border-[var(--tienos-color-accent)] data-[checked]:[&>span]:shadow-[0_0_0_2px_var(--tienos-color-accent)]"
                         >
                           <span aria-hidden="true" />
                           {style}
-                        </button>
+                        </Radio.Root>
                       ))}
-                    </div>
+                    </RadioGroup>
                   </div>
                 </section>
 
@@ -567,10 +576,11 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                 >
                   <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px]">
                     <span>Color</span>
-                    <div
+                    <RadioGroup
                       className="flex flex-wrap gap-2.5 max-[520px]:py-2"
-                      role="group"
                       aria-label="Accent color"
+                      value={accentColor}
+                      onValueChange={setAccentColor}
                     >
                       {[
                         "Multicolor",
@@ -583,93 +593,86 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
                         "Green",
                         "Gray",
                       ].map((color) => (
-                        <button
+                        <Radio.Root
                           key={color}
-                          className={`size-[30px] rounded-full border-[3px] border-transparent aria-pressed:outline aria-pressed:outline-3 aria-pressed:outline-offset-2 aria-pressed:outline-[var(--tienos-color-accent)] ${color === "Multicolor" ? "bg-[conic-gradient(#f33,#fc3,#3c6,#08f,#b3c,#f33)]" : color === "Blue" ? "bg-[#1686ff]" : color === "Purple" ? "bg-[#9d3ba1]" : color === "Pink" ? "bg-[#ef3d91]" : color === "Red" ? "bg-[#e2343c]" : color === "Orange" ? "bg-[#f57814]" : color === "Yellow" ? "bg-[#ffbd22]" : color === "Green" ? "bg-[#55b83e]" : color === "Gray" ? "bg-[#999]" : ""}`}
+                          value={color}
                           aria-label={color}
-                          aria-pressed={accentColor === color}
-                          onClick={() => setAccentColor(color)}
+                          className={`size-[30px] cursor-default rounded-full border-[3px] border-transparent data-[checked]:outline data-[checked]:outline-3 data-[checked]:outline-offset-2 data-[checked]:outline-[var(--tienos-color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)] ${color === "Multicolor" ? "bg-[conic-gradient(#f33,#fc3,#3c6,#08f,#b3c,#f33)]" : color === "Blue" ? "bg-[#1686ff]" : color === "Purple" ? "bg-[#9d3ba1]" : color === "Pink" ? "bg-[#ef3d91]" : color === "Red" ? "bg-[#e2343c]" : color === "Orange" ? "bg-[#f57814]" : color === "Yellow" ? "bg-[#ffbd22]" : color === "Green" ? "bg-[#55b83e]" : color === "Gray" ? "bg-[#999]" : ""}`}
                         />
                       ))}
-                    </div>
+                    </RadioGroup>
                   </div>
-                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
+                  <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t">
                     <span>Text highlight color</span>
-                    <select
-                      aria-label="Text highlight color"
+                    <SettingsSelect
+                      label="Text highlight color"
                       value={textHighlightColor}
-                      onChange={(event) => setTextHighlightColor(event.target.value)}
-                    >
-                      {["Automatic", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green"].map(
-                        (color) => (
-                          <option key={color}>{color}</option>
-                        ),
-                      )}
-                    </select>
-                  </label>
+                      onValueChange={setTextHighlightColor}
+                      options={["Automatic", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green"]}
+                    />
+                  </div>
                 </section>
                 <section
                   className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
                   aria-label="Icon and widget style"
                 >
-                  <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&>[role=group]]:flex [&>[role=group]]:gap-3 max-[520px]:[&>[role=group]]:flex-wrap">
+                  <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&>[role=radiogroup]]:flex [&>[role=radiogroup]]:gap-3 max-[520px]:[&>[role=radiogroup]]:flex-wrap">
                     <span>Icon &amp; widget style</span>
-                    <div role="group" aria-label="Icon and widget style">
+                    <RadioGroup
+                      aria-label="Icon and widget style"
+                      value={widgetStyle}
+                      onValueChange={setWidgetStyle}
+                    >
                       {["Default", "Dark", "Clear", "Tinted"].map((style) => (
-                        <button
+                        <Radio.Root
                           key={style}
-                          className="grid gap-1 border-0 bg-transparent text-center text-[var(--tienos-color-text-secondary)] aria-pressed:font-bold aria-pressed:text-[var(--tienos-color-text-primary)] aria-pressed:[&>span]:border-[var(--tienos-color-accent)] aria-pressed:[&>span]:shadow-[0_0_0_2px_var(--tienos-color-accent)]"
-                          aria-pressed={widgetStyle === style}
-                          onClick={() => setWidgetStyle(style)}
+                          value={style}
+                          aria-label={style}
+                          className="grid cursor-default gap-1 bg-transparent text-center text-[var(--tienos-color-text-secondary)] data-[checked]:font-bold data-[checked]:text-[var(--tienos-color-text-primary)] data-[checked]:[&>span]:border-[var(--tienos-color-accent)] data-[checked]:[&>span]:shadow-[0_0_0_2px_var(--tienos-color-accent)] focus-visible:rounded-lg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)]"
                         >
                           <span
                             className={`block size-[34px] rounded-[9px] border-2 border-transparent ${style === "Default" ? "bg-[#1686ff]" : style === "Dark" ? "bg-[#222]" : style === "Clear" ? "bg-[#aaa]" : style === "Tinted" ? "bg-[#35b9ef]" : ""}`}
                           />
                           {style}
-                        </button>
+                        </Radio.Root>
                       ))}
-                    </div>
+                    </RadioGroup>
                   </div>
-                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
+                  <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t">
                     <span>Folder color</span>
-                    <select
-                      aria-label="Folder color"
+                    <SettingsSelect
+                      label="Folder color"
                       value={folderColor}
-                      onChange={(event) => setFolderColor(event.target.value)}
-                    >
-                      {["Automatic", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green"].map(
-                        (color) => (
-                          <option key={color}>{color}</option>
-                        ),
-                      )}
-                    </select>
-                  </label>
+                      onValueChange={setFolderColor}
+                      options={["Automatic", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green"]}
+                    />
+                  </div>
                 </section>
                 <h3>Windows</h3>
                 <section
                   className="overflow-hidden rounded-[var(--tienos-radius-content)] border border-white/[.03] bg-[var(--tienos-color-content)] p-3.5"
                   aria-label="Windows"
                 >
-                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px] [&_select]:text-inherit">
+                  <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t">
                     <span>Sidebar icon size</span>
-                    <select
-                      aria-label="Sidebar icon size"
+                    <SettingsSelect
+                      label="Sidebar icon size"
                       value={sidebarIconSize}
-                      onChange={(event) => setSidebarIconSize(event.target.value)}
-                    >
-                      {["Small", "Medium", "Large"].map((size) => (
-                        <option key={size}>{size}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&_select]:rounded-[7px] [&_select]:border-0 [&_select]:bg-white/8 [&_select]:p-[5px_22px_5px_8px]">
-                    <span>Tint window background with wallpaper color</span>
-                    <input
-                      type="checkbox"
-                      checked={wallpaperTint}
-                      onChange={(event) => setWallpaperTint(event.target.checked)}
+                      onValueChange={setSidebarIconSize}
+                      options={["Small", "Medium", "Large"]}
                     />
-                  </label>
+                  </div>
+                  <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t">
+                    <label htmlFor="wallpaper-tint">Tint window background with wallpaper color</label>
+                    <Switch.Root
+                      id="wallpaper-tint"
+                      checked={wallpaperTint}
+                      onCheckedChange={setWallpaperTint}
+                      className="relative h-6 w-10 rounded-full bg-[var(--tienos-color-control)] shadow-inner transition-colors data-[checked]:bg-[var(--tienos-color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)]"
+                    >
+                      <Switch.Thumb className="block size-5 translate-x-0.5 rounded-full bg-white shadow transition-transform data-[checked]:translate-x-[18px] motion-reduce:transition-none" />
+                    </Switch.Root>
+                  </div>
                 </section>
               </div>
             ) : selected === "General" ? (
