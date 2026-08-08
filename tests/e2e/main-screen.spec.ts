@@ -1043,6 +1043,8 @@ test("keeps Settings seamless across themes, accessibility modes, and layouts", 
       scenario.appearance,
     );
     await page.reload();
+    await session.send("DOM.enable");
+    await session.send("CSS.enable");
     await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden({ timeout: 10_000 });
     await expect(page.locator("html")).toHaveAttribute("data-theme", scenario.resolved);
     const menu = page.locator("[data-menu-bar-surface]");
@@ -1104,20 +1106,53 @@ test("keeps Settings seamless across themes, accessibility modes, and layouts", 
     await page.screenshot({ path: testInfo.outputPath(`settings-seamless-${scenario.name}.png`) });
 
     await splitter.hover();
+    expect(
+      await splitter.evaluate((node) => ({
+        hover: node.matches(":hover"),
+        focusVisible: node.matches(":focus-visible"),
+      })),
+    ).toEqual({ hover: true, focusVisible: false });
     await expect(grip).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await page.mouse.move(0, 0);
+    await expect(grip).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+
     await splitter.focus();
+    expect(
+      await splitter.evaluate((node) => ({
+        hover: node.matches(":hover"),
+        focusVisible: node.matches(":focus-visible"),
+      })),
+    ).toEqual({ hover: false, focusVisible: true });
     await expect(grip).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-    await page.mouse.move(
-      splitterBounds!.x + splitterBounds!.width / 2,
-      splitterBounds!.y + splitterBounds!.height / 2,
-    );
-    await page.mouse.down();
-    expect(await splitter.evaluate((node) => node.matches(":active"))).toBe(true);
-    await expect(grip).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-    if (scenario.name === "dark" || scenario.name === "iphone") {
-      await page.screenshot({ path: testInfo.outputPath(`settings-grip-active-${scenario.name}.png`) });
+    await splitter.evaluate((node) => (node as HTMLElement).blur());
+    await expect(grip).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+
+    const documentNode = await session.send("DOM.getDocument");
+    const splitterNode = await session.send("DOM.querySelector", {
+      nodeId: documentNode.root.nodeId,
+      selector: ".settings-splitter",
+    });
+    expect(
+      await splitter.evaluate((node) => ({
+        hover: node.matches(":hover"),
+        focusVisible: node.matches(":focus-visible"),
+      })),
+    ).toEqual({ hover: false, focusVisible: false });
+    await session.send("CSS.forcePseudoState", {
+      nodeId: splitterNode.nodeId,
+      forcedPseudoClasses: ["active"],
+    });
+    try {
+      await expect(grip).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+      if (scenario.name === "dark" || scenario.name === "iphone") {
+        await page.screenshot({ path: testInfo.outputPath(`settings-grip-active-${scenario.name}.png`) });
+      }
+    } finally {
+      await session.send("CSS.forcePseudoState", {
+        nodeId: splitterNode.nodeId,
+        forcedPseudoClasses: [],
+      });
     }
-    await page.mouse.up();
 
     if (scenario.name === "iphone") {
       expect(sidebarBounds!.width / shellBounds!.width).toBeGreaterThanOrEqual(0.36);
