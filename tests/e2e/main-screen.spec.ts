@@ -713,6 +713,60 @@ for (const startupViewport of startupViewports) {
   });
 }
 
+for (const startupViewport of startupViewports) {
+  test(`keeps the styled shell until delayed module success on ${startupViewport.name}`, async ({ page }) => {
+    await page.setViewportSize(startupViewport);
+    await recordDismissalFrames(page);
+    let moduleGate = createDelayGate();
+    let moduleIntercepted = false;
+
+    await page.route(/\/assets\/.*\.js$/, async (route) => {
+      moduleIntercepted = true;
+      await moduleGate.blocked;
+      await route.continue();
+    });
+
+    const navigation = page.goto("/", { waitUntil: "domcontentloaded" });
+    await expect.poll(() => moduleIntercepted).toBe(true);
+
+    const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
+    const settingsWindow = page.getByRole("region", { name: "System Settings" });
+    await expect(bootScreen).toBeVisible();
+    await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
+    await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
+    await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("position", "fixed");
+    await expect(settingsWindow).toHaveCount(0);
+    await expect(page.locator("#root")).toHaveAttribute("inert", "");
+    await page.waitForTimeout(700);
+    await expect(bootScreen).toBeVisible();
+
+    moduleGate.release();
+    await navigation;
+    await expect(bootScreen).toBeHidden();
+    await expect(settingsWindow).toHaveCount(1);
+    await expectStyledDismissalFrames(page, { settings: true });
+
+    moduleGate = createDelayGate();
+    moduleIntercepted = false;
+    const warmNavigation = page.reload({ waitUntil: "domcontentloaded" });
+    await expect.poll(() => moduleIntercepted).toBe(true);
+    await expect(bootScreen).toBeVisible();
+    await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
+    await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
+    await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("position", "fixed");
+    await expect(settingsWindow).toHaveCount(0);
+    await expect(page.locator("#root")).toHaveAttribute("inert", "");
+    await page.waitForTimeout(100);
+    await expect(bootScreen).toBeVisible();
+
+    moduleGate.release();
+    await warmNavigation;
+    await expect(bootScreen).toBeHidden();
+    await expect(settingsWindow).toHaveCount(1);
+    await expectStyledDismissalFrames(page, { settings: true });
+  });
+}
+
 for (const asset of paintCriticalAssets) {
   for (const startupViewport of startupViewports) {
     test(`keeps the splash until delayed ${asset.name} paint on ${startupViewport.name}`, async ({
