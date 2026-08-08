@@ -561,6 +561,36 @@ async function setResolvedTheme(page: Page, theme: "dark" | "light") {
   await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
 }
 
+test("serves the canonical favicon set from the production root", async ({ page, request }, testInfo) => {
+  const response = await page.goto("/");
+  expect(response?.ok()).toBe(true);
+
+  const links = await page
+    .locator('head link[rel~="icon"], head link[rel="apple-touch-icon"], head link[rel="manifest"]')
+    .evaluateAll((elements) => elements.map((element) => (element as HTMLLinkElement).getAttribute("href")));
+  expect(links).toEqual([
+    "/favicon.svg",
+    "/favicon-32x32.png",
+    "/favicon-16x16.png",
+    "/favicon.ico",
+    "/apple-touch-icon.png",
+    "/manifest.webmanifest",
+  ]);
+
+  for (const href of links) {
+    const asset = await request.get(href!);
+    expect(asset.ok(), `${href} should load from the production base path`).toBe(true);
+  }
+  expect((await request.get("/favicon.svg")).headers()["content-type"]).toContain("image/svg+xml");
+  expect((await request.get("/favicon-32x32.png")).headers()["content-type"]).toContain("image/png");
+
+  await page.goto("/favicon.svg");
+  await testInfo.attach("canonical-tienos-favicon.png", {
+    body: await page.screenshot(),
+    contentType: "image/png",
+  });
+});
+
 test("applies design-system tokens to component styles", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
   expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(false);

@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { readFile, readdir, stat } from "node:fs/promises";
 import { extname, relative, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
@@ -49,6 +50,54 @@ if (
 const canonicalHref = indexHtml.match(/<link\s+rel=["']canonical["']\s+href=["']([^"']+)["']/i)?.[1];
 if (canonicalHref !== `${canonicalOrigin}/`) {
   throw new Error("Canonical route does not use the GitHub Pages domain");
+}
+
+const requiredIconLinks = [
+  ['rel="icon" href="/favicon.svg" type="image/svg+xml"', "/favicon.svg"],
+  ['rel="icon" href="/favicon-32x32.png" type="image/png" sizes="32x32"', "/favicon-32x32.png"],
+  ['rel="icon" href="/favicon-16x16.png" type="image/png" sizes="16x16"', "/favicon-16x16.png"],
+  ['rel="shortcut icon" href="/favicon.ico"', "/favicon.ico"],
+  ['rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180"', "/apple-touch-icon.png"],
+  ['rel="manifest" href="/manifest.webmanifest"', "/manifest.webmanifest"],
+];
+for (const [markup, reference] of requiredIconLinks) {
+  if (!indexHtml.includes(markup) || !(await exists(outputPath(reference)))) {
+    throw new Error(`Missing or broken favicon metadata: ${markup}`);
+  }
+}
+if (/vite\.svg|apple-touch-icon-precomposed/i.test(indexHtml)) {
+  throw new Error("Static HTML contains an obsolete/default favicon reference");
+}
+
+const pngDimensions = async (reference) => {
+  const data = await readFile(outputPath(reference));
+  if (!data.subarray(1, 4).equals(Buffer.from("PNG"))) throw new Error(`${reference} is not PNG data`);
+  return [data.readUInt32BE(16), data.readUInt32BE(20)];
+};
+for (const [reference, size] of [
+  ["/favicon-16x16.png", 16],
+  ["/favicon-32x32.png", 32],
+  ["/apple-touch-icon.png", 180],
+  ["/icon-192.png", 192],
+  ["/icon-512.png", 512],
+]) {
+  const dimensions = await pngDimensions(reference);
+  if (dimensions[0] !== size || dimensions[1] !== size)
+    throw new Error(`${reference} has invalid dimensions`);
+}
+const icoData = await readFile(outputPath("/favicon.ico"));
+if (icoData.readUInt16LE(0) !== 0 || icoData.readUInt16LE(2) !== 1 || icoData.readUInt16LE(4) < 2) {
+  throw new Error("favicon.ico is not a standards-compatible multi-image icon");
+}
+const manifest = JSON.parse(await readFile(outputPath("/manifest.webmanifest"), "utf8"));
+if (
+  manifest.name !== "tienOS" ||
+  manifest.start_url !== "/" ||
+  manifest.scope !== "/" ||
+  !manifest.icons?.some((icon) => icon.src === "/icon-192.png" && icon.sizes === "192x192") ||
+  !manifest.icons?.some((icon) => icon.src === "/icon-512.png" && icon.sizes === "512x512")
+) {
+  throw new Error("Web app manifest does not reference the canonical tienOS icon set");
 }
 
 const remoteSubresources = [
