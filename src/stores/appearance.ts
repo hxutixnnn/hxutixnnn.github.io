@@ -114,7 +114,10 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
       return true;
     };
     const rollback = () => {
-      if (request === themeRequest) set({ pendingMode: null });
+      if (request === themeRequest) {
+        set({ pendingMode: null });
+        if (mode !== "auto" && get().mode === "auto") get().syncSystemTheme();
+      }
       return false;
     };
     if (
@@ -129,10 +132,11 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
     return decodeWallpaper(resolvedTheme).then(commit, rollback);
   },
   syncSystemTheme: () => {
-    if (get().mode !== "auto") {
+    if (get().pendingMode !== null) {
       if (get().pendingMode === "auto") void get().setMode("auto");
       return;
     }
+    if (get().mode !== "auto") return;
     const resolvedTheme = systemTheme();
     const request = ++themeRequest;
     if (typeof Image === "undefined" || !("decode" in Image.prototype)) {

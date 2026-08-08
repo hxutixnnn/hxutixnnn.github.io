@@ -22,7 +22,7 @@ Note: the earlier `@base-ui-components/react` package name was renamed by the up
 
 ## Wallpapers
 
-The Light-mode wallpaper “assorted-color smoke” is Copyright Paweł Czerwiński and is distributed under the [Unsplash License](https://unsplash.com/license), which permits free commercial and non-commercial use, copying, modification, and distribution without attribution. The authoritative photo page is <https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik>, and the exact reproducible image-service URL is <https://images.unsplash.com/photo-1558470598-a5dda9640f68?auto=format&fit=crop&w=2400&h=1500&q=36>. It was resized, cropped, and compressed for local web delivery; it is not sold or redistributed as a standalone stock-photo service.
+The Light-mode wallpaper “assorted-color smoke” is Copyright Paweł Czerwiński and is distributed under the [Unsplash License](https://unsplash.com/license), which permits free commercial and non-commercial use, copying, modification, and distribution without attribution. The authoritative photo page is <https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik>, and the exact reproducible image-service URL is <https://images.unsplash.com/photo-1558470598-a5dda9640f68?fit=crop&fm=jpg&w=2400&h=1500&q=36>. It was resized, cropped, and compressed for local web delivery; it is not sold or redistributed as a standalone stock-photo service.
 
 ## Interface icons
 
