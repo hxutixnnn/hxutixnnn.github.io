@@ -133,7 +133,7 @@ async function recordDismissalFrames(page: Page) {
 
 async function expectStyledDismissalFrames(
   page: Page,
-  options: { settings: boolean },
+  options: { settings: boolean; menu?: "application" | "fallback" },
 ) {
   await expect
     .poll(() =>
@@ -152,7 +152,10 @@ async function expectStyledDismissalFrames(
   for (const frame of frames) expectDismissalFrameGeometry(frame, options);
 }
 
-function expectDismissalFrameGeometry(frame: DismissalFrame, options: { settings: boolean }) {
+function expectDismissalFrameGeometry(
+  frame: DismissalFrame,
+  options: { settings: boolean; menu?: "application" | "fallback" },
+) {
   expect(frame.fontFamily).not.toMatch(/(^|,\s*)(serif|"?Times New Roman"?|Times)(,|$)/i);
   expect(frame.desktop).toMatchObject({
     x: 0,
@@ -161,13 +164,21 @@ function expectDismissalFrameGeometry(frame: DismissalFrame, options: { settings
     position: "relative",
   });
   expect(frame.desktop?.height).toBeGreaterThanOrEqual(frame.viewport.height);
-  expect(frame.menu).toMatchObject({
-    x: 0,
-    y: 0,
-    width: frame.viewport.width,
-    position: "fixed",
-  });
-  expect(frame.menu?.height).toBeGreaterThanOrEqual(28);
+  if (options.menu === "fallback") {
+    expect(frame.menu?.position).toBe("fixed");
+    expect(frame.menu?.x).toBeCloseTo(6, 1);
+    expect(frame.menu?.y).toBeCloseTo(6, 1);
+    expect(frame.menu?.width).toBeCloseTo(frame.viewport.width - 12, 1);
+    expect(frame.menu?.height).toBeGreaterThanOrEqual(40);
+  } else {
+    expect(frame.menu).toMatchObject({
+      x: 0,
+      y: 0,
+      width: frame.viewport.width,
+      position: "fixed",
+    });
+    expect(frame.menu?.height).toBeGreaterThanOrEqual(28);
+  }
   if (options.settings) {
     expect(frame.settings?.position).toBe("relative");
     expect(frame.settings?.containerPosition).toBe("absolute");
@@ -184,6 +195,70 @@ function expectDismissalFrameGeometry(frame: DismissalFrame, options: { settings
   } else {
     expect(frame.settings).toBeNull();
   }
+}
+
+async function expectCapturedFramesToMatchStableReveal(frames: Buffer[], stableFrame: Buffer) {
+  const decoded = await Promise.all(
+    [...frames, stableFrame].map(async (frame) => {
+      const { data, info } = await sharp(frame).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+      return { data, width: info.width, height: info.height, channels: info.channels };
+    }),
+  );
+  const stable = decoded.at(-1)!;
+  const captured = decoded.slice(0, -1).filter(
+    (frame) => frame.width === stable.width && frame.height === stable.height,
+  );
+  expect(captured.length).toBeGreaterThanOrEqual(2);
+
+  const distanceFromStable = (frame: (typeof decoded)[number]) => {
+    let difference = 0;
+    let samples = 0;
+    for (let offset = 0; offset < frame.data.length; offset += frame.channels * 97) {
+      for (let channel = 0; channel < 3; channel += 1) {
+        difference += Math.abs(frame.data[offset + channel] - stable.data[offset + channel]);
+        samples += 1;
+      }
+    }
+    return difference / samples;
+  };
+  const distances = captured.map(distanceFromStable);
+  const greatestDistance = Math.max(...distances);
+  const bootIndex = distances.findLastIndex((distance) => distance >= greatestDistance - 3);
+  const boot = captured[bootIndex];
+  const revealFrames = [...captured.slice(bootIndex + 1), stable];
+  expect(revealFrames.length).toBeGreaterThanOrEqual(2);
+
+  let priorOpacity = 1;
+  let exposedFrames = 0;
+  for (const frame of revealFrames) {
+    let numerator = 0;
+    let denominator = 0;
+    for (let offset = 0; offset < frame.data.length; offset += frame.channels * 97) {
+      for (let channel = 0; channel < 3; channel += 1) {
+        const bootDelta = boot.data[offset + channel] - stable.data[offset + channel];
+        numerator += (frame.data[offset + channel] - stable.data[offset + channel]) * bootDelta;
+        denominator += bootDelta * bootDelta;
+      }
+    }
+    const opacity = Math.max(0, Math.min(1, numerator / denominator));
+    let residual = 0;
+    let samples = 0;
+    for (let offset = 0; offset < frame.data.length; offset += frame.channels * 97) {
+      for (let channel = 0; channel < 3; channel += 1) {
+        const expected =
+          stable.data[offset + channel] +
+          opacity * (boot.data[offset + channel] - stable.data[offset + channel]);
+        residual += Math.abs(frame.data[offset + channel] - expected);
+        samples += 1;
+      }
+    }
+    expect(opacity).toBeLessThanOrEqual(priorOpacity + 0.03);
+    expect(residual / samples).toBeLessThan(8);
+    if (opacity < 0.98) exposedFrames += 1;
+    priorOpacity = opacity;
+  }
+  expect(exposedFrames).toBeGreaterThanOrEqual(1);
+  expect(priorOpacity).toBeLessThan(0.01);
 }
 
 async function expectConventionalRoundedGeometry(element: Locator) {
@@ -728,7 +803,12 @@ test("releases the static desktop when application styles fail", async ({ page }
     "color",
     "rgba(255, 255, 255, 0.9)",
   );
-  await expectStyledDismissalFrames(page, { settings: false });
+  await expectStyledDismissalFrames(page, { settings: false, menu: "fallback" });
+
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(bootScreen).toBeHidden({ timeout: 10_000 });
+  await expectStyledDismissalFrames(page, { settings: false, menu: "fallback" });
 });
 
 test("reveals the static desktop when the application module fails", async ({ page }) => {
@@ -771,6 +851,11 @@ test("reveals the static desktop when the application module fails", async ({ pa
     "rgba(255, 255, 255, 0.9)",
   );
   await expectStyledDismissalFrames(page, { settings: false });
+
+  await page.setViewportSize({ width: 320, height: 568 });
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  await expectStyledDismissalFrames(page, { settings: false });
 });
 
 test("renders the tienOS main screen and system menu", async ({ page }) => {
@@ -810,93 +895,73 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
 });
 
 test("reveals the static desktop without JavaScript", async ({ browser }) => {
-  const context = await browser.newContext({
-    javaScriptEnabled: false,
-    reducedMotion: "reduce",
-  });
-  const page = await context.newPage();
-  const session = await context.newCDPSession(page);
-  const renderedFrames: Array<{ image: Buffer; state: (DismissalFrame & { bootOpacity: number }) | null }> = [];
-  session.on("Page.screencastFrame", ({ data, sessionId }) => {
-    void (async () => {
-      const result = await session.send("Runtime.evaluate", {
-        expression: `(() => {
-          const bounds = (element) => {
-            if (!element) return null;
-            const box = element.getBoundingClientRect();
-            return { x: box.x, y: box.y, width: box.width, height: box.height, position: getComputedStyle(element).position };
-          };
-          const desktop = document.querySelector('main[aria-label="tienOS desktop"]');
-          const menu = document.querySelector('[data-menu-bar-surface]');
-          const settings = document.querySelector('[aria-label="System Settings"]');
-          const settingsBounds = bounds(settings);
-          const boot = document.getElementById('tienos-boot');
-          if (!document.body || !desktop || !menu) return null;
-          return {
-            viewport: { width: innerWidth, height: innerHeight },
-            fontFamily: getComputedStyle(document.body).fontFamily,
-            desktop: bounds(desktop),
-            menu: bounds(menu),
-            settings: settingsBounds ? { ...settingsBounds, containerPosition: settings.parentElement ? getComputedStyle(settings.parentElement).position : null } : null,
-            bootOpacity: boot ? Number(getComputedStyle(boot).opacity) : 0
-          };
-        })()`,
-        returnByValue: true,
-      });
-      renderedFrames.push({
-        image: Buffer.from(data, "base64"),
-        state: (result.result.value as (DismissalFrame & { bootOpacity: number }) | null) ?? null,
-      });
-      await session.send("Page.screencastFrameAck", { sessionId });
-    })();
-  });
-  await session.send("Page.startScreencast", { format: "png", everyNthFrame: 1 });
+  for (const viewport of [
+    { width: 1440, height: 900 },
+    { width: 320, height: 568 },
+  ]) {
+    const context = await browser.newContext({
+      colorScheme: "dark",
+      javaScriptEnabled: false,
+      reducedMotion: "no-preference",
+      viewport,
+    });
+    const page = await context.newPage();
+    await page.route("**/wallpapers/tienos-default.jpg", (route) => route.abort("failed"));
+    const session = await context.newCDPSession(page);
+    const renderedFrames: Buffer[] = [];
+    session.on("Page.screencastFrame", ({ data, sessionId }) => {
+      renderedFrames.push(Buffer.from(data, "base64"));
+      void session.send("Page.screencastFrameAck", { sessionId });
+    });
+    await session.send("Page.startScreencast", { format: "png", everyNthFrame: 1 });
 
-  await page.goto("/", { waitUntil: "domcontentloaded" });
-  const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
-  await expect(bootScreen).toBeHidden();
-  await page.waitForTimeout(100);
-  await session.send("Page.stopScreencast");
-  const exposedFrames = renderedFrames.filter(
-    (frame): frame is { image: Buffer; state: DismissalFrame & { bootOpacity: number } } =>
-      Boolean(frame.state && frame.state.bootOpacity < 0.99),
-  );
-  expect(exposedFrames.length).toBeGreaterThanOrEqual(1);
-  for (const frame of exposedFrames) {
-    const metadata = await sharp(frame.image).metadata();
-    expect(metadata.width).toBe(frame.state.viewport.width);
-    expect(metadata.height).toBe(frame.state.viewport.height);
-    expectDismissalFrameGeometry(frame.state, { settings: false });
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    const navigationFrame = renderedFrames.length;
+    const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
+    await expect(bootScreen).toBeHidden();
+    await page.waitForTimeout(100);
+    const stableFrame = await page.screenshot();
+    await session.send("Page.stopScreencast");
+    await expectCapturedFramesToMatchStableReveal(
+      renderedFrames.slice(navigationFrame),
+      stableFrame,
+    );
+
+    await page.unroute("**/wallpapers/tienos-default.jpg");
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(bootScreen).toBeHidden();
+    await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "Battery full" })).toBeVisible();
+    const noScriptFont = await page
+      .locator("body")
+      .evaluate((element) => getComputedStyle(element).fontFamily);
+    expect(noScriptFont).not.toMatch(/(^|,\s*)(serif|"?Times New Roman"?|Times)(,|$)/i);
+    await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("position", "fixed");
+    const wallpaper = page.locator(".tienos-wallpaper");
+    const vignette = page.locator(".tienos-vignette");
+    await expect(wallpaper).toHaveCSS("filter", "saturate(1.08)");
+    await expect(wallpaper).not.toHaveCSS("transform", "none");
+    const wallpaperState = await wallpaper.evaluate((element) => {
+      const styles = getComputedStyle(element);
+      const matrix = new DOMMatrixReadOnly(styles.transform);
+      return { scale: styles.scale, transformScale: matrix.a };
+    });
+    expect(wallpaperState.scale).toBe("none");
+    expect(wallpaperState.transformScale).toBeCloseTo(1.02);
+    await expect(vignette).toHaveCSS("background-image", /linear-gradient.*radial-gradient/);
+    const menuBarSurface = page.locator("[data-menu-bar-surface]");
+    await expect(menuBarSurface).toHaveCSS("backdrop-filter", "none");
+    await expect(menuBarSurface).toHaveCSS("background-image", "none");
+    await expect(menuBarSurface).toHaveCSS("border-radius", "0px");
+    await expect(menuBarSurface).toHaveCSS("box-shadow", "none");
+    await expect(page.getByRole("navigation", { name: "tienOS menu bar" })).toHaveCSS(
+      "text-shadow",
+      "rgba(0, 0, 0, 0.4) 0px 1px 3px",
+    );
+
+    await context.close();
   }
-  await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
-  await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
-  await expect(page.getByRole("img", { name: "Battery full" })).toBeVisible();
-  const noScriptFont = await page.locator("body").evaluate((element) => getComputedStyle(element).fontFamily);
-  expect(noScriptFont).not.toMatch(/(^|,\s*)(serif|"?Times New Roman"?|Times)(,|$)/i);
-  await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("position", "fixed");
-  const wallpaper = page.locator(".tienos-wallpaper");
-  const vignette = page.locator(".tienos-vignette");
-  await expect(wallpaper).toHaveCSS("filter", "saturate(1.08)");
-  await expect(wallpaper).not.toHaveCSS("transform", "none");
-  const wallpaperState = await wallpaper.evaluate((element) => {
-    const styles = getComputedStyle(element);
-    const matrix = new DOMMatrixReadOnly(styles.transform);
-    return { scale: styles.scale, transformScale: matrix.a };
-  });
-  expect(wallpaperState.scale).toBe("none");
-  expect(wallpaperState.transformScale).toBeCloseTo(1.02);
-  await expect(vignette).toHaveCSS("background-image", /linear-gradient.*radial-gradient/);
-  const menuBarSurface = page.locator("[data-menu-bar-surface]");
-  await expect(menuBarSurface).toHaveCSS("backdrop-filter", "none");
-  await expect(menuBarSurface).toHaveCSS("background-image", "none");
-  await expect(menuBarSurface).toHaveCSS("border-radius", "0px");
-  await expect(menuBarSurface).toHaveCSS("box-shadow", "none");
-  await expect(page.getByRole("navigation", { name: "tienOS menu bar" })).toHaveCSS(
-    "text-shadow",
-    "rgba(0, 0, 0, 0.4) 0px 1px 3px",
-  );
-
-  await context.close();
 });
 
 test("opens System Settings by default and supports close and reopen", async ({ page }) => {
