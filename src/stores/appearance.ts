@@ -63,11 +63,19 @@ function resolveTheme(mode: AppearanceMode): ResolvedTheme {
   return mode === "auto" ? systemTheme() : mode;
 }
 
-function applyTheme(mode: AppearanceMode, resolvedTheme: ResolvedTheme) {
+function applyTheme(mode: AppearanceMode, resolvedTheme: ResolvedTheme, wallpaperReady = true) {
   if (typeof document === "undefined") return;
+  if (!wallpaperReady) {
+    document.documentElement.dataset.wallpaperFallback = resolvedTheme;
+    document.documentElement.style.setProperty("--tienos-wallpaper", "none");
+  }
   document.documentElement.dataset.appearance = mode;
   document.documentElement.dataset.theme = resolvedTheme;
   document.documentElement.style.colorScheme = resolvedTheme;
+  if (wallpaperReady) {
+    delete document.documentElement.dataset.wallpaperFallback;
+    document.documentElement.style.removeProperty("--tienos-wallpaper");
+  }
   document
     .querySelector<HTMLMetaElement>('meta[name="theme-color"]')
     ?.setAttribute("content", resolvedTheme === "dark" ? "#07121d" : "#dbeafe");
@@ -81,6 +89,7 @@ type AppearanceState = {
   mode: AppearanceMode;
   pendingMode: AppearanceMode | null;
   resolvedTheme: ResolvedTheme;
+  wallpaperReady: boolean;
   setMode: (mode: AppearanceMode) => Promise<boolean>;
   syncSystemTheme: () => void;
 };
@@ -89,6 +98,7 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
   mode: initialMode,
   pendingMode: null,
   resolvedTheme: initialTheme,
+  wallpaperReady: true,
   setMode: (mode) => {
     const resolvedTheme = resolveTheme(mode);
     const request = ++themeRequest;
@@ -96,7 +106,7 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
       if (request !== themeRequest) return false;
       persistAppearance(mode);
       applyTheme(mode, resolvedTheme);
-      set({ mode, pendingMode: null, resolvedTheme });
+      set({ mode, pendingMode: null, resolvedTheme, wallpaperReady: true });
       return true;
     };
     const rollback = () => {
@@ -104,7 +114,7 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
       return false;
     };
     if (
-      resolvedTheme === get().resolvedTheme ||
+      (resolvedTheme === get().resolvedTheme && get().wallpaperReady) ||
       typeof Image === "undefined" ||
       !("decode" in Image.prototype)
     ) {
@@ -120,16 +130,20 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
     const request = ++themeRequest;
     if (typeof Image === "undefined" || !("decode" in Image.prototype)) {
       applyTheme("auto", resolvedTheme);
-      set({ resolvedTheme });
+      set({ resolvedTheme, wallpaperReady: true });
       return;
     }
     void decodeWallpaper(resolvedTheme).then(
       () => {
         if (request !== themeRequest || get().mode !== "auto") return;
         applyTheme("auto", resolvedTheme);
-        set({ resolvedTheme });
+        set({ resolvedTheme, wallpaperReady: true });
       },
-      () => undefined,
+      () => {
+        if (request !== themeRequest || get().mode !== "auto") return;
+        applyTheme("auto", resolvedTheme, false);
+        set({ resolvedTheme, wallpaperReady: false });
+      },
     );
   },
 }));

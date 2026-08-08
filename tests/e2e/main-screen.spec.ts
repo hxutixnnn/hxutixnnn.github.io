@@ -1658,6 +1658,23 @@ for (const colorScheme of ["dark", "light"] as const) {
   }
 }
 
+for (const viewport of startupViewports) {
+  test(`matches the representative Light application on ${viewport.name}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await page.clock.setFixedTime(new Date("2026-08-08T12:34:56Z"));
+    await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
+    await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("light")));
+    await page.goto("/");
+    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-light\.jpg/);
+    await expect(page).toHaveScreenshot(`light-wallpaper-${viewport.name}.png`, {
+      animations: "disabled",
+      caret: "hide",
+    });
+  });
+}
+
 test("opens System Settings by default and supports close and reopen", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
@@ -2453,6 +2470,7 @@ test.describe("appearance modes", () => {
 
     await modes.getByRole("radio", { name: "Light" }).click();
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(modes.getByRole("radio", { name: "Light" })).toBeFocused();
     await page.emulateMedia({ colorScheme: "dark" });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
     await page.reload();
@@ -2495,26 +2513,31 @@ test.describe("appearance modes", () => {
     await page.goto("/");
     await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
     await page.emulateMedia({ colorScheme: "light" });
-    await page.waitForTimeout(100);
     await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
-    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator(":root")).toHaveAttribute("data-wallpaper-fallback", "light");
+    await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", "none");
+    await expect(page.getByRole("main", { name: "tienOS desktop" })).toHaveCSS(
+      "background-color",
+      "rgb(219, 234, 254)",
+    );
 
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
     await page.getByRole("menuitem", { name: "System Settings…" }).click();
     await page.getByRole("button", { name: "Appearance" }).click();
 
-    await page
+    const lightMode = page
       .getByRole("radiogroup", { name: "Appearance mode" })
-      .getByRole("radio", { name: "Light" })
-      .click();
-    await page.waitForTimeout(100);
+      .getByRole("radio", { name: "Light" });
+    await lightMode.click();
 
     await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
-    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
-    await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-default\.jpg/);
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", "none");
     await expect(
       page.getByRole("radiogroup", { name: "Appearance mode" }).getByRole("radio", { name: "Auto" }),
     ).toBeChecked();
+    await expect(lightMode).toBeFocused();
     await expect
       .poll(() => page.evaluate(() => localStorage.getItem("tienos-appearance")))
       .toBe(JSON.stringify("auto"));

@@ -560,10 +560,9 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
                   aria-label="Appearance style"
                 >
                   <RadioGroup
-                    key={pendingAppearanceMode ?? "idle"}
                     className="flex justify-end gap-3 max-[520px]:flex-col max-[520px]:items-start"
                     aria-label="Appearance mode"
-                    value={appearanceMode}
+                    value={pendingAppearanceMode ?? appearanceMode}
                     onValueChange={(mode) => void setAppearanceMode(mode)}
                   >
                     {(["auto", "light", "dark"] satisfies AppearanceMode[]).map((mode) => (

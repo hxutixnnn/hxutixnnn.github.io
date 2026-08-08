@@ -29,3 +29,17 @@ assets:
     copyright: Copyright 2026 Fonticons, Inc.
     modified: Combined the 34 required Classic Solid SVG icons into one local symbol sprite; paths are unchanged.
     sha256: 2239f1a8108cb8dcfb81c8165fc70dbf74f8199abea0873d5d04780b59d9d99b
+  - path: tests/e2e/main-screen.spec.ts-snapshots/light-wallpaper-desktop-chromium-linux.png
+    author: tienOS contributors; Paweł Czerwiński; Fonticons, Inc.
+    source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
+    license: MIT for original interface; Unsplash License for wallpaper; Font Awesome Pro Commercial License for icons
+    copyright: Interface Copyright tienOS contributors; wallpaper Copyright Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
+    modified: Deterministic Playwright visual baseline captured at 1440x900 for Light wallpaper review.
+    sha256: deefab2828582ccadc4da02cbc8ae62a2fd2d1b37f0c0b7d267daa28620fa5e6
+  - path: tests/e2e/main-screen.spec.ts-snapshots/light-wallpaper-mobile-chromium-linux.png
+    author: tienOS contributors; Paweł Czerwiński; Fonticons, Inc.
+    source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
+    license: MIT for original interface; Unsplash License for wallpaper; Font Awesome Pro Commercial License for icons
+    copyright: Interface Copyright tienOS contributors; wallpaper Copyright Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
+    modified: Deterministic Playwright visual baseline captured at 320x568 for Light wallpaper review.
+    sha256: 7bcbce33bf9b51fdcdc5e400c99c91c6cee31865579fe4fc48d7de07a2cfe306
