@@ -87,7 +87,7 @@ async function touchDrag(session: CDPSession, from: { x: number; y: number }, to
 }
 
 async function readCenterPixel(element: Locator) {
-  const screenshot = await element.screenshot();
+  const screenshot = await element.screenshot({ animations: "disabled" });
   const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
   const offset = (Math.floor(info.height / 2) * info.width + Math.floor(info.width / 2)) * info.channels;
   return Array.from(data.subarray(offset, offset + 3));
@@ -307,6 +307,100 @@ test("uses opaque menu surfaces with reduced transparency", async ({ page }) => 
   await expect(page.locator(".settings-window")).toHaveCSS("backdrop-filter", "none");
   await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("backdrop-filter", "none");
   await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+});
+
+test("menu popup families are translucent and wallpaper-responsive", async ({ page }, testInfo) => {
+  test.setTimeout(150_000);
+  for (const theme of ["dark", "light"] as const) {
+    await page.addInitScript(
+      (mode) => localStorage.setItem("tienos-appearance", JSON.stringify(mode)),
+      theme,
+    );
+    await page.goto("/");
+    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+
+    const wallpaper = page.locator(".tienos-wallpaper");
+    const sampleAgainstWallpapers = async (popup: Locator, family: string) => {
+      const samples: number[][] = [];
+      for (const color of [
+        ["dark", "rgb(8 16 28)"],
+        ["midtone", "rgb(68 116 148)"],
+        ["bright", "rgb(232 242 250)"],
+      ].map(([, color]) => color)) {
+        await wallpaper.evaluate((node, value) => {
+          (node as HTMLElement).style.setProperty("background", value, "important");
+        }, color);
+        samples.push(await readCenterPixel(popup));
+      }
+      const darkToBright = samples[2].reduce(
+        (sum, channel, index) => sum + Math.abs(channel - samples[0][index]),
+        0,
+      );
+      // A submenu is composited over its translucent parent near their shared edge, so its
+      // wallpaper signal is intentionally subtler than either top-level family.
+      const minimumResponse = family === "submenu" ? 2 : 45;
+      expect(darkToBright, `${theme} ${family} should transmit wallpaper color`).toBeGreaterThan(
+        minimumResponse,
+      );
+      const reviewRegion = family === "system" ? "dark" : family === "submenu" ? "midtone" : "bright";
+      const reviewColor =
+        reviewRegion === "dark"
+          ? "rgb(8 16 28)"
+          : reviewRegion === "midtone"
+            ? "rgb(68 116 148)"
+            : "rgb(232 242 250)";
+      await wallpaper.evaluate((node, value) => {
+        (node as HTMLElement).style.setProperty("background", value, "important");
+      }, reviewColor);
+      await page.screenshot({
+        animations: "disabled",
+        path: testInfo.outputPath(`popup-${theme}-${family}-${reviewRegion}.png`),
+      });
+    };
+
+    await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+    const systemPopup = page.locator(".tienos-menu-popup:visible").first();
+    await expect(systemPopup).toHaveCSS("background-color", /rgba\(.+, 0\.(58|62)\)/);
+    await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
+    await sampleAgainstWallpapers(systemPopup, "system");
+
+    await page.getByRole("menuitem", { name: "Recent Items" }).hover();
+    const submenuPopup = page.locator(".tienos-menu-popup:visible").last();
+    await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
+    await sampleAgainstWallpapers(submenuPopup, "submenu");
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+
+    await page.getByRole("menuitem", { name: "Navigator" }).click();
+    const navigatorPopup = page.locator(".tienos-menu-popup:visible");
+    await sampleAgainstWallpapers(navigatorPopup, "navigator");
+    await page.keyboard.press("Escape");
+  }
+});
+
+test("high contrast keeps popup surfaces opaque and legible", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setEmulatedMedia", {
+    features: [{ name: "prefers-contrast", value: "more" }],
+  });
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden({ timeout: 10_000 });
+  await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+
+  const popup = page.locator(".tienos-menu-popup:visible");
+  await expect(popup).toHaveCSS("background-color", "rgb(20, 27, 36)");
+  await expect(popup).toHaveCSS("background-image", "none");
+  await expect(page.getByRole("menuitem", { name: "System Settings…" })).toHaveCSS(
+    "color",
+    "rgba(255, 255, 255, 0.9)",
+  );
+  await expect(page.getByRole("menuitem", { name: "No Recent Items" })).toHaveCount(0);
+  await page.getByRole("menuitem", { name: "Recent Items" }).hover();
+  await expect(page.getByRole("menuitem", { name: "No Recent Items" })).toHaveCSS(
+    "color",
+    "rgba(255, 255, 255, 0.62)",
+  );
 });
 
 test("restores the pre-PR-16 menu bar while Settings carries layered glass", async ({ page }, testInfo) => {
@@ -671,7 +765,7 @@ test("supports menu popup keyboard navigation, activation, focus return, and dis
   const systemPopup = page.locator(".tienos-menu-popup:visible");
   await expect(systemPopup).toHaveCount(1);
   await expect(systemPopup).toHaveCSS("background-image", /linear-gradient/);
-  await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+  await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
   await expect(page.getByRole("menuitem", { name: "About This OS" })).toHaveAttribute("data-highlighted", "");
   await page.keyboard.press("Enter");
   await expect(systemPopup).toBeHidden();
@@ -687,7 +781,7 @@ test("supports menu popup keyboard navigation, activation, focus return, and dis
   const submenuPopup = page.locator(".tienos-menu-popup:visible").last();
   await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
   await expect(submenuPopup).toHaveCSS("background-image", /linear-gradient/);
-  await expect(submenuPopup).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+  await expect(submenuPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
   await expect(page.getByRole("menuitem", { name: "No Recent Items" })).toHaveAttribute(
     "aria-disabled",
     "true",
@@ -709,7 +803,7 @@ test("supports menu popup keyboard navigation, activation, focus return, and dis
   const navigatorPopup = page.locator(".tienos-menu-popup:visible");
   await expect(navigatorPopup).toHaveCount(1);
   await expect(navigatorPopup).toHaveCSS("background-image", /linear-gradient/);
-  await expect(navigatorPopup).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+  await expect(navigatorPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
   await expect(page.getByRole("menuitem", { name: "About Navigator" })).toHaveAttribute(
     "data-highlighted",
     "",
@@ -739,7 +833,7 @@ test("supports compact touch menu popups, submenu collision, activation, and dis
     await expect(popup).toBeVisible();
     await expect(popup).toHaveCSS("border-radius", "14px");
     await expect(popup).toHaveCSS("background-image", /linear-gradient/);
-    await expect(popup).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+    await expect(popup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
     const bounds = await popup.boundingBox();
     expect(bounds!.x).toBeGreaterThanOrEqual(7);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(313);
