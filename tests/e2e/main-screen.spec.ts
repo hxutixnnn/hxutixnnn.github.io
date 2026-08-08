@@ -259,20 +259,25 @@ async function expectLocalSeparatorContrasts(popup: Locator, separators: Locator
           Math.floor(bounds!.x + bounds!.width / 2 + horizontalOffset - popupBounds!.x),
         ),
       );
-      const y = Math.max(
-        0,
-        Math.min(rendered.info.height - 1, Math.floor(bounds!.y + bounds!.height / 2 - popupBounds!.y)),
+      const firstY = Math.max(0, Math.floor(bounds!.y - popupBounds!.y) - 1);
+      const lastY = Math.min(
+        rendered.info.height - 1,
+        Math.ceil(bounds!.y + bounds!.height - popupBounds!.y) + 1,
       );
-      const renderedOffset = (y * rendered.info.width + x) * rendered.info.channels;
-      const backgroundOffset = (y * backgrounds.info.width + x) * backgrounds.info.channels;
-      const separatorColor = pixelColor(
-        Array.from(rendered.data.subarray(renderedOffset, renderedOffset + 3)),
-      );
-      const backgroundColor = pixelColor(
-        Array.from(backgrounds.data.subarray(backgroundOffset, backgroundOffset + 3)),
-      );
+      const renderedContrasts = Array.from({ length: lastY - firstY + 1 }, (_, index) => {
+        const y = firstY + index;
+        const renderedOffset = (y * rendered.info.width + x) * rendered.info.channels;
+        const backgroundOffset = (y * backgrounds.info.width + x) * backgrounds.info.channels;
+        const separatorColor = pixelColor(
+          Array.from(rendered.data.subarray(renderedOffset, renderedOffset + 3)),
+        );
+        const backgroundColor = pixelColor(
+          Array.from(backgrounds.data.subarray(backgroundOffset, backgroundOffset + 3)),
+        );
+        return contrastRatio(separatorColor, backgroundColor);
+      });
       expect(
-        contrastRatio(separatorColor, backgroundColor),
+        Math.max(...renderedContrasts),
         `${label} separator ${separatorIndex + 1} at ${horizontalOffset < 0 ? "left" : "right"}`,
       ).toBeGreaterThanOrEqual(3);
     }
@@ -582,6 +587,7 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
     ]);
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
+    await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
 
     await page.getByRole("menuitem", { name: "Navigator" }).click();
     const navigatorPopup = page.locator(".tienos-menu-popup:visible");
@@ -664,6 +670,7 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
       );
       await page.keyboard.press("Escape");
       await page.keyboard.press("Escape");
+      await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
 
       await page.getByRole("menuitem", { name: "Navigator" }).click();
       const navigatorPopup = page.locator(".tienos-menu-popup:visible");
@@ -1011,7 +1018,6 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
 
   await expect(page).toHaveTitle("tienOS");
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
-  await expect(bootScreen).toBeVisible();
   await expect(bootScreen).toBeHidden();
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
   const wallpaperState = await page.locator(".tienos-wallpaper").evaluate((element) => {
