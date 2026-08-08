@@ -7,6 +7,8 @@
   --tienos-space-6: 32px;
   --tienos-space-7: 48px;
 
+  --tienos-safe-area-bottom: env(safe-area-inset-bottom);
+
   --tienos-type-caption: 11px;
   --tienos-type-secondary: 12px;
   --tienos-type-body: 13px;

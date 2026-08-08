@@ -99,6 +99,13 @@ function readViewport(): Viewport {
   return { width: window.innerWidth, height: window.innerHeight };
 }
 
+function readSafeAreaBottom() {
+  const value = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue("--tienos-safe-area-bottom"),
+  );
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
 }
@@ -258,8 +265,9 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
       const nextViewport = readViewport();
       const nextMenuBottom = menuBar?.getBoundingClientRect().bottom ?? 0;
       const measuredDockTop = dock?.getBoundingClientRect().top ?? nextViewport.height;
+      const safeAreaBoundary = nextViewport.height - readSafeAreaBottom();
       const nextBottomBoundary = Math.floor(
-        measuredDockTop > nextMenuBottom ? measuredDockTop : nextViewport.height,
+        measuredDockTop > nextMenuBottom ? Math.min(measuredDockTop, safeAreaBoundary) : safeAreaBoundary,
       );
       const nextCompact = nextViewport.width <= compactBreakpoint;
       const modeChanged = compactRef.current !== nextCompact;
