@@ -103,7 +103,7 @@ export function cancelResolvedThemeTransition() {
 }
 
 /** Atomically changes all theme-owned document state behind one document-wide composition. */
-export async function transitionResolvedTheme(commit: () => void, isCurrent = () => true) {
+export async function transitionResolvedTheme(commit: () => void, isCurrent = () => true, animate = true) {
   const request = ++generation;
   clearActive();
 
@@ -114,7 +114,7 @@ export async function transitionResolvedTheme(commit: () => void, isCurrent = ()
     return true;
   };
 
-  if (!animationIsSafe() || !document.querySelector('main[aria-label="tienOS desktop"]')) {
+  if (!animate || !animationIsSafe() || !document.querySelector('main[aria-label="tienOS desktop"]')) {
     if (canCommit()) commitWithoutDescendantTransitions(commit);
     return;
   }

@@ -2,7 +2,7 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { App } from "./App";
 import "./styles.css";
-import { wallpaperByTheme, type ResolvedTheme } from "./stores/appearance";
+import { useAppearanceStore, wallpaperByTheme, type ResolvedTheme } from "./stores/appearance";
 
 const root = document.getElementById("root");
 
@@ -82,6 +82,11 @@ const assetReadiness = Promise.all([applicationStylesReady, loadWallpaper(), loa
 const desktopAssetsReady = bootController
   ? Promise.race([assetReadiness, bootController.released])
   : assetReadiness;
+const desktopReady = Promise.all([assetReadiness, bootController?.released ?? Promise.resolve()]).then(() =>
+  useAppearanceStore.getState().markDesktopReady(),
+);
+
+void desktopReady;
 
 async function mountApplication() {
   const stylesReady = bootController

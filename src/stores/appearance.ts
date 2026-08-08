@@ -87,19 +87,23 @@ const initialTheme = resolveTheme(initialMode);
 applyTheme(initialMode, initialTheme);
 
 type AppearanceState = {
+  desktopReady: boolean;
   mode: AppearanceMode;
   pendingMode: AppearanceMode | null;
   resolvedTheme: ResolvedTheme;
   wallpaperReady: boolean;
+  markDesktopReady: () => void;
   setMode: (mode: AppearanceMode) => Promise<boolean>;
   syncSystemTheme: () => void;
 };
 
 export const useAppearanceStore = create<AppearanceState>((set, get) => ({
+  desktopReady: false,
   mode: initialMode,
   pendingMode: null,
   resolvedTheme: initialTheme,
   wallpaperReady: true,
+  markDesktopReady: () => set({ desktopReady: true }),
   setMode: (mode) => {
     const resolvedTheme = resolveTheme(mode);
     const request = ++themeRequest;
@@ -117,7 +121,7 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
         set({ mode, pendingMode: null, resolvedTheme, wallpaperReady: true });
       };
       if (changesResolvedTheme) {
-        await transitionResolvedTheme(apply, () => request === themeRequest);
+        await transitionResolvedTheme(apply, () => request === themeRequest, get().desktopReady);
       } else apply();
       return request === themeRequest;
     };
@@ -154,7 +158,11 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
         set({ resolvedTheme, wallpaperReady });
       };
       if (resolvedTheme !== get().resolvedTheme) {
-        void transitionResolvedTheme(apply, () => request === themeRequest && get().mode === "auto");
+        void transitionResolvedTheme(
+          apply,
+          () => request === themeRequest && get().mode === "auto",
+          get().desktopReady,
+        );
       } else apply();
     };
     if (typeof Image === "undefined" || !("decode" in Image.prototype)) {

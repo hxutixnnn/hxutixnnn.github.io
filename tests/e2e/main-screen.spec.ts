@@ -1662,6 +1662,77 @@ for (const asset of paintCriticalAssets) {
   }
 }
 
+test("applies pre-ready Auto changes directly and animates after reveal", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("tienos-appearance", JSON.stringify("auto"));
+    const tracker = { count: 0 };
+    Object.defineProperty(window, "themeTransitionStarts", { configurable: true, value: tracker });
+    type TransitionDocument = Document & {
+      startViewTransition?: (update: () => void | Promise<void>) => {
+        finished: Promise<void>;
+        ready: Promise<void>;
+        skipTransition: () => void;
+      };
+    };
+    const transitionDocument = document as TransitionDocument;
+    const startViewTransition = transitionDocument.startViewTransition?.bind(document);
+    if (startViewTransition) {
+      transitionDocument.startViewTransition = (update) => {
+        tracker.count += 1;
+        return startViewTransition(update);
+      };
+    }
+  });
+  await page.emulateMedia({ colorScheme: "light" });
+  const lightWallpaperGate = createDelayGate();
+  let lightWallpaperIntercepted = false;
+  await page.route("**/wallpapers/tienos-light.jpg", async (route) => {
+    lightWallpaperIntercepted = true;
+    await lightWallpaperGate.blocked;
+    await route.continue();
+  });
+  await page.route("**/wallpapers/tienos-default.jpg", (route) => route.abort("failed"));
+
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await expect.poll(() => lightWallpaperIntercepted).toBe(true);
+  const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
+  await expect(bootScreen).toBeVisible();
+  await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
+
+  await page.emulateMedia({ colorScheme: "dark" });
+  await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator(":root")).toHaveAttribute("data-wallpaper-fallback", "dark");
+  await expect(page.locator('[data-theme-transition-layer="old"]')).toHaveCount(0);
+  expect(
+    await page.evaluate(
+      () =>
+        (window as typeof window & { themeTransitionStarts: { count: number } }).themeTransitionStarts.count,
+    ),
+  ).toBe(0);
+
+  lightWallpaperGate.release();
+  await expect(bootScreen).toBeHidden();
+  await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
+  await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", "none");
+
+  await armThemeAnimationPause(page);
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (window as typeof window & { themeTransitionStarts: { count: number } }).themeTransitionStarts
+            .count,
+      ),
+    )
+    .toBe(1);
+  await waitForThemeAnimations(page);
+  expectProductionThemeAnimations(await pauseThemeAnimationsAtMidpoint(page));
+  await finishThemeAnimations(page);
+});
+
 for (const startupViewport of startupViewports) {
   test(`releases the static desktop when styles fail on ${startupViewport.name}`, async ({ page }) => {
     await page.setViewportSize(startupViewport);
