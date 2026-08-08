@@ -324,6 +324,7 @@ async function readCenterPixel(element: Locator) {
 }
 
 test("applies design-system tokens to component styles", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
