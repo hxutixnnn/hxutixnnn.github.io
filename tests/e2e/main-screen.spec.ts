@@ -985,7 +985,7 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
   }
 });
 
-test("restores the pre-PR-16 menu bar while Settings carries layered glass", async ({ page }, testInfo) => {
+test("keeps Settings on one continuous glass field with a floating sidebar", async ({ page }, testInfo) => {
   for (const theme of ["dark", "light"] as const) {
     await page.addInitScript(
       (mode) => localStorage.setItem("tienos-appearance", JSON.stringify(mode)),
@@ -1010,8 +1010,14 @@ test("restores the pre-PR-16 menu bar while Settings carries layered glass", asy
     await expect(sidebar).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
     await expect(shell).toHaveCSS("background-image", /linear-gradient/);
     await expect(sidebar).toHaveCSS("background-image", /linear-gradient/);
-    await expect(detail).toHaveCSS("background-image", /linear-gradient/);
-    await page.screenshot({ path: testInfo.outputPath(`settings-glass-${theme}.png`) });
+    await expect(sidebar).toHaveCSS("border-radius", "16px");
+    await expect(detail).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(detail).toHaveCSS("background-image", "none");
+    await expect(detail).toHaveCSS("box-shadow", "none");
+    const splitter = page.getByRole("separator", { name: "Resize Settings sidebar" });
+    await expect(splitter).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await expect(splitter.locator("[data-splitter-grip]")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await page.screenshot({ path: testInfo.outputPath(`settings-seamless-${theme}.png`) });
   }
 
   const shell = page.locator(".settings-window");
@@ -1985,6 +1991,10 @@ test("resizes the Settings sidebar with mouse, keyboard, touch, and responsive b
   const splitter = page.getByRole("separator", { name: "Resize Settings sidebar" });
   await expect(splitter).toHaveAttribute("aria-orientation", "vertical");
   const initialValue = Number(await splitter.getAttribute("aria-valuenow"));
+  const grip = splitter.locator("[data-splitter-grip]");
+  await expect(grip).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+  await splitter.hover();
+  await expect(grip).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
   const splitterBounds = await splitter.boundingBox();
   await page.mouse.move(splitterBounds!.x + 4, splitterBounds!.y + 120);
   await page.mouse.down();
@@ -1993,6 +2003,7 @@ test("resizes the Settings sidebar with mouse, keyboard, touch, and responsive b
   expect(Number(await splitter.getAttribute("aria-valuenow"))).toBeGreaterThan(initialValue);
 
   await splitter.focus();
+  await expect(grip).not.toHaveCSS("box-shadow", "none");
   await page.keyboard.press("Home");
   expect(await splitter.getAttribute("aria-valuenow")).toBe(await splitter.getAttribute("aria-valuemin"));
   await page.keyboard.press("End");
