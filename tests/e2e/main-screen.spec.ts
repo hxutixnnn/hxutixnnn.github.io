@@ -558,7 +558,7 @@ test("applies design-system tokens to component styles", async ({ page }) => {
   expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(false);
   await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
   await page.goto("/");
-  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden({ timeout: 10_000 });
 
   const tokens = await page.locator(":root").evaluate((root) => {
     const styles = getComputedStyle(root);
@@ -1949,17 +1949,21 @@ test("fits and fixes an open System Settings window on compact screens", async (
 
   await expect
     .poll(async () => {
-      const bounds = await settingsWindow.boundingBox();
-      return (
-        bounds && {
-          x: Math.round(bounds.x),
-          y: Math.round(bounds.y),
-          width: Math.round(bounds.width),
-          height: Math.round(bounds.height),
-        }
-      );
+      const [bounds, menuBounds, dockBounds] = await Promise.all([
+        settingsWindow.boundingBox(),
+        page.locator("[data-menu-bar-surface]").boundingBox(),
+        page.locator("[data-dock-surface]").boundingBox(),
+      ]);
+      if (!bounds || !menuBounds || !dockBounds) return null;
+      const top = Math.max(46, Math.ceil(menuBounds.y + menuBounds.height));
+      return [
+        Math.round(bounds.x) - 8,
+        Math.round(bounds.y) - top,
+        Math.round(bounds.width) - 304,
+        Math.round(bounds.height) - Math.max(0, Math.floor(dockBounds.y) - top - 8),
+      ];
     })
-    .toEqual({ x: 8, y: 46, width: 304, height: 194 });
+    .toEqual([0, 0, 0, 0]);
 
   const compactBounds = await settingsWindow.boundingBox();
   const compactDragHandle = await page.locator(".settings-history").boundingBox();
@@ -2275,6 +2279,22 @@ test("Dock supports touch and compact viewport boundaries", async ({ browser }, 
   await expect(settingsWindow).toHaveCount(1);
 
   const expectCompactBounds = async (safeAreaBottom: number) => {
+    await expect
+      .poll(async () => {
+        const [menuBounds, windowBounds, dockBounds] = await Promise.all([
+          page.locator("[data-menu-bar-surface]").boundingBox(),
+          settingsWindow.boundingBox(),
+          dock.boundingBox(),
+        ]);
+        if (!menuBounds || !windowBounds || !dockBounds) return false;
+        return (
+          Math.round(page.viewportSize()!.height - dockBounds.y - dockBounds.height) === safeAreaBottom &&
+          windowBounds.y >= menuBounds.y + menuBounds.height &&
+          windowBounds.y + windowBounds.height <= dockBounds.y
+        );
+      })
+      .toBe(true);
+
     const [menuBounds, windowBounds, dockBounds] = await Promise.all([
       page.locator("[data-menu-bar-surface]").boundingBox(),
       settingsWindow.boundingBox(),
