@@ -454,7 +454,12 @@ async function expectLocalRenderedContrasts(
   });
 }
 
-async function expectLocalSeparatorContrasts(popup: Locator, separators: Locator[], label: string) {
+async function expectLocalSeparatorTreatment(
+  popup: Locator,
+  separators: Locator[],
+  label: string,
+  treatment: "subtle" | "explicit" = "subtle",
+) {
   if (separators.length === 0) return;
   const popupBounds = await popup.boundingBox();
   expect(popupBounds).not.toBeNull();
@@ -481,6 +486,15 @@ async function expectLocalSeparatorContrasts(popup: Locator, separators: Locator
     ),
   );
   separatorBounds.forEach((bounds, separatorIndex) => {
+    expect(bounds!.height, `${label} separator ${separatorIndex + 1} should be a hairline`).toBe(1);
+    const inset = bounds!.x - popupBounds!.x;
+    if (treatment === "subtle") {
+      expect(inset, `${label} separator ${separatorIndex + 1} should be inset`).toBeGreaterThanOrEqual(12);
+      expect(
+        popupBounds!.x + popupBounds!.width - (bounds!.x + bounds!.width),
+        `${label} separator ${separatorIndex + 1} should have symmetric trailing inset`,
+      ).toBeCloseTo(inset, 0);
+    }
     for (const horizontalOffset of [-55, 55]) {
       const x = Math.max(
         0,
@@ -506,10 +520,16 @@ async function expectLocalSeparatorContrasts(popup: Locator, separators: Locator
         );
         return contrastRatio(separatorColor, backgroundColor);
       });
-      expect(
-        Math.max(...renderedContrasts),
+      const peakContrast = Math.max(...renderedContrasts);
+      const assertion = expect(
+        peakContrast,
         `${label} separator ${separatorIndex + 1} at ${horizontalOffset < 0 ? "left" : "right"}`,
-      ).toBeGreaterThanOrEqual(3);
+      );
+      if (treatment === "explicit") assertion.toBeGreaterThanOrEqual(3);
+      else {
+        assertion.toBeGreaterThanOrEqual(1.08);
+        assertion.toBeLessThan(2);
+      }
     }
   });
 }
@@ -762,7 +782,7 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
           (rightBrightness - leftBrightness) * region.direction,
           `${theme} ${family} should render the ${region.name} wallpaper boundary`,
         ).toBeGreaterThan(20);
-        await expectLocalSeparatorContrasts(
+        await expectLocalSeparatorTreatment(
           popup,
           await popup.locator('[role="separator"]').all(),
           `${theme} ${family} ${region.name}`,
@@ -881,7 +901,12 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
       await expectColorContrast(shortcut, "color", popupBackground, 3);
       await expectColorContrast(chevron, "color", popupBackground, 3);
       const systemSeparators = await systemPopup.locator('[role="separator"]').all();
-      await expectLocalSeparatorContrasts(systemPopup, systemSeparators, `${theme} ${mode.name} system`);
+      await expectLocalSeparatorTreatment(
+        systemPopup,
+        systemSeparators,
+        `${theme} ${mode.name} system`,
+        "explicit",
+      );
 
       await page.getByRole("menuitem", { name: "System Settings…" }).hover();
       const selectedItem = page.locator(".tienos-menu-item[data-highlighted]");
@@ -923,10 +948,11 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
         4.5,
       );
       const navigatorSeparators = await navigatorPopup.locator('[role="separator"]').all();
-      await expectLocalSeparatorContrasts(
+      await expectLocalSeparatorTreatment(
         navigatorPopup,
         navigatorSeparators,
         `${theme} ${mode.name} navigator`,
+        "explicit",
       );
       await page.keyboard.press("Escape");
     }
