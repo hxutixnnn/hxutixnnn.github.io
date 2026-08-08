@@ -2924,6 +2924,7 @@ test("traffic lights preserve one window through genie minimize, Dock restore, a
   page,
 }, testInfo) => {
   await page.goto("/");
+  await expect(page.locator("#root")).not.toHaveAttribute("inert");
   const window = page.getByRole("region", { name: "System Settings" });
   const dock = page.getByRole("navigation", { name: "Dock" });
   const dockApp = dock.getByRole("button", { name: "System Settings" });
@@ -2993,7 +2994,7 @@ test("traffic lights preserve one window through genie minimize, Dock restore, a
   );
 });
 
-test("each traffic light accepts genuine touch activation", async ({ browser }) => {
+test("each traffic light accepts genuine touch activation", async ({ browser }, testInfo) => {
   const context = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } });
   const page = await context.newPage();
   await page.goto("/");
@@ -3006,6 +3007,7 @@ test("each traffic light accepts genuine touch activation", async ({ browser }) 
     "aria-pressed",
     "true",
   );
+  await page.screenshot({ path: testInfo.outputPath("settings-touch-fullscreen.png") });
   await page.getByRole("button", { name: "Minimize System Settings" }).tap();
   await expect(page.getByRole("region", { name: "System Settings" })).toBeHidden();
   await dockApp.tap();
@@ -3048,4 +3050,137 @@ test("genie transition is interruptible and reduced motion bypasses warping", as
   await expect(page.getByRole("navigation", { name: "Dock" }).getByRole("status")).toHaveText(
     "System Settings is running and minimized",
   );
+});
+
+test("fullscreen preserves window identity, keyboard focus, scroll, and live usable geometry", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("#root")).not.toHaveAttribute("inert");
+  const window = page.getByRole("region", { name: "System Settings" });
+  const fullscreen = page.getByRole("button", { name: "Toggle fullscreen System Settings" });
+  const details = page.locator('.settings-scroll-viewport[aria-label="Settings details"]');
+  await window.evaluate((element) => (element.dataset.testIdentity = "original"));
+  await details.evaluate((element) => (element.scrollTop = 96));
+  const scrollTop = await details.evaluate((element) => element.scrollTop);
+
+  await fullscreen.focus();
+  await fullscreen.press("Enter");
+  await expect(fullscreen).toBeFocused();
+  await expect(window).toHaveAttribute("data-test-identity", "original");
+
+  await page.setViewportSize({ width: 1180, height: 760 });
+  await expect
+    .poll(async () => {
+      const box = await window.boundingBox();
+      const menuBottom = await page
+        .locator("[data-menu-bar-surface]")
+        .evaluate((element) => Math.ceil(element.getBoundingClientRect().bottom));
+      const dockTop = await page
+        .locator("[data-dock-surface]")
+        .evaluate((element) => Math.floor(element.getBoundingClientRect().top));
+      return (
+        box !== null &&
+        Math.abs(box.x) <= 1 &&
+        Math.abs(box.y - menuBottom) <= 1 &&
+        Math.abs(box.width - 1180) <= 1 &&
+        Math.abs(box.height - (dockTop - menuBottom)) <= 1
+      );
+    })
+    .toBe(true);
+  await page.locator("[data-dock-surface]").evaluate((dock) => (dock.style.bottom = "90px"));
+  await expect
+    .poll(async () => {
+      const height = (await window.boundingBox())?.height;
+      const expected = await page
+        .locator("[data-dock-surface]")
+        .evaluate((element) => Math.floor(element.getBoundingClientRect().top) - 30);
+      return height !== undefined && Math.abs(height - expected) <= 1;
+    })
+    .toBe(true);
+
+  await fullscreen.press("Enter");
+  await expect(fullscreen).toBeFocused();
+  await expect(window).toHaveAttribute("data-test-identity", "original");
+  expect(await details.evaluate((element) => element.scrollTop)).toBe(scrollTop);
+});
+
+test("transition state is inert, tracks Dock movement, and repeated activation stays deterministic", async ({
+  page,
+}, testInfo) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await expect(page.locator("#root")).not.toHaveAttribute("inert");
+  const window = page.locator("[data-genie-window]");
+  const dock = page.getByRole("navigation", { name: "Dock" });
+  const dockApp = dock.getByRole("button", { name: "System Settings" });
+
+  await page.mouse.click(1400, 400);
+  await page.screenshot({ path: testInfo.outputPath("settings-inactive.png") });
+  await page.getByPlaceholder("Search").click();
+  await page.screenshot({ path: testInfo.outputPath("settings-active.png") });
+  const minimizing = await page
+    .getByRole("button", { name: "Minimize System Settings" })
+    .evaluate((button: HTMLButtonElement) => {
+      button.click();
+      return new Promise<{ visibility: string | undefined; hidden: string | null; inert: boolean }>(
+        (resolve) =>
+          requestAnimationFrame(() => {
+            const element = document.querySelector<HTMLElement>("[data-genie-window]")!;
+            resolve({
+              visibility: element.dataset.windowVisibility,
+              hidden: element.getAttribute("aria-hidden"),
+              inert: element.inert,
+            });
+          }),
+      );
+    });
+  expect(minimizing).toEqual({ visibility: "minimizing", hidden: "true", inert: true });
+  const originalTarget = await window.evaluate((element) =>
+    getComputedStyle(element).getPropertyValue("--genie-y"),
+  );
+  await page.locator("[data-dock-surface]").evaluate((element) => (element.style.bottom = "120px"));
+  await page.waitForTimeout(50);
+  expect(
+    await window.evaluate((element) => getComputedStyle(element).getPropertyValue("--genie-y")),
+  ).not.toBe(originalTarget);
+
+  const activateTwiceAndReadWindow = (button: HTMLButtonElement) => {
+    button.click();
+    return new Promise<Array<{ visibility: string | undefined; hidden: string | null; inert: boolean }>>(
+      (resolve) =>
+        requestAnimationFrame(() => {
+          const element = document.querySelector<HTMLElement>("[data-genie-window]")!;
+          const first = {
+            visibility: element.dataset.windowVisibility,
+            hidden: element.getAttribute("aria-hidden"),
+            inert: element.inert,
+          };
+          button.click();
+          requestAnimationFrame(() =>
+            resolve([
+              first,
+              {
+                visibility: element.dataset.windowVisibility,
+                hidden: element.getAttribute("aria-hidden"),
+                inert: element.inert,
+              },
+            ]),
+          );
+        }),
+    );
+  };
+  const [restoring, repeated] = await dockApp.evaluate(activateTwiceAndReadWindow);
+  expect(restoring).toEqual({ visibility: "restoring", hidden: "true", inert: true });
+  expect([
+    { visibility: "restoring", hidden: "true", inert: true },
+    { visibility: "visible", hidden: null, inert: false },
+  ]).toContainEqual(repeated);
+  await expect(window).toHaveAttribute("data-window-visibility", "visible", { timeout: 1_000 });
+  await expect(window).not.toHaveAttribute("aria-hidden");
+  expect(await window.evaluate((element) => element.inert)).toBe(false);
+  await dockApp.evaluate((button: HTMLButtonElement) => button.click());
+  await expect(dock.getByRole("status")).toHaveText("System Settings is running and minimized", {
+    timeout: 1_000,
+  });
 });

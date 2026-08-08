@@ -112,12 +112,14 @@
   clip-path: none;
 }
 [data-genie-window][data-window-visibility="minimizing"],
-[data-genie-window][data-window-visibility="minimized"],
-[data-genie-window][data-window-visibility="restoring"] {
+[data-genie-window][data-window-visibility="minimized"] {
   pointer-events: none;
   opacity: 0;
   transform: translate(var(--genie-x), var(--genie-y)) scale(var(--genie-scale-x), var(--genie-scale-y));
   clip-path: polygon(43% 0, 57% 0, 100% 100%, 0 100%);
+}
+[data-genie-window][data-window-visibility="restoring"] {
+  pointer-events: none;
 }
 [data-genie-window][data-window-visibility="minimizing"] {
   animation: tienos-genie-clip 400ms cubic-bezier(0.22, 0.72, 0.18, 1) both;
@@ -135,6 +137,38 @@
 }
 [data-genie-window][data-fullscreen] {
   border-radius: 0;
+}
+.settings-light::before {
+  position: absolute;
+  top: -15.5px;
+  right: -15.5px;
+  bottom: -15.5px;
+  left: -15.5px;
+  content: "";
+}
+.settings-light:first-child::before {
+  right: -29px;
+  left: 0;
+}
+.settings-light:last-child::before {
+  right: 0;
+  left: -29px;
+}
+@media (max-width: 700px) {
+  .settings-light::before {
+    top: -16.5px;
+    right: -16.5px;
+    bottom: -16.5px;
+    left: -16.5px;
+  }
+  .settings-light:first-child::before {
+    right: -33px;
+    left: 0;
+  }
+  .settings-light:last-child::before {
+    right: 0;
+    left: -33px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   [data-genie-window] {
