@@ -24,8 +24,15 @@ import { useAppearanceStore, type AppearanceMode } from "../stores/appearance";
 
 type SystemSettingsProps = {
   focusRequest?: number;
+  minimized?: boolean;
+  minimizeRequest?: number;
+  onMinimizedChange?: (minimized: boolean) => void;
+  onVisibilityChange?: (visibility: WindowVisibility) => void;
+  onActiveChange?: (active: boolean) => void;
   onClose: () => void;
 };
+
+export type WindowVisibility = "visible" | "minimizing" | "minimized" | "restoring";
 
 type SettingCategory = {
   icon: FontAwesomeIconName;
@@ -236,7 +243,15 @@ function applyFrameDuringResize(element: HTMLElement, frame: SettingsFrame) {
   element.style.transform = `translate(${transform.e + frame.x - bounds.x}px, ${transform.f + frame.y - bounds.y}px)`;
 }
 
-export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProps) {
+export function SystemSettings({
+  focusRequest = 0,
+  minimized = false,
+  minimizeRequest = 0,
+  onMinimizedChange = () => undefined,
+  onVisibilityChange = () => undefined,
+  onActiveChange = () => undefined,
+  onClose,
+}: SystemSettingsProps) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("General");
   const appearanceMode = useAppearanceStore((state) => state.mode);
@@ -251,10 +266,18 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
   const [wallpaperTint, setWallpaperTint] = useState(true);
   const [viewport, setViewport] = useState(readViewport);
   const compact = viewport.width <= compactBreakpoint;
-  const [menuBottom, setMenuBottom] = useState(0);
+  const [menuBottom, setMenuBottom] = useState(30);
   const [bottomBoundary, setBottomBoundary] = useState(viewport.height);
   const [sidebarPercent, setSidebarPercent] = useState(() => (compact ? 40 : 30.8));
-  const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport, 0) : desktopFrame(viewport)));
+  const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport, 30) : desktopFrame(viewport)));
+  const [fullscreen, setFullscreen] = useState(false);
+  const fullscreenRef = useRef(false);
+  const normalFrameRef = useRef<SettingsFrame | null>(null);
+  const [visibility, setVisibility] = useState<WindowVisibility>(minimized ? "minimized" : "visible");
+  const animationTimerRef = useRef<number>(0);
+  const rndRef = useRef<Rnd>(null);
+  const handledFocusRequestRef = useRef(0);
+  const handledMinimizeRequestRef = useRef(0);
   const windowRef = useRef<HTMLElement>(null);
   const compactRef = useRef(compact);
   const detailsViewportRef = useRef<HTMLDivElement>(null);
@@ -279,6 +302,15 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
       setBottomBoundary(nextBottomBoundary);
       if (modeChanged) setSidebarPercent(nextCompact ? 40 : 30.8);
       setFrame((currentFrame) => {
+        if (fullscreenRef.current) {
+          const maximizedPosition = { x: 0, y: Math.ceil(nextMenuBottom) };
+          rndRef.current?.updatePosition(maximizedPosition);
+          return {
+            ...maximizedPosition,
+            width: nextViewport.width,
+            height: Math.max(0, nextBottomBoundary - Math.ceil(nextMenuBottom)),
+          };
+        }
         if (nextCompact) return compactFrame(nextViewport, nextMenuBottom, nextBottomBoundary);
         const nextFrame = modeChanged ? desktopFrame(nextViewport) : currentFrame;
         return clampFrame(nextFrame, nextViewport, nextMenuBottom, nextBottomBoundary);
@@ -299,8 +331,105 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
     if (detailsViewportRef.current) detailsViewportRef.current.scrollTop = 0;
   }, [selected]);
   useEffect(() => {
-    if (focusRequest > 0) windowRef.current?.focus({ preventScroll: true });
-  }, [focusRequest]);
+    if (focusRequest <= handledFocusRequestRef.current) return;
+    handledFocusRequestRef.current = focusRequest;
+    if (visibility === "minimizing") {
+      window.clearTimeout(animationTimerRef.current);
+      requestAnimationFrame(() => {
+        setVisibility("restoring");
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() => {
+            setVisibility("visible");
+            windowRef.current?.focus({ preventScroll: true });
+          }),
+        );
+      });
+      return;
+    }
+    if (visibility === "visible") windowRef.current?.focus({ preventScroll: true });
+  }, [focusRequest, visibility]);
+
+  const setGenieTarget = useCallback(() => {
+    const element = windowRef.current;
+    const dockIcon = document.querySelector<HTMLElement>("[data-dock-settings]");
+    if (!element || !dockIcon) return;
+    const source = element.getBoundingClientRect();
+    const target = dockIcon.getBoundingClientRect();
+    element.style.setProperty(
+      "--genie-x",
+      `${target.x + target.width / 2 - (source.x + source.width / 2)}px`,
+    );
+    element.style.setProperty(
+      "--genie-y",
+      `${target.y + target.height / 2 - (source.y + source.height / 2)}px`,
+    );
+    element.style.setProperty("--genie-scale-x", `${Math.max(0.06, target.width / source.width)}`);
+    element.style.setProperty("--genie-scale-y", `${Math.max(0.06, target.height / source.height)}`);
+  }, []);
+
+  const beginMinimize = useCallback(() => {
+    if (visibility === "minimized" || visibility === "minimizing") return;
+    window.clearTimeout(animationTimerRef.current);
+    setGenieTarget();
+    setVisibility("minimizing");
+    animationTimerRef.current = window.setTimeout(
+      () => {
+        setVisibility("minimized");
+        onMinimizedChange(true);
+      },
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 420,
+    );
+  }, [onMinimizedChange, setGenieTarget, visibility]);
+
+  useEffect(() => {
+    if (minimizeRequest <= handledMinimizeRequestRef.current) return;
+    handledMinimizeRequestRef.current = minimizeRequest;
+    const frame = requestAnimationFrame(beginMinimize);
+    return () => cancelAnimationFrame(frame);
+  }, [beginMinimize, minimizeRequest]);
+
+  useEffect(() => onVisibilityChange(visibility), [onVisibilityChange, visibility]);
+
+  useLayoutEffect(() => {
+    if (minimized || visibility !== "minimized") return;
+    window.clearTimeout(animationTimerRef.current);
+    setGenieTarget();
+    requestAnimationFrame(() => {
+      setVisibility("restoring");
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          setVisibility("visible");
+          windowRef.current?.focus({ preventScroll: true });
+        }),
+      );
+    });
+  }, [minimized, setGenieTarget, visibility]);
+
+  useEffect(() => () => window.clearTimeout(animationTimerRef.current), []);
+
+  const toggleFullscreen = () => {
+    if (fullscreen) {
+      fullscreenRef.current = false;
+      setFullscreen(false);
+      const restoredFrame =
+        normalFrameRef.current ??
+        (compact ? compactFrame(viewport, menuBottom, bottomBoundary) : desktopFrame(viewport));
+      rndRef.current?.updatePosition({ x: restoredFrame.x, y: restoredFrame.y });
+      setFrame(restoredFrame);
+      normalFrameRef.current = null;
+      return;
+    }
+    normalFrameRef.current = frame;
+    fullscreenRef.current = true;
+    setFullscreen(true);
+    const maximizedPosition = { x: 0, y: Math.ceil(menuBottom) };
+    rndRef.current?.updatePosition(maximizedPosition);
+    setFrame({
+      ...maximizedPosition,
+      width: viewport.width,
+      height: Math.max(0, bottomBoundary - Math.ceil(menuBottom)),
+    });
+  };
   const filteredCategoryGroups = useMemo(
     () =>
       [categories.slice(0, 7), categories.slice(7)].map((group) =>
@@ -371,7 +500,10 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
 
   const settingsWindow = (
     <Rnd
-      className="settings-rnd z-30"
+      key={fullscreen ? "fullscreen" : "normal"}
+      ref={rndRef}
+      className={`settings-rnd z-30 ${visibility === "minimized" ? "invisible pointer-events-none" : ""}`}
+      data-window-visibility={visibility}
       size={{ width: frame.width, height: frame.height }}
       position={{ x: frame.x, y: frame.y }}
       bounds="[data-settings-drag-boundary]"
@@ -379,8 +511,8 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
       minHeight={minimumHeight}
       maxWidth={viewport.width}
       maxHeight={availableHeight}
-      disableDragging={compact}
-      enableResizing={!compact}
+      disableDragging={compact || fullscreen || visibility !== "visible"}
+      enableResizing={!compact && !fullscreen && visibility === "visible"}
       dragHandleClassName="settings-drag-handle"
       cancel=".settings-navigation,.settings-scroll-area,button,input,select,label"
       resizeHandleStyles={resizeHandleStyles}
@@ -400,8 +532,13 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
       <section
         ref={windowRef}
         style={{ gridTemplateColumns: `${resolvedSidebarPercent}% 8px minmax(0, 1fr)` }}
+        data-genie-window
+        data-window-visibility={visibility}
+        data-fullscreen={fullscreen || undefined}
         className="settings-window relative grid h-full w-full overflow-hidden rounded-[var(--tienos-radius-window)] border border-white/25 [background:linear-gradient(135deg,rgb(255_255_255/0.16),transparent_36%,rgb(4_10_20/0.16)),var(--tienos-color-window)] text-[var(--tienos-color-text-primary)] shadow-[var(--tienos-shadow-window),0_10px_32px_rgb(2_8_23/0.24),inset_0_1px_0_rgb(255_255_255/0.3),inset_0_-1px_0_rgb(0_0_0/0.16)] backdrop-blur-[32px] backdrop-saturate-[1.4] contrast-more:border-[var(--tienos-color-border)] contrast-more:[background:var(--tienos-color-window)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-window)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none max-[700px]:rounded-[18px]"
         aria-label="System Settings"
+        aria-hidden={visibility === "minimized" || undefined}
+        onFocusCapture={() => onActiveChange(true)}
         tabIndex={-1}
       >
         <aside
@@ -413,22 +550,40 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
             className="settings-sidebar-panel settings-drag-handle flex h-full min-h-0 flex-col overflow-hidden rounded-[calc(var(--tienos-radius-window)_-_8px)] border border-white/20 [background:linear-gradient(145deg,rgb(255_255_255/0.13),transparent_46%),var(--tienos-color-sidebar)] p-[10px_9px_8px] shadow-[0_12px_30px_rgb(0_0_0/0.2),inset_0_1px_0_rgb(255_255_255/0.25),inset_0_-1px_0_rgb(0_0_0/0.1)] backdrop-blur-[24px] backdrop-saturate-[1.35] contrast-more:border-[var(--tienos-color-border)] contrast-more:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
           >
             <div
-              className="settings-drag-handle mx-0.5 mb-[29px] flex touch-none select-none gap-2.5 max-[700px]:mb-5 max-[700px]:gap-[7px]"
+              className="settings-drag-handle mx-[-8px] mb-[16px] flex select-none gap-0 max-[700px]:mb-[7px]"
               aria-label="Window controls"
             >
               <button
-                className="settings-light size-[13px] rounded-[50%] border-0 bg-[#ff5f57] max-[700px]:size-[11px]"
+                type="button"
+                className="settings-light grid size-11 touch-manipulation place-items-center rounded-[50%] focus-visible:outline-2 focus-visible:outline-offset-[-8px] focus-visible:outline-[var(--tienos-color-focus)]"
                 aria-label="Close System Settings"
+                title="Close"
+                onPointerDown={(event) => event.stopPropagation()}
                 onClick={onClose}
-              />
+              >
+                <span className="size-[13px] rounded-full border border-black/10 bg-[#ff5f57] max-[700px]:size-[11px]" />
+              </button>
               <button
-                className="settings-light size-[13px] rounded-full border-0 bg-[#febc2e] max-[700px]:size-[11px]"
+                type="button"
+                className="settings-light grid size-11 touch-manipulation place-items-center rounded-[50%] focus-visible:outline-2 focus-visible:outline-offset-[-8px] focus-visible:outline-[var(--tienos-color-focus)]"
                 aria-label="Minimize System Settings"
-              />
+                title="Minimize"
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={beginMinimize}
+              >
+                <span className="size-[13px] rounded-full border border-black/10 bg-[#febc2e] max-[700px]:size-[11px]" />
+              </button>
               <button
-                className="settings-light size-[13px] rounded-full border-0 bg-[#28c840] max-[700px]:size-[11px]"
-                aria-label="Expand System Settings"
-              />
+                type="button"
+                className="settings-light grid size-11 touch-manipulation place-items-center rounded-[50%] focus-visible:outline-2 focus-visible:outline-offset-[-8px] focus-visible:outline-[var(--tienos-color-focus)]"
+                aria-label="Toggle fullscreen System Settings"
+                aria-pressed={fullscreen}
+                title={fullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={toggleFullscreen}
+              >
+                <span className="size-[13px] rounded-full border border-black/10 bg-[#28c840] max-[700px]:size-[11px]" />
+              </button>
             </div>
 
             <Field.Root

@@ -24,6 +24,7 @@ describe("tienOS main screen", () => {
     expect(app).not.toHaveAttribute("aria-pressed");
     expect(getByRole("status")).toHaveTextContent("System Settings is running");
 
+    await user.click(getByRole("main", { name: "tienOS desktop" }));
     await user.click(app);
     expect(getAllByRole("region", { name: "System Settings" })).toHaveLength(1);
     expect(getByRole("region", { name: "System Settings" })).toHaveFocus();
