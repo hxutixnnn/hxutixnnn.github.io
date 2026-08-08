@@ -3022,6 +3022,18 @@ test("each traffic light accepts genuine touch activation", async ({ browser }, 
     });
   }, controlNames);
   expect(hitOwners).toEqual(controlNames.map((name) => Array(9).fill(name)));
+  const compactDotGeometry = await page.locator("[data-sidebar-panel]").evaluate((panel) => {
+    const panelBox = panel.getBoundingClientRect();
+    return Array.from(panel.querySelectorAll<HTMLElement>("[data-traffic-dot]"), (dot) => {
+      const box = dot.getBoundingClientRect();
+      return { center: box.left + box.width / 2 - panelBox.left, size: box.width };
+    });
+  });
+  expect(compactDotGeometry).toEqual([
+    { center: 14.5, size: 11 },
+    { center: 32.5, size: 11 },
+    { center: 50.5, size: 11 },
+  ]);
 
   await page
     .getByRole("button", { name: "Toggle fullscreen System Settings" })
@@ -3194,11 +3206,16 @@ test("transition state is inert, tracks Dock movement, and repeated activation s
   const originalTarget = await window.evaluate((element) =>
     getComputedStyle(element).getPropertyValue("--genie-y"),
   );
+  await page.waitForTimeout(300);
   await page.locator("[data-dock-surface]").evaluate((element) => (element.style.bottom = "120px"));
-  await page.waitForTimeout(50);
+  await page.waitForTimeout(150);
   expect(
     await window.evaluate((element) => getComputedStyle(element).getPropertyValue("--genie-y")),
   ).not.toBe(originalTarget);
+  await expect(window).toHaveAttribute("data-window-visibility", "minimizing");
+  await expect(dock.getByRole("status")).toHaveText("System Settings is running and minimized", {
+    timeout: 2_500,
+  });
 
   const activateTwiceAndReadWindow = (button: HTMLButtonElement) => {
     button.click();
@@ -3236,7 +3253,7 @@ test("transition state is inert, tracks Dock movement, and repeated activation s
   expect(await window.evaluate((element) => element.inert)).toBe(false);
   await dockApp.evaluate((button: HTMLButtonElement) => button.click());
   await expect(dock.getByRole("status")).toHaveText("System Settings is running and minimized", {
-    timeout: 1_000,
+    timeout: 2_500,
   });
 });
 
@@ -3302,6 +3319,18 @@ test("Settings portal activity and traffic-light hit regions keep unambiguous ow
   const minimize = page.getByRole("button", { name: "Minimize System Settings" });
   const close = page.getByRole("button", { name: "Close System Settings" });
   const fullscreen = page.getByRole("button", { name: "Toggle fullscreen System Settings" });
+  const desktopDotGeometry = await page.locator("[data-sidebar-panel]").evaluate((panel) => {
+    const panelBox = panel.getBoundingClientRect();
+    return Array.from(panel.querySelectorAll<HTMLElement>("[data-traffic-dot]"), (dot) => {
+      const box = dot.getBoundingClientRect();
+      return { center: box.left + box.width / 2 - panelBox.left, size: box.width };
+    });
+  });
+  expect(desktopDotGeometry).toEqual([
+    { center: 18.5, size: 13 },
+    { center: 41.5, size: 13 },
+    { center: 64.5, size: 13 },
+  ]);
   const [red, yellow, green] = await Promise.all([
     close.boundingBox(),
     minimize.boundingBox(),

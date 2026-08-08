@@ -276,7 +276,7 @@ export function SystemSettings({
   const normalScrollTopRef = useRef<number | null>(null);
   const [visibility, setVisibility] = useState<WindowVisibility>(minimized ? "minimized" : "visible");
   const visibilityRef = useRef(visibility);
-  const animationTimerRef = useRef<number>(0);
+  const transitionRunRef = useRef(0);
   const rndRef = useRef<Rnd>(null);
   const handledFocusRequestRef = useRef(0);
   const handledLifecycleRequestRef = useRef(0);
@@ -312,6 +312,46 @@ export function SystemSettings({
     element.style.setProperty("--genie-scale-x", `${Math.max(0.06, target.width / source.width)}`);
     element.style.setProperty("--genie-scale-y", `${Math.max(0.06, target.height / source.height)}`);
   }, []);
+
+  const settleWindowTransition = useCallback((complete: () => void) => {
+    const run = ++transitionRunRef.current;
+    const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+    const settle = async () => {
+      await nextFrame();
+      let settledFrames = 0;
+      while (run === transitionRunRef.current) {
+        const element = windowRef.current;
+        if (!element) return;
+        const activeAnimations = element
+          .getAnimations()
+          .filter((animation) => animation.playState === "pending" || animation.playState === "running");
+        if (activeAnimations.length > 0) {
+          settledFrames = 0;
+          await Promise.allSettled(activeAnimations.map((animation) => animation.finished));
+          continue;
+        }
+        settledFrames += 1;
+        if (settledFrames === 2) {
+          complete();
+          return;
+        }
+        await nextFrame();
+      }
+    };
+    void settle();
+  }, []);
+
+  const finishRestore = useCallback(() => {
+    settleWindowTransition(() => {
+      if (visibilityRef.current !== "restoring") return;
+      updateVisibility("visible");
+      requestAnimationFrame(() => {
+        (restoreFocusRef.current?.isConnected ? restoreFocusRef.current : windowRef.current)?.focus({
+          preventScroll: true,
+        });
+      });
+    });
+  }, [settleWindowTransition, updateVisibility]);
 
   useLayoutEffect(() => {
     const menuBar = document.querySelector<HTMLElement>("[data-menu-bar-surface]");
@@ -371,38 +411,24 @@ export function SystemSettings({
     if (focusRequest <= handledFocusRequestRef.current) return;
     handledFocusRequestRef.current = focusRequest;
     if (visibility === "minimizing") {
-      window.clearTimeout(animationTimerRef.current);
       setGenieTarget();
       updateVisibility("restoring");
-      animationTimerRef.current = window.setTimeout(
-        () => {
-          updateVisibility("visible");
-          requestAnimationFrame(() => {
-            (restoreFocusRef.current?.isConnected ? restoreFocusRef.current : windowRef.current)?.focus({
-              preventScroll: true,
-            });
-          });
-        },
-        window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 420,
-      );
+      finishRestore();
       return;
     }
     if (visibility === "visible") windowRef.current?.focus({ preventScroll: true });
-  }, [focusRequest, setGenieTarget, updateVisibility, visibility]);
+  }, [finishRestore, focusRequest, setGenieTarget, updateVisibility, visibility]);
 
   const beginMinimize = useCallback(() => {
     if (visibility === "minimized" || visibility === "minimizing") return;
-    window.clearTimeout(animationTimerRef.current);
     setGenieTarget();
     updateVisibility("minimizing");
-    animationTimerRef.current = window.setTimeout(
-      () => {
-        updateVisibility("minimized");
-        onMinimizedChange(true);
-      },
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 420,
-    );
-  }, [onMinimizedChange, setGenieTarget, updateVisibility, visibility]);
+    settleWindowTransition(() => {
+      if (visibilityRef.current !== "minimizing") return;
+      updateVisibility("minimized");
+      onMinimizedChange(true);
+    });
+  }, [onMinimizedChange, setGenieTarget, settleWindowTransition, updateVisibility, visibility]);
 
   useEffect(() => {
     if (!lifecycleRequest || lifecycleRequest.id <= handledLifecycleRequestRef.current) return;
@@ -428,23 +454,17 @@ export function SystemSettings({
 
   useLayoutEffect(() => {
     if (minimized || visibility !== "minimized") return;
-    window.clearTimeout(animationTimerRef.current);
     setGenieTarget();
     updateVisibility("restoring");
-    animationTimerRef.current = window.setTimeout(
-      () => {
-        updateVisibility("visible");
-        requestAnimationFrame(() => {
-          (restoreFocusRef.current?.isConnected ? restoreFocusRef.current : windowRef.current)?.focus({
-            preventScroll: true,
-          });
-        });
-      },
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 420,
-    );
-  }, [minimized, setGenieTarget, updateVisibility, visibility]);
+    finishRestore();
+  }, [finishRestore, minimized, setGenieTarget, updateVisibility, visibility]);
 
-  useEffect(() => () => window.clearTimeout(animationTimerRef.current), []);
+  useEffect(
+    () => () => {
+      transitionRunRef.current += 1;
+    },
+    [],
+  );
 
   useLayoutEffect(() => {
     const element = rndRef.current?.resizableElement.current;
@@ -632,7 +652,10 @@ export function SystemSettings({
                 title="Close"
                 onClick={onClose}
               >
-                <span className="pointer-events-none absolute top-1/2 right-0 size-[13px] -translate-y-1/2 rounded-full border border-black/10 bg-[#ff5f57] max-[700px]:top-[20.5px] max-[700px]:size-[11px]" />
+                <span
+                  data-traffic-dot="close"
+                  className="pointer-events-none absolute top-1/2 left-[6px] size-[13px] -translate-y-1/2 rounded-full border border-black/10 bg-[#ff5f57] max-[700px]:top-[20.5px] max-[700px]:size-[11px]"
+                />
               </button>
               <button
                 type="button"
@@ -641,7 +664,10 @@ export function SystemSettings({
                 title="Minimize"
                 onClick={beginMinimize}
               >
-                <span className="pointer-events-none absolute top-1/2 left-1/2 size-[13px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-black/10 bg-[#febc2e] max-[700px]:top-[20.5px] max-[700px]:size-[11px]" />
+                <span
+                  data-traffic-dot="minimize"
+                  className="pointer-events-none absolute top-1/2 left-[-15px] size-[13px] -translate-y-1/2 rounded-full border border-black/10 bg-[#febc2e] max-[700px]:top-[20.5px] max-[700px]:left-[-20px] max-[700px]:size-[11px]"
+                />
               </button>
               <button
                 type="button"
@@ -651,7 +677,10 @@ export function SystemSettings({
                 title={fullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
                 onClick={toggleFullscreen}
               >
-                <span className="pointer-events-none absolute top-1/2 left-0 size-[13px] -translate-y-1/2 rounded-full border border-black/10 bg-[#28c840] max-[700px]:top-[20.5px] max-[700px]:size-[11px]" />
+                <span
+                  data-traffic-dot="fullscreen"
+                  className="pointer-events-none absolute top-1/2 left-[-36px] size-[13px] -translate-y-1/2 rounded-full border border-black/10 bg-[#28c840] max-[700px]:top-[20.5px] max-[700px]:left-[-46px] max-[700px]:size-[11px]"
+                />
               </button>
             </div>
 
