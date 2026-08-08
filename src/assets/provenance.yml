@@ -84,7 +84,7 @@ assets:
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering.
-    sha256: 4abc02242f78b1b894ec8ceef7177427171ec3478c4638d9fcc9035b3add651b
+    sha256: 71628975e79a2bdf84d342594c4215a3ef7f05a842ff408f5351082123f83534
   - path: tests/e2e/main-screen.spec.ts-snapshots/delayed-wallpaper-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
@@ -119,7 +119,7 @@ assets:
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering.
-    sha256: 4728f6bafdf3408235b16c57056f9a10d34e3265172392b07ef910ad8c6c889f
+    sha256: 9bc710ce967a7edc95712b1eff7d62087d5f6a4da39f5f4df6b35dccfb21fe95
   - path: tests/e2e/main-screen.spec.ts-snapshots/explicit-light-to-dark-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
@@ -161,7 +161,7 @@ assets:
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering.
-    sha256: 8f7b52b0a525dd955852afb5d36788ef43a33e8abecf9876678e95e3fb64f8b8
+    sha256: 8e758de72cfc444bb03c169f512341f7fdaac9e954dba0ff7599d25def2c0081
   - path: tests/e2e/main-screen.spec.ts-snapshots/rapid-light-dark-light-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
@@ -175,7 +175,7 @@ assets:
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering.
-    sha256: 4728f6bafdf3408235b16c57056f9a10d34e3265172392b07ef910ad8c6c889f
+    sha256: 9bc710ce967a7edc95712b1eff7d62087d5f6a4da39f5f4df6b35dccfb21fe95
   - path: tests/e2e/main-screen.spec.ts-snapshots/light-wallpaper-desktop-chromium-linux.png
     author: tienOS contributors; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com

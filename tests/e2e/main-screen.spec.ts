@@ -35,24 +35,18 @@ function createDelayGate() {
   return { blocked, release };
 }
 
-async function captureNativeThemeTransition(
-  page: Page,
-  name: string,
-  expectedTheme: "light" | "dark",
-  changeTheme: () => Promise<unknown>,
-  pixelBaseline = false,
-) {
-  await page.locator(":root").evaluate((root) => {
-    (root as HTMLElement).style.setProperty("--tienos-motion-theme", "1200ms");
-    document.querySelector<HTMLElement>(".tienos-wallpaper")?.style.setProperty("animation", "none");
+async function armThemeAnimationPause(page: Page) {
+  await page.evaluate(() => {
+    if (document.querySelector("[data-test-theme-transition-pause]")) return;
     const style = document.createElement("style");
     style.dataset.testThemeTransitionPause = "";
     style.textContent =
-      "@keyframes tienos-test-theme-hold{from{opacity:1}to{opacity:1}}::view-transition-group(root){animation:tienos-test-theme-hold 1200ms linear paused!important;pointer-events:none!important}::view-transition-old(root),::view-transition-new(root){animation:none!important;opacity:.5!important;pointer-events:none!important}";
+      "::view-transition-group(root),::view-transition-old(root),::view-transition-new(root){animation-play-state:paused!important}";
     document.head.append(style);
   });
-  await changeTheme();
-  await expect(page.locator(":root")).toHaveAttribute("data-theme", expectedTheme);
+}
+
+async function waitForThemeAnimations(page: Page) {
   await expect
     .poll(() =>
       page.evaluate(
@@ -66,9 +60,11 @@ async function captureNativeThemeTransition(
             ).length,
       ),
     )
-    .toBeGreaterThanOrEqual(1);
+    .toBeGreaterThanOrEqual(3);
+}
 
-  const midpoint = await page.evaluate(async () => {
+async function pauseThemeAnimationsAtMidpoint(page: Page) {
+  return page.evaluate(() => {
     const animations = document
       .getAnimations()
       .filter((animation) =>
@@ -78,11 +74,102 @@ async function captureNativeThemeTransition(
       );
     for (const animation of animations) {
       animation.pause();
-      animation.currentTime = 600;
+      animation.currentTime = Number(animation.effect?.getTiming().duration) / 2;
     }
-    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-    const opacity = (pseudo: string) =>
-      Number.parseFloat(getComputedStyle(document.documentElement, pseudo).opacity);
+    void document.documentElement.offsetWidth;
+    const describe = (
+      pseudo: "::view-transition-old(root)" | "::view-transition-new(root)",
+      animationName: "tienos-theme-fade-out" | "tienos-theme-fade-in",
+    ) => {
+      const animation = animations.find(
+        (candidate) =>
+          (candidate.effect as (AnimationEffect & { pseudoElement?: string | null }) | null)
+            ?.pseudoElement === pseudo &&
+          candidate instanceof CSSAnimation &&
+          candidate.animationName === animationName,
+      ) as CSSAnimation | undefined;
+      const styles = getComputedStyle(document.documentElement, pseudo);
+      return {
+        animationName: animation?.animationName,
+        computedName: styles.animationName,
+        duration: Number(animation?.effect?.getTiming().duration),
+        computedDuration: styles.animationDuration,
+        computedEasing: styles.animationTimingFunction,
+        keyframeOpacity: (animation?.effect as KeyframeEffect | null)
+          ?.getKeyframes()
+          .map((keyframe) => Number(keyframe.opacity)),
+        opacity: Number.parseFloat(styles.opacity),
+        progress: animation?.effect?.getComputedTiming().progress,
+      };
+    };
+    return {
+      animationCount: animations.length,
+      old: describe("::view-transition-old(root)", "tienos-theme-fade-out"),
+      next: describe("::view-transition-new(root)", "tienos-theme-fade-in"),
+    };
+  });
+}
+
+async function finishThemeAnimations(page: Page) {
+  await page.evaluate(() => {
+    for (const animation of document.getAnimations()) {
+      if (
+        (
+          animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
+        )?.pseudoElement?.startsWith("::view-transition")
+      )
+        animation.finish();
+    }
+    document.querySelector("[data-test-theme-transition-pause]")?.remove();
+  });
+}
+
+function expectProductionThemeAnimations(state: Awaited<ReturnType<typeof pauseThemeAnimationsAtMidpoint>>) {
+  expect(state.animationCount).toBeGreaterThanOrEqual(3);
+  expect(state.old).toMatchObject({
+    animationName: "tienos-theme-fade-out",
+    computedName: "tienos-theme-fade-out",
+    duration: 280,
+    computedDuration: "0.28s",
+    computedEasing: "cubic-bezier(0.22, 1, 0.36, 1)",
+    keyframeOpacity: [1, 0],
+  });
+  expect(state.next).toMatchObject({
+    animationName: "tienos-theme-fade-in",
+    computedName: "tienos-theme-fade-in",
+    duration: 280,
+    computedDuration: "0.28s",
+    computedEasing: "cubic-bezier(0.22, 1, 0.36, 1)",
+    keyframeOpacity: [0, 1],
+  });
+  expect(state.old.progress).toBeGreaterThan(0);
+  expect(state.old.progress).toBeLessThan(1);
+  expect(state.next.progress).toBeGreaterThan(0);
+  expect(state.next.progress).toBeLessThan(1);
+  expect(state.old.opacity).toBeGreaterThan(0);
+  expect(state.old.opacity).toBeLessThan(1);
+  expect(state.next.opacity).toBeGreaterThan(0);
+  expect(state.next.opacity).toBeLessThan(1);
+}
+
+async function captureNativeThemeTransition(
+  page: Page,
+  name: string,
+  expectedTheme: "light" | "dark",
+  changeTheme: () => Promise<unknown>,
+  pixelBaseline = false,
+) {
+  await page.locator(":root").evaluate(() => {
+    document.querySelector<HTMLElement>(".tienos-wallpaper")?.style.setProperty("animation", "none");
+  });
+  await armThemeAnimationPause(page);
+  await changeTheme();
+  await expect(page.locator(":root")).toHaveAttribute("data-theme", expectedTheme);
+
+  await waitForThemeAnimations(page);
+  const animationState = await pauseThemeAnimationsAtMidpoint(page);
+  expectProductionThemeAnimations(animationState);
+  const midpoint = await page.evaluate(() => {
     const visibleSurfaces = [
       ".tienos-wallpaper",
       "[data-menu-bar-surface]",
@@ -95,18 +182,12 @@ async function captureNativeThemeTransition(
       return element && element.getBoundingClientRect().width > 0;
     });
     return {
-      oldOpacity: opacity("::view-transition-old(root)"),
-      newOpacity: opacity("::view-transition-new(root)"),
       theme: document.documentElement.dataset.theme,
       transactionOpen: document.documentElement.hasAttribute("data-theme-transaction"),
       visibleSurfaces,
     };
   });
   expect(midpoint.theme).toBe(expectedTheme);
-  expect(midpoint.oldOpacity).toBeGreaterThan(0);
-  expect(midpoint.oldOpacity).toBeLessThan(1);
-  expect(midpoint.newOpacity).toBeGreaterThan(0);
-  expect(midpoint.newOpacity).toBeLessThan(1);
   expect(midpoint.transactionOpen).toBe(false);
   expect(midpoint.visibleSurfaces).toEqual(
     expect.arrayContaining([".tienos-wallpaper", "[data-menu-bar-surface]", "[data-dock-surface]"]),
@@ -119,19 +200,7 @@ async function captureNativeThemeTransition(
     });
   }
 
-  await page.evaluate(() => {
-    document.querySelector("[data-test-theme-transition-pause]")?.remove();
-    void document.documentElement.offsetWidth;
-    for (const animation of document.getAnimations()) {
-      if (
-        (
-          animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-        )?.pseudoElement?.startsWith("::view-transition")
-      )
-        animation.finish();
-    }
-    document.documentElement.style.removeProperty("--tienos-motion-theme");
-  });
+  await finishThemeAnimations(page);
   await expect
     .poll(() =>
       page.evaluate(
@@ -2833,68 +2902,24 @@ test.describe("appearance modes", () => {
       () => modes.getByRole("radio", { name: "Light" }).click(),
       true,
     );
-    await page.locator(":root").evaluate((root) => {
-      (root as HTMLElement).style.setProperty("--tienos-motion-theme", "1200ms");
-      const style = document.createElement("style");
-      style.dataset.testThemeTransitionPause = "";
-      style.textContent =
-        "@keyframes tienos-test-theme-hold{from{opacity:1}to{opacity:1}}::view-transition-group(root){animation:tienos-test-theme-hold 1200ms linear paused!important;pointer-events:none!important}::view-transition-old(root),::view-transition-new(root){animation:none!important;opacity:.5!important;pointer-events:none!important}";
-      document.head.append(style);
-    });
+    await armThemeAnimationPause(page);
     await modes.getByRole("radio", { name: "Dark" }).click();
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+    await waitForThemeAnimations(page);
+    expectProductionThemeAnimations(await pauseThemeAnimationsAtMidpoint(page));
     await modes.getByRole("radio", { name: "Light" }).evaluate((element: HTMLElement) => {
       element.focus();
       element.click();
     });
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () =>
-            document
-              .getAnimations()
-              .filter((animation) =>
-                (
-                  animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-                )?.pseudoElement?.startsWith("::view-transition"),
-              ).length,
-        ),
-      )
-      .toBeGreaterThanOrEqual(1);
-    await page.evaluate(async () => {
-      for (const animation of document.getAnimations()) {
-        if (
-          (
-            animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-          )?.pseudoElement?.startsWith("::view-transition")
-        ) {
-          animation.pause();
-          animation.currentTime = 600;
-        }
-      }
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      );
-    });
+    await waitForThemeAnimations(page);
+    expectProductionThemeAnimations(await pauseThemeAnimationsAtMidpoint(page));
     await expect(page).toHaveScreenshot("rapid-light-dark-light-midpoint.png", {
       animations: "allow",
       caret: "hide",
       maxDiffPixelRatio: 0.01,
     });
-    await page.evaluate(() => {
-      document.querySelector("[data-test-theme-transition-pause]")?.remove();
-      void document.documentElement.offsetWidth;
-      for (const animation of document.getAnimations()) {
-        if (
-          (
-            animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-          )?.pseudoElement?.startsWith("::view-transition")
-        )
-          animation.finish();
-      }
-      document.documentElement.style.removeProperty("--tienos-motion-theme");
-    });
+    await finishThemeAnimations(page);
     await expect
       .poll(() => page.evaluate(() => localStorage.getItem("tienos-appearance")))
       .toBe(JSON.stringify("light"));
@@ -3001,7 +3026,7 @@ test.describe("appearance modes", () => {
       const animate = HTMLElement.prototype.animate;
       HTMLElement.prototype.animate = function (keyframes, options) {
         if (this.dataset.themeTransitionLayer && typeof options === "object") {
-          const animation = animate.call(this, keyframes, { ...options, duration: 1200 });
+          const animation = animate.call(this, keyframes, options);
           animation.pause();
           animation.currentTime = 0;
           return animation;
@@ -3048,7 +3073,9 @@ test.describe("appearance modes", () => {
     const fallbackFrame = await fallbackLayer.evaluate(async (layer) => {
       const animation = layer.getAnimations()[0];
       animation.pause();
-      animation.currentTime = 600;
+      await animation.ready;
+      const timing = animation.effect?.getTiming();
+      animation.currentTime = Number(timing?.duration) / 2;
       await new Promise<void>((resolve) =>
         requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
       );
@@ -3059,7 +3086,13 @@ test.describe("appearance modes", () => {
       const styles = getComputedStyle(wallpaper);
       return {
         animationName: styles.animationName,
+        duration: timing?.duration,
+        easing: timing?.easing,
+        keyframeOpacity: (animation.effect as KeyframeEffect | null)
+          ?.getKeyframes()
+          .map((keyframe) => Number(keyframe.opacity)),
         opacity: Number.parseFloat(getComputedStyle(layer).opacity),
+        progress: animation.effect?.getComputedTiming().progress,
         transform: styles.transform,
         transitionProperty: styles.transitionProperty,
         scrollTop: details.scrollTop,
@@ -3068,6 +3101,13 @@ test.describe("appearance modes", () => {
       };
     });
     expect(fallbackFrame.animationName).toBe("none");
+    expect(fallbackFrame).toMatchObject({
+      duration: 280,
+      easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+      keyframeOpacity: [1, 0],
+    });
+    expect(fallbackFrame.progress).toBeGreaterThan(0);
+    expect(fallbackFrame.progress).toBeLessThan(1);
     expect(fallbackFrame.transitionProperty).toBe("none");
     expect(fallbackFrame.transform).toBe(oldWallpaperTransform);
     expect(fallbackFrame.opacity).toBeGreaterThan(0);
@@ -3216,12 +3256,6 @@ test.describe("appearance modes", () => {
     await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
     await page.locator(".tienos-wallpaper").evaluate((node) => {
       (node as HTMLElement).style.animation = "none";
-      document.documentElement.style.setProperty("--tienos-motion-theme", "1200ms");
-      const style = document.createElement("style");
-      style.dataset.testThemeTransitionPause = "";
-      style.textContent =
-        "@keyframes tienos-test-theme-hold{from{opacity:1}to{opacity:1}}::view-transition-group(root){animation:tienos-test-theme-hold 1200ms linear paused!important;pointer-events:none!important}::view-transition-old(root),::view-transition-new(root){animation:none!important;opacity:.5!important;pointer-events:none!important}";
-      document.head.append(style);
     });
     const darkWallpaperGate = createDelayGate();
     let darkWallpaperIntercepted = false;
@@ -3266,56 +3300,18 @@ test.describe("appearance modes", () => {
       maxDiffPixelRatio: 0.01,
     });
 
+    await armThemeAnimationPause(page);
     darkWallpaperGate.release();
     await expect(page.locator(":root")).toHaveAttribute("data-appearance", "dark");
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () =>
-            document
-              .getAnimations()
-              .filter((animation) =>
-                (
-                  animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-                )?.pseudoElement?.startsWith("::view-transition"),
-              ).length,
-        ),
-      )
-      .toBeGreaterThanOrEqual(1);
-    await page.evaluate(async () => {
-      for (const animation of document.getAnimations()) {
-        if (
-          (
-            animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-          )?.pseudoElement?.startsWith("::view-transition")
-        ) {
-          animation.pause();
-          animation.currentTime = 600;
-        }
-      }
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-      );
-    });
+    await waitForThemeAnimations(page);
+    expectProductionThemeAnimations(await pauseThemeAnimationsAtMidpoint(page));
     await expect(page).toHaveScreenshot("delayed-wallpaper-midpoint.png", {
       animations: "allow",
       caret: "hide",
       maxDiffPixelRatio: 0.01,
     });
-    await page.evaluate(() => {
-      document.querySelector("[data-test-theme-transition-pause]")?.remove();
-      void document.documentElement.offsetWidth;
-      for (const animation of document.getAnimations()) {
-        if (
-          (
-            animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-          )?.pseudoElement?.startsWith("::view-transition")
-        )
-          animation.finish();
-      }
-      document.documentElement.style.removeProperty("--tienos-motion-theme");
-    });
+    await finishThemeAnimations(page);
     await expect
       .poll(() =>
         page.evaluate(
