@@ -458,8 +458,10 @@ async function expectLocalSeparatorTreatment(
   popup: Locator,
   separators: Locator[],
   label: string,
+  expectedCount: number,
   treatment: "subtle" | "explicit" = "subtle",
 ) {
+  expect(separators, `${label} separator count`).toHaveLength(expectedCount);
   if (separators.length === 0) return;
   const popupBounds = await popup.boundingBox();
   expect(popupBounds).not.toBeNull();
@@ -753,7 +755,11 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
     await page.getByRole("button", { name: "Close System Settings" }).click();
 
     const wallpaper = page.locator(".tienos-wallpaper");
-    const sampleAgainstWallpapers = async (popup: Locator, family: string) => {
+    const sampleAgainstWallpapers = async (
+      popup: Locator,
+      family: string,
+      expectedSeparatorCount: number,
+    ) => {
       const bounds = await popup.boundingBox();
       expect(bounds).not.toBeNull();
       const pattern = "repeating-linear-gradient(90deg, rgb(8 16 28) 0 220px, rgb(232 242 250) 220px 440px)";
@@ -786,6 +792,7 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
           popup,
           await popup.locator('[role="separator"]').all(),
           `${theme} ${family} ${region.name}`,
+          expectedSeparatorCount,
         );
         await page.screenshot({
           animations: "disabled",
@@ -809,7 +816,7 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
     const expectedBackground = theme === "dark" ? "rgba(20, 27, 36, 0.62)" : "rgba(245, 248, 252, 0.62)";
     await expect(systemPopup).toHaveCSS("background-color", expectedBackground);
     await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
-    await sampleAgainstWallpapers(systemPopup, "system");
+    await sampleAgainstWallpapers(systemPopup, "system", 5);
     const systemLabels = await systemPopup.locator(".tienos-menu-item > span").all();
     const systemShortcuts = await systemPopup.locator("kbd").all();
     await expectLocalRenderedContrasts(systemPopup, [
@@ -834,7 +841,7 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
     const submenuPopup = page.locator(".tienos-menu-popup:visible").last();
     await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
     await expect(submenuPopup).toHaveCSS("background-color", expectedBackground);
-    await sampleAgainstWallpapers(submenuPopup, "submenu");
+    await sampleAgainstWallpapers(submenuPopup, "submenu", 0);
     await expectLocalRenderedContrasts(submenuPopup, [
       {
         foreground: page.getByRole("menuitem", { name: "No Recent Items" }),
@@ -849,7 +856,7 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
     await page.getByRole("menuitem", { name: "Navigator" }).click();
     const navigatorPopup = page.locator(".tienos-menu-popup:visible");
     await expect(navigatorPopup).toHaveCSS("background-color", expectedBackground);
-    await sampleAgainstWallpapers(navigatorPopup, "navigator");
+    await sampleAgainstWallpapers(navigatorPopup, "navigator", 1);
     const navigatorLabels = await navigatorPopup.locator(".tienos-menu-item > span").all();
     const navigatorShortcuts = await navigatorPopup.locator("kbd").all();
     await expectLocalRenderedContrasts(navigatorPopup, [
@@ -905,6 +912,7 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
         systemPopup,
         systemSeparators,
         `${theme} ${mode.name} system`,
+        5,
         "explicit",
       );
 
@@ -924,6 +932,13 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
         await submenuPopup.evaluate((node) => getComputedStyle(node).backgroundColor),
       );
       expect(submenuBackground.alpha, `${theme} ${mode.name} submenu should be opaque`).toBe(1);
+      await expectLocalSeparatorTreatment(
+        submenuPopup,
+        await submenuPopup.locator('[role="separator"]').all(),
+        `${theme} ${mode.name} recent items submenu`,
+        0,
+        "explicit",
+      );
       await expectColorContrast(
         page.getByRole("menuitem", { name: "No Recent Items" }),
         "color",
@@ -952,6 +967,7 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
         navigatorPopup,
         navigatorSeparators,
         `${theme} ${mode.name} navigator`,
+        1,
         "explicit",
       );
       await page.keyboard.press("Escape");
