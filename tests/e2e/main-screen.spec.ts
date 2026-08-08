@@ -317,10 +317,208 @@ async function touchDrag(session: CDPSession, from: { x: number; y: number }, to
 }
 
 async function readCenterPixel(element: Locator) {
-  const screenshot = await element.screenshot();
+  const screenshot = await element.screenshot({ animations: "disabled" });
   const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
   const offset = (Math.floor(info.height / 2) * info.width + Math.floor(info.width / 2)) * info.channels;
   return Array.from(data.subarray(offset, offset + 3));
+}
+
+async function readHorizontalPixels(element: Locator, distanceFromCenter: number) {
+  const screenshot = await element.screenshot({ animations: "disabled" });
+  const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
+  const y = Math.max(1, info.height - 7);
+  const center = Math.floor(info.width / 2);
+  return [-distanceFromCenter, distanceFromCenter].map((offsetFromCenter) => {
+    const x = center + offsetFromCenter;
+    const offset = (y * info.width + x) * info.channels;
+    return Array.from(data.subarray(offset, offset + 3));
+  });
+}
+
+async function readBackgroundsBehind(popup: Locator, foregrounds: Locator[]) {
+  const popupBounds = await popup.boundingBox();
+  expect(popupBounds).not.toBeNull();
+  const foregroundHandles = await Promise.all(foregrounds.map((foreground) => foreground.elementHandle()));
+  for (const handle of foregroundHandles) expect(handle).not.toBeNull();
+  const foregroundBounds = await Promise.all(foregroundHandles.map((handle) => handle.boundingBox()));
+  for (const bounds of foregroundBounds) expect(bounds).not.toBeNull();
+  await Promise.all(
+    foregroundHandles.map((handle) =>
+      handle.evaluate((node) => (node as HTMLElement).style.setProperty("visibility", "hidden", "important")),
+    ),
+  );
+  const screenshot = await popup.screenshot({ animations: "disabled" }).finally(async () => {
+    await Promise.all(
+      foregroundHandles.map((handle) =>
+        handle.evaluate((node) => (node as HTMLElement).style.removeProperty("visibility")),
+      ),
+    );
+  });
+  const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
+  return foregroundBounds.map((bounds) => {
+    const x = Math.max(
+      0,
+      Math.min(info.width - 1, Math.floor(bounds!.x + bounds!.width / 2 - popupBounds!.x)),
+    );
+    const y = Math.max(
+      0,
+      Math.min(info.height - 1, Math.floor(bounds!.y + bounds!.height / 2 - popupBounds!.y)),
+    );
+    const offset = (y * info.width + x) * info.channels;
+    return pixelColor(Array.from(data.subarray(offset, offset + 3)));
+  });
+}
+
+type Rgba = { red: number; green: number; blue: number; alpha: number };
+
+function parseColor(value: string): Rgba {
+  const channels = value.match(/[\d.]+/g)?.map(Number);
+  if (!channels || channels.length < 3) throw new Error(`Unsupported computed color: ${value}`);
+  return {
+    red: channels[0],
+    green: channels[1],
+    blue: channels[2],
+    alpha: channels[3] ?? 1,
+  };
+}
+
+function composite(foreground: Rgba, background: Rgba): Rgba {
+  return {
+    red: foreground.red * foreground.alpha + background.red * (1 - foreground.alpha),
+    green: foreground.green * foreground.alpha + background.green * (1 - foreground.alpha),
+    blue: foreground.blue * foreground.alpha + background.blue * (1 - foreground.alpha),
+    alpha: 1,
+  };
+}
+
+function contrastRatio(first: Rgba, second: Rgba) {
+  const luminance = ({ red, green, blue }: Rgba) => {
+    const linearize = (channel: number) => {
+      const value = channel / 255;
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * linearize(red) + 0.7152 * linearize(green) + 0.0722 * linearize(blue);
+  };
+  const lighter = Math.max(luminance(first), luminance(second));
+  const darker = Math.min(luminance(first), luminance(second));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function pixelColor([red, green, blue]: number[]): Rgba {
+  return { red, green, blue, alpha: 1 };
+}
+
+async function expectColorContrast(
+  foreground: Locator,
+  foregroundProperty: "color" | "background-color",
+  background: Rgba,
+  minimum: number,
+) {
+  const value = parseColor(
+    await foreground.evaluate(
+      (node, property) => getComputedStyle(node).getPropertyValue(property),
+      foregroundProperty,
+    ),
+  );
+  expect(contrastRatio(composite(value, background), background)).toBeGreaterThanOrEqual(minimum);
+}
+
+async function expectLocalRenderedContrasts(
+  popup: Locator,
+  entries: {
+    foreground: Locator;
+    minimum: number;
+    label: string;
+    property?: "color" | "background-color";
+  }[],
+) {
+  const foregroundColors = await Promise.all(
+    entries.map(async ({ foreground, property = "color" }) =>
+      parseColor(
+        await foreground.evaluate(
+          (node, cssProperty) => getComputedStyle(node).getPropertyValue(cssProperty),
+          property,
+        ),
+      ),
+    ),
+  );
+  const backgrounds = await readBackgroundsBehind(
+    popup,
+    entries.map(({ foreground }) => foreground),
+  );
+  entries.forEach(({ minimum, label }, index) => {
+    expect(
+      contrastRatio(composite(foregroundColors[index], backgrounds[index]), backgrounds[index]),
+      label,
+    ).toBeGreaterThanOrEqual(minimum);
+  });
+}
+
+async function expectLocalSeparatorContrasts(popup: Locator, separators: Locator[], label: string) {
+  if (separators.length === 0) return;
+  const popupBounds = await popup.boundingBox();
+  expect(popupBounds).not.toBeNull();
+  const separatorHandles = await Promise.all(separators.map((separator) => separator.elementHandle()));
+  for (const handle of separatorHandles) expect(handle).not.toBeNull();
+  const separatorBounds = await Promise.all(separatorHandles.map((handle) => handle.boundingBox()));
+  for (const bounds of separatorBounds) expect(bounds).not.toBeNull();
+  const renderedScreenshot = await popup.screenshot({ animations: "disabled" });
+  await Promise.all(
+    separatorHandles.map((handle) =>
+      handle.evaluate((node) => (node as HTMLElement).style.setProperty("visibility", "hidden", "important")),
+    ),
+  );
+  const backgroundScreenshot = await popup.screenshot({ animations: "disabled" }).finally(async () => {
+    await Promise.all(
+      separatorHandles.map((handle) =>
+        handle.evaluate((node) => (node as HTMLElement).style.removeProperty("visibility")),
+      ),
+    );
+  });
+  const [rendered, backgrounds] = await Promise.all(
+    [renderedScreenshot, backgroundScreenshot].map((screenshot) =>
+      sharp(screenshot).raw().toBuffer({ resolveWithObject: true }),
+    ),
+  );
+  separatorBounds.forEach((bounds, separatorIndex) => {
+    for (const horizontalOffset of [-55, 55]) {
+      const x = Math.max(
+        0,
+        Math.min(
+          rendered.info.width - 1,
+          Math.floor(bounds!.x + bounds!.width / 2 + horizontalOffset - popupBounds!.x),
+        ),
+      );
+      const firstY = Math.max(0, Math.floor(bounds!.y - popupBounds!.y) - 1);
+      const lastY = Math.min(
+        rendered.info.height - 1,
+        Math.ceil(bounds!.y + bounds!.height - popupBounds!.y) + 1,
+      );
+      const renderedContrasts = Array.from({ length: lastY - firstY + 1 }, (_, index) => {
+        const y = firstY + index;
+        const renderedOffset = (y * rendered.info.width + x) * rendered.info.channels;
+        const backgroundOffset = (y * backgrounds.info.width + x) * backgrounds.info.channels;
+        const separatorColor = pixelColor(
+          Array.from(rendered.data.subarray(renderedOffset, renderedOffset + 3)),
+        );
+        const backgroundColor = pixelColor(
+          Array.from(backgrounds.data.subarray(backgroundOffset, backgroundOffset + 3)),
+        );
+        return contrastRatio(separatorColor, backgroundColor);
+      });
+      expect(
+        Math.max(...renderedContrasts),
+        `${label} separator ${separatorIndex + 1} at ${horizontalOffset < 0 ? "left" : "right"}`,
+      ).toBeGreaterThanOrEqual(3);
+    }
+  });
+}
+
+async function setResolvedTheme(page: Page, theme: "dark" | "light") {
+  await page.evaluate((mode) => localStorage.setItem("tienos-appearance", JSON.stringify(mode)), theme);
+  await page.reload();
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden({ timeout: 10_000 });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
 }
 
 test("applies design-system tokens to component styles", async ({ page }) => {
@@ -521,23 +719,212 @@ test("keeps keyboard focus visible in forced colors", async ({ page }) => {
   expect(forcedColors.focus).not.toBe(forcedColors.background);
 });
 
-test("uses opaque menu surfaces with reduced transparency", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
-  const session = await page.context().newCDPSession(page);
-  await session.send("Emulation.setEmulatedMedia", {
-    features: [{ name: "prefers-reduced-transparency", value: "reduce" }],
-  });
+test("menu popup families are translucent and wallpaper-responsive", async ({ page }, testInfo) => {
+  test.setTimeout(150_000);
   await page.goto("/");
-  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  for (const theme of ["dark", "light"] as const) {
+    await setResolvedTheme(page, theme);
+    await page.getByRole("button", { name: "Close System Settings" }).click();
 
-  await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
-  const popup = page.locator(".tienos-menu-popup").first();
-  await expect(popup).toHaveCSS("background-color", "rgb(20, 27, 36)");
-  await expect(popup).toHaveCSS("backdrop-filter", "none");
-  await page.getByRole("menuitem", { name: "System Settings…" }).click();
-  await expect(page.locator(".settings-window")).toHaveCSS("backdrop-filter", "none");
-  await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("backdrop-filter", "none");
-  await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    const wallpaper = page.locator(".tienos-wallpaper");
+    const sampleAgainstWallpapers = async (popup: Locator, family: string) => {
+      const bounds = await popup.boundingBox();
+      expect(bounds).not.toBeNull();
+      const pattern = "repeating-linear-gradient(90deg, rgb(8 16 28) 0 220px, rgb(232 242 250) 220px 440px)";
+      const centerX = bounds!.x + bounds!.width / 2;
+      const regions = [
+        { name: "dark-to-bright", position: centerX - 220, direction: 1 },
+        { name: "bright-to-dark", position: centerX - 440, direction: -1 },
+      ];
+      for (const region of regions) {
+        await wallpaper.evaluate(
+          (node, values) => {
+            const styles = (node as HTMLElement).style;
+            styles.setProperty("background-image", values.pattern, "important");
+            styles.setProperty("background-position", `${values.position}px 0`, "important");
+            styles.setProperty("background-size", "440px 100%", "important");
+            styles.setProperty("animation", "none", "important");
+            styles.setProperty("transform", "none", "important");
+          },
+          { pattern, position: region.position },
+        );
+        const boundaryPixels = await readHorizontalPixels(popup, 55);
+        const [leftBrightness, rightBrightness] = boundaryPixels.map((pixel) =>
+          pixel.reduce((sum, channel) => sum + channel, 0),
+        );
+        expect(
+          (rightBrightness - leftBrightness) * region.direction,
+          `${theme} ${family} should render the ${region.name} wallpaper boundary`,
+        ).toBeGreaterThan(20);
+        await expectLocalSeparatorContrasts(
+          popup,
+          await popup.locator('[role="separator"]').all(),
+          `${theme} ${family} ${region.name}`,
+        );
+        await page.screenshot({
+          animations: "disabled",
+          path: testInfo.outputPath(`popup-${theme}-${family}-${region.name}.png`),
+        });
+      }
+      await wallpaper.evaluate(
+        (node, values) => {
+          (node as HTMLElement).style.setProperty(
+            "background-position",
+            `${values.centerX - 330}px 0`,
+            "important",
+          );
+        },
+        { centerX },
+      );
+    };
+
+    await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+    const systemPopup = page.locator(".tienos-menu-popup:visible").first();
+    const expectedBackground = theme === "dark" ? "rgba(20, 27, 36, 0.62)" : "rgba(245, 248, 252, 0.62)";
+    await expect(systemPopup).toHaveCSS("background-color", expectedBackground);
+    await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
+    await sampleAgainstWallpapers(systemPopup, "system");
+    const systemLabels = await systemPopup.locator(".tienos-menu-item > span").all();
+    const systemShortcuts = await systemPopup.locator("kbd").all();
+    await expectLocalRenderedContrasts(systemPopup, [
+      ...systemLabels.map((foreground, index) => ({
+        foreground,
+        minimum: 4.5,
+        label: `${theme} system row ${index + 1} should remain legible over bright wallpaper`,
+      })),
+      ...systemShortcuts.map((foreground, index) => ({
+        foreground,
+        minimum: 4.5,
+        label: `${theme} system shortcut ${index + 1} should remain legible over bright wallpaper`,
+      })),
+      {
+        foreground: page.getByRole("menuitem", { name: "Recent Items" }).locator("svg"),
+        minimum: 3,
+        label: `${theme} submenu chevron should remain legible over bright wallpaper`,
+      },
+    ]);
+
+    await page.getByRole("menuitem", { name: "Recent Items" }).hover();
+    const submenuPopup = page.locator(".tienos-menu-popup:visible").last();
+    await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
+    await expect(submenuPopup).toHaveCSS("background-color", expectedBackground);
+    await sampleAgainstWallpapers(submenuPopup, "submenu");
+    await expectLocalRenderedContrasts(submenuPopup, [
+      {
+        foreground: page.getByRole("menuitem", { name: "No Recent Items" }),
+        minimum: 3,
+        label: `${theme} disabled submenu row should remain legible over bright wallpaper`,
+      },
+    ]);
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+    await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
+
+    await page.getByRole("menuitem", { name: "Navigator" }).click();
+    const navigatorPopup = page.locator(".tienos-menu-popup:visible");
+    await expect(navigatorPopup).toHaveCSS("background-color", expectedBackground);
+    await sampleAgainstWallpapers(navigatorPopup, "navigator");
+    const navigatorLabels = await navigatorPopup.locator(".tienos-menu-item > span").all();
+    const navigatorShortcuts = await navigatorPopup.locator("kbd").all();
+    await expectLocalRenderedContrasts(navigatorPopup, [
+      ...navigatorLabels.map((foreground, index) => ({
+        foreground,
+        minimum: 4.5,
+        label: `${theme} navigator row ${index + 1} should remain legible over bright wallpaper`,
+      })),
+      ...navigatorShortcuts.map((foreground, index) => ({
+        foreground,
+        minimum: 4.5,
+        label: `${theme} navigator shortcut ${index + 1} should remain legible over bright wallpaper`,
+      })),
+    ]);
+    await page.keyboard.press("Escape");
+  }
+});
+
+test("accessibility modes keep every popup family opaque and legible", async ({ page }) => {
+  test.setTimeout(150_000);
+  const session = await page.context().newCDPSession(page);
+  await page.goto("/");
+  const modes = [
+    { name: "reduced transparency", feature: "prefers-reduced-transparency", value: "reduce" },
+    { name: "increased contrast", feature: "prefers-contrast", value: "more" },
+    { name: "forced colors", feature: "forced-colors", value: "active" },
+  ];
+
+  for (const theme of ["dark", "light"] as const) {
+    for (const mode of modes) {
+      await session.send("Emulation.setEmulatedMedia", {
+        features: [{ name: mode.feature, value: mode.value }],
+      });
+      await setResolvedTheme(page, theme);
+      await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+
+      const systemPopup = page.locator(".tienos-menu-popup:visible").first();
+      const popupBackground = parseColor(
+        await systemPopup.evaluate((node) => getComputedStyle(node).backgroundColor),
+      );
+      expect(popupBackground.alpha, `${theme} ${mode.name} popup should be opaque`).toBe(1);
+      await expect(systemPopup).toHaveCSS("background-image", "none");
+
+      const primaryItem = page.getByRole("menuitem", { name: "About This OS" });
+      const shortcut = page.getByRole("menuitem", { name: "System Settings…" }).locator("kbd");
+      const recentItems = page.getByRole("menuitem", { name: "Recent Items" });
+      const chevron = recentItems.locator("svg");
+      await expectColorContrast(primaryItem, "color", popupBackground, 4.5);
+      await expectColorContrast(shortcut, "color", popupBackground, 3);
+      await expectColorContrast(chevron, "color", popupBackground, 3);
+      const systemSeparators = await systemPopup.locator('[role="separator"]').all();
+      await expectLocalSeparatorContrasts(systemPopup, systemSeparators, `${theme} ${mode.name} system`);
+
+      await page.getByRole("menuitem", { name: "System Settings…" }).hover();
+      const selectedItem = page.locator(".tienos-menu-item[data-highlighted]");
+      const selectedBackground = parseColor(
+        await selectedItem.evaluate((node) => getComputedStyle(node).backgroundColor),
+      );
+      expect(contrastRatio(selectedBackground, popupBackground)).toBeGreaterThanOrEqual(1.1);
+      await expectColorContrast(selectedItem, "color", selectedBackground, 4.5);
+      await expectColorContrast(selectedItem.locator("kbd"), "color", selectedBackground, 4.5);
+
+      await recentItems.hover();
+      const submenuPopup = page.locator(".tienos-menu-popup:visible").last();
+      await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
+      const submenuBackground = parseColor(
+        await submenuPopup.evaluate((node) => getComputedStyle(node).backgroundColor),
+      );
+      expect(submenuBackground.alpha, `${theme} ${mode.name} submenu should be opaque`).toBe(1);
+      await expectColorContrast(
+        page.getByRole("menuitem", { name: "No Recent Items" }),
+        "color",
+        submenuBackground,
+        3,
+      );
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+      await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
+
+      await page.getByRole("menuitem", { name: "Navigator" }).click();
+      const navigatorPopup = page.locator(".tienos-menu-popup:visible");
+      await expect(navigatorPopup).toHaveCount(1);
+      const navigatorBackground = parseColor(
+        await navigatorPopup.evaluate((node) => getComputedStyle(node).backgroundColor),
+      );
+      expect(navigatorBackground.alpha, `${theme} ${mode.name} navigator should be opaque`).toBe(1);
+      await expectColorContrast(
+        page.getByRole("menuitem", { name: "About Navigator" }),
+        "color",
+        navigatorBackground,
+        4.5,
+      );
+      const navigatorSeparators = await navigatorPopup.locator('[role="separator"]').all();
+      await expectLocalSeparatorContrasts(
+        navigatorPopup,
+        navigatorSeparators,
+        `${theme} ${mode.name} navigator`,
+      );
+      await page.keyboard.press("Escape");
+    }
+  }
 });
 
 test("restores the pre-PR-16 menu bar while Settings carries layered glass", async ({ page }, testInfo) => {
@@ -921,7 +1308,6 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
 
   await expect(page).toHaveTitle("tienOS");
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
-  await expect(bootScreen).toBeVisible();
   await expect(bootScreen).toBeHidden();
   await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
   const wallpaperState = await page.locator(".tienos-wallpaper").evaluate((element) => {
@@ -962,7 +1348,7 @@ test("supports menu popup keyboard navigation, activation, focus return, and dis
   const systemPopup = page.locator(".tienos-menu-popup:visible");
   await expect(systemPopup).toHaveCount(1);
   await expect(systemPopup).toHaveCSS("background-image", /linear-gradient/);
-  await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+  await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
   await expect(page.getByRole("menuitem", { name: "About This OS" })).toHaveAttribute("data-highlighted", "");
   await page.keyboard.press("Enter");
   await expect(systemPopup).toBeHidden();
@@ -984,7 +1370,7 @@ test("supports menu popup keyboard navigation, activation, focus return, and dis
   const submenuPopup = page.locator(".tienos-menu-popup:visible").last();
   await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
   await expect(submenuPopup).toHaveCSS("background-image", /linear-gradient/);
-  await expect(submenuPopup).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+  await expect(submenuPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
   await expect(page.getByRole("menuitem", { name: "No Recent Items" })).toHaveAttribute(
     "aria-disabled",
     "true",
@@ -1006,7 +1392,7 @@ test("supports menu popup keyboard navigation, activation, focus return, and dis
   const navigatorPopup = page.locator(".tienos-menu-popup:visible");
   await expect(navigatorPopup).toHaveCount(1);
   await expect(navigatorPopup).toHaveCSS("background-image", /linear-gradient/);
-  await expect(navigatorPopup).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+  await expect(navigatorPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
   await expect(page.getByRole("menuitem", { name: "About Navigator" })).toHaveAttribute(
     "data-highlighted",
     "",
@@ -1036,7 +1422,7 @@ test("supports compact touch menu popups, submenu collision, activation, and dis
     await expect(popup).toBeVisible();
     await expect(popup).toHaveCSS("border-radius", "14px");
     await expect(popup).toHaveCSS("background-image", /linear-gradient/);
-    await expect(popup).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+    await expect(popup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
     const bounds = await popup.boundingBox();
     expect(bounds!.x).toBeGreaterThanOrEqual(7);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(313);
