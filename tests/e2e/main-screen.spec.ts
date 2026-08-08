@@ -523,6 +523,7 @@ async function setResolvedTheme(page: Page, theme: "dark" | "light") {
 
 test("applies design-system tokens to component styles", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" });
+  expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(false);
   await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
@@ -565,6 +566,7 @@ test("applies design-system tokens to component styles", async ({ page }) => {
     element.setAttribute("data-ending-style", "");
     const styles = getComputedStyle(element);
     const transition = {
+      property: styles.transitionProperty,
       duration: styles.transitionDuration,
       timing: styles.transitionTimingFunction,
     };
@@ -585,7 +587,11 @@ test("applies design-system tokens to component styles", async ({ page }) => {
     element.style.removeProperty("transition");
     return { transition, transforms };
   });
-  expect(popupState.transition).toEqual({ duration: "0.777s, 0.888s", timing: "ease, ease" });
+  expect(popupState.transition).toEqual({
+    property: "opacity, transform",
+    duration: "0.777s, 0.888s",
+    timing: "ease, ease",
+  });
   for (const state of popupState.transforms) {
     expect(state.scale).toBe("none");
     expect(state.translate).toBe("none");
@@ -1304,6 +1310,7 @@ for (const startupViewport of startupViewports) {
 
 test("renders the tienOS main screen and system menu", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
+  expect(await page.evaluate(() => matchMedia("(prefers-reduced-motion: reduce)").matches)).toBe(true);
   await page.goto("/");
 
   await expect(page).toHaveTitle("tienOS");
@@ -1323,6 +1330,26 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
   const popup = page.locator(".tienos-menu-popup").first();
   await expect(popup).toHaveCSS("border-radius", "14px");
   await expect(popup).toHaveCSS("padding", "4px");
+  const reducedMotionState = await popup.evaluate((element) => {
+    element.setAttribute("data-ending-style", "");
+    const styles = getComputedStyle(element);
+    const state = {
+      transitionProperty: styles.transitionProperty,
+      transform: styles.transform,
+      transformAnimations: element
+        .getAnimations()
+        .filter((animation) =>
+          (animation.effect as KeyframeEffect).getKeyframes().some((frame) => frame.transform !== undefined),
+        ).length,
+    };
+    element.removeAttribute("data-ending-style");
+    return state;
+  });
+  expect(reducedMotionState).toEqual({
+    transitionProperty: "none",
+    transform: "none",
+    transformAnimations: 0,
+  });
   await expect(page.getByText("About This OS", { exact: true }).locator("..")).toHaveCSS(
     "border-radius",
     "10px",
