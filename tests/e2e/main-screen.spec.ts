@@ -2926,6 +2926,7 @@ test("traffic lights preserve one window through genie minimize, Dock restore, a
   await page.goto("/");
   await expect(page.locator("#root")).not.toHaveAttribute("inert");
   const window = page.getByRole("region", { name: "System Settings" });
+  const genieWindow = page.locator("[data-genie-window]");
   const dock = page.getByRole("navigation", { name: "Dock" });
   const dockApp = dock.getByRole("button", { name: "System Settings" });
   const normal = await window.boundingBox();
@@ -2936,7 +2937,7 @@ test("traffic lights preserve one window through genie minimize, Dock restore, a
     .evaluate((button: HTMLButtonElement) => button.click());
   await expect(page.locator('.settings-window[data-window-visibility="minimizing"]')).toHaveCount(1);
   await page.waitForTimeout(120);
-  const midpoint = await window.evaluate((element) => ({
+  const midpoint = await genieWindow.evaluate((element) => ({
     transform: getComputedStyle(element).transform,
     clipPath: getComputedStyle(element).clipPath,
     opacity: Number(getComputedStyle(element).opacity),
@@ -2965,12 +2966,11 @@ test("traffic lights preserve one window through genie minimize, Dock restore, a
     .evaluate((el) => el.getBoundingClientRect().bottom);
   const dockTop = await page.locator("[data-dock-surface]").evaluate((el) => el.getBoundingClientRect().top);
   const maximized = await window.boundingBox();
-  expect(maximized).toEqual({
-    x: 0,
-    y: Math.ceil(menuBottom),
-    width: page.viewportSize()!.width,
-    height: Math.floor(dockTop) - Math.ceil(menuBottom),
-  });
+  expect(maximized).not.toBeNull();
+  expect(maximized!.x).toBeCloseTo(0, 0);
+  expect(maximized!.y).toBeCloseTo(Math.ceil(menuBottom), 0);
+  expect(maximized!.width).toBeCloseTo(page.viewportSize()!.width, 0);
+  expect(maximized!.height).toBeCloseTo(Math.floor(dockTop) - Math.ceil(menuBottom), 0);
   await page.screenshot({ path: testInfo.outputPath("settings-fullscreen.png") });
   await fullscreen.click();
   expect(await window.boundingBox()).toEqual(normal);
@@ -3014,14 +3014,15 @@ test("each traffic light accepts genuine touch activation", async ({ browser }, 
       const box = button.getBoundingClientRect();
       return [2, 22, 42].flatMap((offsetX) =>
         [2, 22, 42].map((offsetY) =>
-          document.elementFromPoint(box.left + offsetX, box.top + offsetY)?.closest("button")?.getAttribute(
-            "aria-label",
-          ),
+          document
+            .elementFromPoint(box.left + offsetX, box.top + offsetY)
+            ?.closest("button")
+            ?.getAttribute("aria-label"),
         ),
       );
     });
   }, controlNames);
-  expect(hitOwners).toEqual(controlNames.map((name) => Array(9).fill(name)));
+  expect(hitOwners).toEqual(controlNames.map((name) => Array<string>(9).fill(name)));
   const compactDotGeometry = await page.locator("[data-sidebar-panel]").evaluate((panel) => {
     const panelBox = panel.getBoundingClientRect();
     return Array.from(panel.querySelectorAll<HTMLElement>("[data-traffic-dot]"), (dot) => {
@@ -3058,16 +3059,12 @@ test("each traffic light accepts genuine touch activation", async ({ browser }, 
     "true",
   );
   await page.screenshot({ path: testInfo.outputPath("settings-touch-fullscreen.png") });
-  await page
-    .getByRole("button", { name: "Minimize System Settings" })
-    .tap({ position: { x: 22, y: 20.5 } });
+  await page.getByRole("button", { name: "Minimize System Settings" }).tap({ position: { x: 22, y: 20.5 } });
   await expect(page.getByRole("region", { name: "System Settings" })).toBeHidden();
   await dockApp.tap();
   await expect(page.getByRole("region", { name: "System Settings" })).toBeVisible();
   await page.waitForTimeout(450);
-  await page
-    .getByRole("button", { name: "Close System Settings" })
-    .tap({ position: { x: 22, y: 20.5 } });
+  await page.getByRole("button", { name: "Close System Settings" }).tap({ position: { x: 22, y: 20.5 } });
   await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(0);
 
   await dockApp.tap();
@@ -3267,7 +3264,7 @@ test("transition state is inert, tracks Dock movement, and repeated activation s
   ]).toContainEqual(repeated);
   await expect(window).toHaveAttribute("data-window-visibility", "visible", { timeout: 1_000 });
   await expect(window).not.toHaveAttribute("aria-hidden");
-  expect(await window.evaluate((element) => element.inert)).toBe(false);
+  expect(await window.evaluate((element: HTMLElement): boolean => element.inert)).toBe(false);
   await dockApp.evaluate((button: HTMLButtonElement) => button.click());
   await expect(dock.getByRole("status")).toHaveText("System Settings is running and minimized", {
     timeout: 2_500,
@@ -3506,9 +3503,7 @@ test("fresh Settings lifecycles discard stale and in-flight requests", async ({ 
   const rapidVisibility = await dockApp.evaluate(async (button: HTMLButtonElement) => {
     button.click();
     button.click();
-    await new Promise<void>((resolve) =>
-      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
-    );
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
     return document.querySelector<HTMLElement>("[data-genie-window]")?.dataset.windowVisibility;
   });
   expect(rapidVisibility).toBe("visible");

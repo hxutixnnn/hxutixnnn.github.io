@@ -326,7 +326,7 @@ export function SystemSettings({
         if (!element) return;
         const activeAnimations = element
           .getAnimations()
-          .filter((animation) => animation.playState === "pending" || animation.playState === "running");
+          .filter((animation) => animation.playState === "running");
         if (activeAnimations.length > 0) {
           settledFrames = 0;
           await Promise.allSettled(activeAnimations.map((animation) => animation.finished));
@@ -414,6 +414,8 @@ export function SystemSettings({
     handledFocusRequestRef.current = focusRequest;
     if (visibility === "minimizing") {
       setGenieTarget();
+      // Interruption must reverse the in-flight transition before the next paint.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       updateVisibility("restoring");
       finishRestore();
       return;
@@ -462,6 +464,8 @@ export function SystemSettings({
   useLayoutEffect(() => {
     if (minimized || visibility !== "minimized") return;
     setGenieTarget();
+    // External restoration must expose the retained window in this layout pass.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     updateVisibility("restoring");
     finishRestore();
   }, [finishRestore, minimized, setGenieTarget, updateVisibility, visibility]);
