@@ -59,7 +59,7 @@ The version-pinned audit and adoption decisions for every installed Base UI expo
 ### Menu bar and menus
 
 Use Base UI menu semantics, complete keyboard operation, familiar shortcuts, and semantic labels.
-Keep menu presentation compact. The menu bar is an edge-to-edge, non-glass transparent overlay with safe-area top padding, wallpaper-colored text, and a restrained text shadow; the static HTML mirrors those utilities to prevent startup style jumps. Popup menus share the Settings layered glass language: wallpaper-dependent translucent fills, blur and saturation, edge highlights, inner and outer shadows, and conventional radii. Resolved themes, increased contrast, reduced transparency, and forced colors must retain legible opaque fallbacks.
+Keep menu presentation compact. The menu bar is an edge-to-edge, non-glass transparent overlay with safe-area top padding, wallpaper-colored text, and a restrained text shadow; the static HTML mirrors those utilities to prevent startup style jumps. Popup menus share the Settings layered glass language: wallpaper-dependent translucent fills, blur and saturation, edge highlights, inner and outer shadows, and conventional radii. Their normal-theme separators are subtle one-pixel inset hairlines; increased contrast, reduced transparency, and forced colors restore stronger full-width rules. Resolved themes and those accessibility modes must retain legible opaque fallbacks.
 Selection uses the accent token plus text and positional state, never color alone.
 
 ### Windows
