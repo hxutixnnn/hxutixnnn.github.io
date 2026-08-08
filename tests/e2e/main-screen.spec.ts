@@ -985,14 +985,66 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
   }
 });
 
-test("keeps Settings on one continuous glass field with a floating sidebar", async ({ page }, testInfo) => {
-  for (const theme of ["dark", "light"] as const) {
-    await page.addInitScript(
-      (mode) => localStorage.setItem("tienos-appearance", JSON.stringify(mode)),
-      theme,
+test("keeps Settings seamless across themes, accessibility modes, and layouts", async ({
+  page,
+}, testInfo) => {
+  test.setTimeout(150_000);
+  const session = await page.context().newCDPSession(page);
+  const scenarios: readonly {
+    name: string;
+    appearance: "light" | "dark" | "auto";
+    resolved: "light" | "dark";
+    feature?: { name: string; value: string };
+    width: number;
+    height: number;
+  }[] = [
+    { name: "light", appearance: "light", resolved: "light", width: 1440, height: 900 },
+    { name: "dark", appearance: "dark", resolved: "dark", width: 1440, height: 900 },
+    { name: "auto-light", appearance: "auto", resolved: "light", width: 1440, height: 900 },
+    { name: "auto-dark", appearance: "auto", resolved: "dark", width: 1440, height: 900 },
+    {
+      name: "reduced-transparency",
+      appearance: "auto",
+      resolved: "dark",
+      feature: { name: "prefers-reduced-transparency", value: "reduce" },
+      width: 1440,
+      height: 900,
+    },
+    {
+      name: "increased-contrast",
+      appearance: "auto",
+      resolved: "light",
+      feature: { name: "prefers-contrast", value: "more" },
+      width: 1440,
+      height: 900,
+    },
+    {
+      name: "forced-colors",
+      appearance: "auto",
+      resolved: "dark",
+      feature: { name: "forced-colors", value: "active" },
+      width: 1440,
+      height: 900,
+    },
+    { name: "iphone", appearance: "auto", resolved: "light", width: 390, height: 844 },
+  ];
+
+  await page.goto("/");
+  for (const scenario of scenarios) {
+    await page.setViewportSize({ width: scenario.width, height: scenario.height });
+    await session.send("Emulation.setEmulatedMedia", {
+      features: [
+        { name: "prefers-color-scheme", value: scenario.resolved },
+        ...(scenario.feature ? [scenario.feature] : []),
+      ],
+    });
+    await page.evaluate(
+      (appearance) => localStorage.setItem("tienos-appearance", JSON.stringify(appearance)),
+      scenario.appearance,
     );
-    await page.goto("/");
+    await page.reload();
     await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden({ timeout: 10_000 });
+    await expect(page.locator("html")).toHaveAttribute("data-theme", scenario.resolved);
     const menu = page.locator("[data-menu-bar-surface]");
     await expect(menu).toHaveCSS("top", "0px");
     await expect(menu).toHaveCSS("left", "0px");
@@ -1006,18 +1058,71 @@ test("keeps Settings on one continuous glass field with a floating sidebar", asy
     const shell = page.locator(".settings-window");
     const sidebar = page.locator(".settings-sidebar-panel");
     const detail = page.locator(".settings-detail");
-    await expect(shell).toHaveCSS("backdrop-filter", "blur(32px) saturate(1.4)");
-    await expect(sidebar).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
-    await expect(shell).toHaveCSS("background-image", /linear-gradient/);
-    await expect(sidebar).toHaveCSS("background-image", /linear-gradient/);
-    await expect(sidebar).toHaveCSS("border-radius", "16px");
+    const fallback = scenario.feature?.name;
+    if (fallback === "prefers-reduced-transparency" || fallback === "forced-colors") {
+      await expect(shell).toHaveCSS("backdrop-filter", "none");
+      await expect(sidebar).toHaveCSS("backdrop-filter", "none");
+    } else {
+      await expect(shell).toHaveCSS("backdrop-filter", "blur(32px) saturate(1.4)");
+      await expect(sidebar).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+    }
+    if (fallback) {
+      await expect(shell).toHaveCSS("background-image", "none");
+      await expect(sidebar).toHaveCSS("background-image", "none");
+    } else {
+      await expect(shell).toHaveCSS("background-image", /linear-gradient/);
+      await expect(sidebar).toHaveCSS("background-image", /linear-gradient/);
+    }
+    await expect(sidebar).toHaveCSS("border-style", "solid");
+    await expect(sidebar).toHaveCSS("border-radius", scenario.width <= 700 ? "11px" : "16px");
     await expect(detail).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
     await expect(detail).toHaveCSS("background-image", "none");
     await expect(detail).toHaveCSS("box-shadow", "none");
     const splitter = page.getByRole("separator", { name: "Resize Settings sidebar" });
+    const grip = splitter.locator("[data-splitter-grip]");
     await expect(splitter).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-    await expect(splitter.locator("[data-splitter-grip]")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-    await page.screenshot({ path: testInfo.outputPath(`settings-seamless-${theme}.png`) });
+    await expect(grip).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    const seam = await splitter.evaluate((node) => ({
+      before: getComputedStyle(node, "::before").backgroundColor,
+      after: getComputedStyle(node, "::after").backgroundColor,
+    }));
+    expect(seam).toEqual({ before: "rgba(0, 0, 0, 0)", after: "rgba(0, 0, 0, 0)" });
+    const [splitterBounds, gripBounds, shellBounds, sidebarBounds] = await Promise.all([
+      splitter.boundingBox(),
+      grip.boundingBox(),
+      shell.boundingBox(),
+      sidebar.boundingBox(),
+    ]);
+    expect(gripBounds!.height).toBeLessThan(splitterBounds!.height / 4);
+    expect(sidebarBounds!.x).toBeGreaterThan(shellBounds!.x);
+    expect(sidebarBounds!.y).toBeGreaterThan(shellBounds!.y);
+    const minimum = Number(await splitter.getAttribute("aria-valuemin"));
+    const maximum = Number(await splitter.getAttribute("aria-valuemax"));
+    const current = Number(await splitter.getAttribute("aria-valuenow"));
+    expect(minimum).toBeLessThanOrEqual(current);
+    expect(current).toBeLessThanOrEqual(maximum);
+    await page.screenshot({ path: testInfo.outputPath(`settings-seamless-${scenario.name}.png`) });
+
+    await splitter.hover();
+    await expect(grip).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await splitter.focus();
+    await expect(grip).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    await page.mouse.move(
+      splitterBounds!.x + splitterBounds!.width / 2,
+      splitterBounds!.y + splitterBounds!.height / 2,
+    );
+    await page.mouse.down();
+    expect(await splitter.evaluate((node) => node.matches(":active"))).toBe(true);
+    await expect(grip).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    if (scenario.name === "dark" || scenario.name === "iphone") {
+      await page.screenshot({ path: testInfo.outputPath(`settings-grip-active-${scenario.name}.png`) });
+    }
+    await page.mouse.up();
+
+    if (scenario.name === "iphone") {
+      expect(sidebarBounds!.width / shellBounds!.width).toBeGreaterThanOrEqual(0.36);
+      expect(sidebarBounds!.width / shellBounds!.width).toBeLessThanOrEqual(0.43);
+    }
   }
 
   const shell = page.locator(".settings-window");
