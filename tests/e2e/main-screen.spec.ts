@@ -2995,25 +2995,50 @@ test("traffic lights preserve one window through genie minimize, Dock restore, a
 });
 
 test("each traffic light accepts genuine touch activation", async ({ browser }, testInfo) => {
-  const context = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } });
+  const context = await browser.newContext({ hasTouch: true, viewport: { width: 320, height: 568 } });
   const page = await context.newPage();
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
+  await expect(page.locator("#root")).not.toHaveAttribute("inert");
   const dockApp = page
     .getByRole("navigation", { name: "Dock" })
     .getByRole("button", { name: "System Settings" });
+  const controlNames = [
+    "Close System Settings",
+    "Minimize System Settings",
+    "Toggle fullscreen System Settings",
+  ];
+  const hitOwners = await page.evaluate((names) => {
+    return names.map((name) => {
+      const button = document.querySelector<HTMLButtonElement>(`button[aria-label="${name}"]`)!;
+      const box = button.getBoundingClientRect();
+      return [2, 22, 42].flatMap((offsetX) =>
+        [2, 22, 42].map((offsetY) =>
+          document.elementFromPoint(box.left + offsetX, box.top + offsetY)?.closest("button")?.getAttribute(
+            "aria-label",
+          ),
+        ),
+      );
+    });
+  }, controlNames);
+  expect(hitOwners).toEqual(controlNames.map((name) => Array(9).fill(name)));
 
-  await page.getByRole("button", { name: "Toggle fullscreen System Settings" }).tap();
+  await page
+    .getByRole("button", { name: "Toggle fullscreen System Settings" })
+    .tap({ position: { x: 42, y: 22 } });
   await expect(page.getByRole("button", { name: "Toggle fullscreen System Settings" })).toHaveAttribute(
     "aria-pressed",
     "true",
   );
   await page.screenshot({ path: testInfo.outputPath("settings-touch-fullscreen.png") });
-  await page.getByRole("button", { name: "Minimize System Settings" }).tap();
+  await page
+    .getByRole("button", { name: "Minimize System Settings" })
+    .tap({ position: { x: 2, y: 22 } });
   await expect(page.getByRole("region", { name: "System Settings" })).toBeHidden();
   await dockApp.tap();
   await expect(page.getByRole("region", { name: "System Settings" })).toBeVisible();
   await page.waitForTimeout(450);
-  await page.getByRole("button", { name: "Close System Settings" }).tap();
+  await page.getByRole("button", { name: "Close System Settings" }).tap({ position: { x: 2, y: 22 } });
   await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(0);
 
   await dockApp.tap();
@@ -3026,13 +3051,43 @@ test("each traffic light accepts genuine touch activation", async ({ browser }, 
 });
 
 test("genie transition is interruptible and reduced motion bypasses warping", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
-  await page.getByRole("button", { name: "Minimize System Settings" }).click();
-  await page.waitForTimeout(80);
-  await page
-    .getByRole("navigation", { name: "Dock" })
-    .getByRole("button", { name: "System Settings" })
-    .click();
+  const continuity = await page
+    .getByRole("button", { name: "Minimize System Settings" })
+    .evaluate(async (button: HTMLButtonElement) => {
+      const window = document.querySelector<HTMLElement>("[data-genie-window]")!;
+      const dock = document.querySelector<HTMLButtonElement>("[data-dock-settings]")!;
+      const readVisualState = () => {
+        const style = getComputedStyle(window);
+        return {
+          clipPath: Array.from(style.clipPath.matchAll(/-?\d+(?:\.\d+)?/g), (match) => Number(match[0])),
+          matrix: Array.from(new DOMMatrixReadOnly(style.transform).toFloat64Array()),
+          opacity: Number(style.opacity),
+          visibility: window.dataset.windowVisibility,
+        };
+      };
+      button.click();
+      await new Promise((resolve) => setTimeout(resolve, 120));
+      const before = readVisualState();
+      const afterRestoring = new Promise<ReturnType<typeof readVisualState>>((resolve) => {
+        const observer = new MutationObserver(() => {
+          if (window.dataset.windowVisibility !== "restoring") return;
+          observer.disconnect();
+          resolve(readVisualState());
+        });
+        observer.observe(window, { attributes: true, attributeFilter: ["data-window-visibility"] });
+      });
+      dock.click();
+      return { before, after: await afterRestoring };
+    });
+  const maximumDelta = (before: number[], after: number[]) =>
+    Math.max(...before.map((value, index) => Math.abs(value - after[index])));
+  expect(maximumDelta(continuity.before.clipPath, continuity.after.clipPath)).toBeLessThan(2);
+  expect(maximumDelta(continuity.before.matrix, continuity.after.matrix)).toBeLessThan(2);
+  expect(Math.abs(continuity.before.opacity - continuity.after.opacity)).toBeLessThan(0.02);
+  expect(continuity.before.visibility).toBe("minimizing");
+  expect(continuity.after.visibility).toBe("restoring");
   await expect(page.getByRole("region", { name: "System Settings" })).toBeVisible();
   await expect(page.getByRole("region", { name: "System Settings" })).toBeFocused();
 

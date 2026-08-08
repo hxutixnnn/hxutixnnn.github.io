@@ -108,8 +108,8 @@
   transition:
     transform 400ms cubic-bezier(0.22, 0.72, 0.18, 1),
     clip-path 400ms cubic-bezier(0.22, 0.72, 0.18, 1),
-    opacity 120ms ease-in 280ms;
-  clip-path: none;
+    opacity 400ms cubic-bezier(0.22, 0.72, 0.18, 1);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
 }
 [data-genie-window][data-window-visibility="minimizing"],
 [data-genie-window][data-window-visibility="minimized"] {
@@ -120,20 +120,6 @@
 }
 [data-genie-window][data-window-visibility="restoring"] {
   pointer-events: none;
-}
-[data-genie-window][data-window-visibility="minimizing"] {
-  animation: tienos-genie-clip 400ms cubic-bezier(0.22, 0.72, 0.18, 1) both;
-}
-[data-genie-window][data-window-visibility="restoring"] {
-  animation: tienos-genie-clip 400ms cubic-bezier(0.22, 0.72, 0.18, 1) reverse both;
-}
-@keyframes tienos-genie-clip {
-  from {
-    clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
-  }
-  to {
-    clip-path: polygon(43% 0, 57% 0, 100% 100%, 0 100%);
-  }
 }
 [data-genie-window][data-fullscreen] {
   border-radius: 0;
@@ -147,6 +133,5 @@
   [data-genie-window][data-window-visibility="restoring"] {
     transform: none;
     clip-path: none;
-    animation: none;
   }
 }
