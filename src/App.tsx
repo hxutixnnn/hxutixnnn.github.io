@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useState } from "react";
+import { Dock } from "./components/Dock";
 import { MenuBar } from "./components/MenuBar";
 import { SystemSettings } from "./components/SystemSettings";
 import { useAppearanceStore } from "./stores/appearance";
@@ -10,6 +11,7 @@ type AppProps = {
 
 export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
   const [settingsOpen, setSettingsOpen] = useState(true);
+  const [settingsFocusRequest, setSettingsFocusRequest] = useState(0);
   const syncSystemTheme = useAppearanceStore((state) => state.syncSystemTheme);
 
   useEffect(() => {
@@ -55,9 +57,16 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
             className="fixed inset-0 z-20 bg-[var(--tienos-color-scrim)] backdrop-blur-[2px] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none"
             aria-hidden="true"
           />
-          <SystemSettings onClose={() => setSettingsOpen(false)} />
+          <SystemSettings focusRequest={settingsFocusRequest} onClose={() => setSettingsOpen(false)} />
         </>
       )}
+      <Dock
+        settingsOpen={settingsOpen}
+        onActivateSettings={() => {
+          if (!settingsOpen) setSettingsOpen(true);
+          setSettingsFocusRequest((request) => request + 1);
+        }}
+      />
     </main>
   );
 }

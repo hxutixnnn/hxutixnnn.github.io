@@ -7,6 +7,8 @@
   --tienos-space-6: 32px;
   --tienos-space-7: 48px;
 
+  --tienos-safe-area-bottom: env(safe-area-inset-bottom);
+
   --tienos-type-caption: 11px;
   --tienos-type-secondary: 12px;
   --tienos-type-body: 13px;
@@ -40,6 +42,8 @@
   --tienos-color-content: rgb(255 255 255 / 0.075);
   --tienos-color-control: rgb(255 255 255 / 0.11);
   --tienos-color-scrim: rgb(0 0 0 / 0.34);
+  --tienos-color-dock: rgb(18 27 39 / 0.58);
+  --tienos-color-dock-indicator: rgb(255 255 255 / 0.94);
   --tienos-color-scrollbar-track: transparent;
   --tienos-color-scrollbar-thumb: rgb(255 255 255 / 0.5);
 
@@ -77,6 +81,8 @@
   --tienos-color-content: rgb(255 255 255 / 0.56);
   --tienos-color-control: rgb(15 23 42 / 0.08);
   --tienos-color-scrim: rgb(15 23 42 / 0.2);
+  --tienos-color-dock: rgb(238 244 251 / 0.6);
+  --tienos-color-dock-indicator: rgb(15 23 42 / 0.86);
   --tienos-color-scrollbar-track: transparent;
   --tienos-color-scrollbar-thumb: rgb(15 23 42 / 0.58);
   --tienos-shadow-window: 0 42px 120px rgb(15 23 42 / 0.35);
@@ -113,6 +119,7 @@
     --tienos-color-menu: #141b24;
     --tienos-color-menu-separator: rgb(255 255 255 / 0.68);
     --tienos-menu-separator-inset: 0px;
+    --tienos-color-dock: #18222f;
     --tienos-color-window: #1d1d1f;
     --tienos-color-sidebar: #181819;
     --tienos-color-detail: #202023;
@@ -125,6 +132,7 @@
     --tienos-color-separator: rgb(15 23 42 / 0.52);
     --tienos-color-menu: #f5f8fc;
     --tienos-color-menu-separator: rgb(15 23 42 / 0.58);
+    --tienos-color-dock: #eef3f9;
     --tienos-color-window: #f2f4f8;
     --tienos-color-sidebar: #e2e7ef;
     --tienos-color-detail: #f7f9fc;
@@ -149,6 +157,8 @@
     --tienos-color-separator: CanvasText;
     --tienos-color-border: CanvasText;
     --tienos-color-menu: Canvas;
+    --tienos-color-dock: Canvas;
+    --tienos-color-dock-indicator: CanvasText;
     --tienos-color-menu-highlight: Canvas;
     --tienos-color-menu-text-primary: CanvasText;
     --tienos-color-menu-text-secondary: CanvasText;

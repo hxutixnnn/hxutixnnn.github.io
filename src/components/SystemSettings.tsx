@@ -23,6 +23,7 @@ import { SettingsSelect } from "./SettingsControls";
 import { useAppearanceStore, type AppearanceMode } from "../stores/appearance";
 
 type SystemSettingsProps = {
+  focusRequest?: number;
   onClose: () => void;
 };
 
@@ -98,6 +99,13 @@ function readViewport(): Viewport {
   return { width: window.innerWidth, height: window.innerHeight };
 }
 
+function readSafeAreaBottom() {
+  const value = Number.parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue("--tienos-safe-area-bottom"),
+  );
+  return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
 function clamp(value: number, minimum: number, maximum: number) {
   return Math.min(Math.max(value, minimum), maximum);
 }
@@ -140,14 +148,18 @@ function SettingsScrollArea({
   );
 }
 
-function compactFrame(viewport: Viewport, menuBottom: number): SettingsFrame {
+function compactFrame(
+  viewport: Viewport,
+  menuBottom: number,
+  bottomBoundary = viewport.height,
+): SettingsFrame {
   const measuredTop = Math.ceil(menuBottom);
   const top = viewport.width <= iphoneBreakpoint ? Math.max(iphoneWindowTop, measuredTop) : measuredTop;
   return {
     x: 8,
     y: top,
     width: Math.max(0, viewport.width - 16),
-    height: Math.max(0, viewport.height - top - 8),
+    height: Math.max(0, bottomBoundary - top - 8),
   };
 }
 
@@ -171,15 +183,20 @@ function desktopFrame(viewport: Viewport): SettingsFrame {
   };
 }
 
-function clampFrame(frame: SettingsFrame, viewport: Viewport, menuBottom = 0): SettingsFrame {
+function clampFrame(
+  frame: SettingsFrame,
+  viewport: Viewport,
+  menuBottom = 0,
+  bottomBoundary = viewport.height,
+): SettingsFrame {
   const top = Math.ceil(menuBottom);
-  const availableHeight = Math.max(0, viewport.height - top);
+  const availableHeight = Math.max(0, bottomBoundary - top);
   const width = clamp(frame.width, Math.min(desktopMinimum.width, viewport.width), viewport.width);
   const height = clamp(frame.height, Math.min(desktopMinimum.height, availableHeight), availableHeight);
 
   return {
     x: clamp(frame.x, 0, viewport.width - width),
-    y: clamp(frame.y, top, viewport.height - height),
+    y: clamp(frame.y, top, bottomBoundary - height),
     width,
     height,
   };
@@ -191,6 +208,7 @@ function frameFromResize(
   position: Parameters<RndResizeCallback>[4],
   viewport: Viewport,
   menuBottom: number,
+  bottomBoundary: number,
 ): SettingsFrame {
   const top = direction.toLowerCase().startsWith("top")
     ? Math.max(position.y, Math.ceil(menuBottom))
@@ -206,6 +224,7 @@ function frameFromResize(
     },
     viewport,
     menuBottom,
+    bottomBoundary,
   );
 }
 
@@ -217,7 +236,7 @@ function applyFrameDuringResize(element: HTMLElement, frame: SettingsFrame) {
   element.style.transform = `translate(${transform.e + frame.x - bounds.x}px, ${transform.f + frame.y - bounds.y}px)`;
 }
 
-export function SystemSettings({ onClose }: SystemSettingsProps) {
+export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProps) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("General");
   const appearanceMode = useAppearanceStore((state) => state.mode);
@@ -232,6 +251,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
   const [viewport, setViewport] = useState(readViewport);
   const compact = viewport.width <= compactBreakpoint;
   const [menuBottom, setMenuBottom] = useState(0);
+  const [bottomBoundary, setBottomBoundary] = useState(viewport.height);
   const [sidebarPercent, setSidebarPercent] = useState(() => (compact ? 40 : 30.8));
   const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport, 0) : desktopFrame(viewport)));
   const windowRef = useRef<HTMLElement>(null);
@@ -240,25 +260,33 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
 
   useLayoutEffect(() => {
     const menuBar = document.querySelector<HTMLElement>("[data-menu-bar-surface]");
+    const dock = document.querySelector<HTMLElement>("[data-dock-surface]");
     const updateGeometry = () => {
       const nextViewport = readViewport();
       const nextMenuBottom = menuBar?.getBoundingClientRect().bottom ?? 0;
+      const measuredDockTop = dock?.getBoundingClientRect().top ?? nextViewport.height;
+      const safeAreaBoundary = nextViewport.height - readSafeAreaBottom();
+      const nextBottomBoundary = Math.floor(
+        measuredDockTop > nextMenuBottom ? Math.min(measuredDockTop, safeAreaBoundary) : safeAreaBoundary,
+      );
       const nextCompact = nextViewport.width <= compactBreakpoint;
       const modeChanged = compactRef.current !== nextCompact;
       compactRef.current = nextCompact;
 
       setViewport(nextViewport);
       setMenuBottom(nextMenuBottom);
+      setBottomBoundary(nextBottomBoundary);
       if (modeChanged) setSidebarPercent(nextCompact ? 40 : 30.8);
       setFrame((currentFrame) => {
-        if (nextCompact) return compactFrame(nextViewport, nextMenuBottom);
+        if (nextCompact) return compactFrame(nextViewport, nextMenuBottom, nextBottomBoundary);
         const nextFrame = modeChanged ? desktopFrame(nextViewport) : currentFrame;
-        return clampFrame(nextFrame, nextViewport, nextMenuBottom);
+        return clampFrame(nextFrame, nextViewport, nextMenuBottom, nextBottomBoundary);
       });
     };
 
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(updateGeometry);
     if (menuBar) observer?.observe(menuBar);
+    if (dock) observer?.observe(dock);
     window.addEventListener("resize", updateGeometry);
     updateGeometry();
     return () => {
@@ -269,6 +297,9 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
   useEffect(() => {
     if (detailsViewportRef.current) detailsViewportRef.current.scrollTop = 0;
   }, [selected]);
+  useEffect(() => {
+    if (focusRequest > 0) windowRef.current?.focus({ preventScroll: true });
+  }, [focusRequest]);
   const filteredCategoryGroups = useMemo(
     () =>
       [categories.slice(0, 7), categories.slice(7)].map((group) =>
@@ -316,12 +347,12 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
           : clampSplit(resolvedSidebarPercent + direction),
     );
   };
-  const availableHeight = Math.max(0, viewport.height - Math.ceil(menuBottom));
+  const availableHeight = Math.max(0, bottomBoundary - Math.ceil(menuBottom));
   const minimumHeight = compact
     ? Math.min(frame.height, availableHeight)
     : Math.min(desktopMinimum.height, availableHeight);
   const updateFrameFromResize: RndResizeCallback = (_, direction, element, __, position) => {
-    const nextFrame = frameFromResize(direction, element, position, viewport, menuBottom);
+    const nextFrame = frameFromResize(direction, element, position, viewport, menuBottom, bottomBoundary);
     applyFrameDuringResize(element, nextFrame);
     setFrame(nextFrame);
   };
@@ -332,16 +363,17 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
         { x: bounds.x, y: bounds.y, width: element.offsetWidth, height: element.offsetHeight },
         viewport,
         menuBottom,
+        bottomBoundary,
       ),
     );
   };
 
-  return (
+  const settingsWindow = (
     <Rnd
       className="settings-rnd z-30"
       size={{ width: frame.width, height: frame.height }}
       position={{ x: frame.x, y: frame.y }}
-      bounds="window"
+      bounds="[data-settings-drag-boundary]"
       minWidth={compact ? frame.width : Math.min(desktopMinimum.width, viewport.width)}
       minHeight={minimumHeight}
       maxWidth={viewport.width}
@@ -353,12 +385,12 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
       resizeHandleStyles={resizeHandleStyles}
       onDrag={(_, position) =>
         setFrame((currentFrame) =>
-          clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom),
+          clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom, bottomBoundary),
         )
       }
       onDragStop={(_, position) =>
         setFrame((currentFrame) =>
-          clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom),
+          clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom, bottomBoundary),
         )
       }
       onResize={updateFrameFromResize}
@@ -369,6 +401,7 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
         style={{ gridTemplateColumns: `${resolvedSidebarPercent}% 8px minmax(0, 1fr)` }}
         className="settings-window relative grid h-full w-full overflow-hidden rounded-[var(--tienos-radius-window)] border border-white/25 [background:linear-gradient(135deg,rgb(255_255_255/0.16),transparent_36%,rgb(4_10_20/0.16)),var(--tienos-color-window)] text-[var(--tienos-color-text-primary)] shadow-[var(--tienos-shadow-window),0_10px_32px_rgb(2_8_23/0.24),inset_0_1px_0_rgb(255_255_255/0.3),inset_0_-1px_0_rgb(0_0_0/0.16)] backdrop-blur-[32px] backdrop-saturate-[1.4] contrast-more:border-[var(--tienos-color-border)] contrast-more:[background:var(--tienos-color-window)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-window)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none max-[700px]:rounded-[18px]"
         aria-label="System Settings"
+        tabIndex={-1}
       >
         <aside
           className="settings-sidebar min-h-0 min-w-0 p-[8px_4px_8px_8px] max-[700px]:p-[7px_3px_7px_7px]"
@@ -715,5 +748,20 @@ export function SystemSettings({ onClose }: SystemSettingsProps) {
         </div>
       </section>
     </Rnd>
+  );
+
+  return (
+    <>
+      <div
+        data-settings-drag-boundary
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-x-0"
+        style={{
+          top: Math.ceil(menuBottom),
+          bottom: Math.max(0, viewport.height - bottomBoundary),
+        }}
+      />
+      {settingsWindow}
+    </>
   );
 }

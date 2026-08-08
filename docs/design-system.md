@@ -23,7 +23,7 @@ Author component presentation as complete Tailwind utility strings in JSX or TSX
 
 ### Surfaces and color
 
-Use semantic text, border, separator, accent, window, sidebar, content, control, and scrim tokens.
+Use semantic text, border, separator, accent, window, sidebar, content, control, Dock, and scrim tokens.
 Light and dark values are selected by the root `data-theme` attribute. The typed Zustand store in [`src/stores/appearance.ts`](../src/stores/appearance.ts) is the single runtime owner of appearance state; components must not own or duplicate it.
 Do not use color as the only indication of selection or status.
 The system provides stronger contrast, opaque reduced-transparency surfaces, and forced-color mappings.
@@ -65,10 +65,16 @@ Selection uses the accent token plus text and positional state, never color alon
 ### Windows
 
 Desktop windows support pointer dragging, eight-direction resizing, viewport bounds, and minimum dimensions.
-Window frames adapt reactively to the available viewport. Their top drag boundary is measured from the rendered menu-bar edge and observed for geometry changes rather than duplicated as a spacing constant.
+Window frames adapt reactively to the available workspace between the rendered menu-bar edge and Dock. Both surfaces are measured and observed for geometry changes rather than duplicated as spacing constants, and the safe-area inset further constrains the bottom boundary.
 Compact layouts remain fully visible and fixed rather than scaling their contents.
 The Settings window supports one-finger dragging from its intended chrome and touch resizing through its `react-rnd` handles; interactive content and independently scrollable panes remain excluded from window dragging.
 Preserve a meaningful accessible window name.
+
+### Dock
+
+The bottom-centered Dock contains one System Settings app item. Activating it opens the single Settings window when closed or focuses the existing window when open; its running indicator follows that lifecycle without adding a minimize action.
+Keep the Dock inside horizontal viewport and bottom safe-area bounds, above windows and below portaled menus. Its app item retains a visible focus indicator, an explicit accessible name and tooltip, and a 56px mouse and touch target.
+The Dock uses wallpaper-dependent layered glass with conventional radii, restrained transform feedback, opaque reduced-transparency and increased-contrast fallbacks, and native forced-color mappings. The static pre-JavaScript desktop mirrors its running appearance without exposing a deceptive launcher control.
 
 ### Sidebars
 
