@@ -1,4 +1,4 @@
-import { expect, test, type CDPSession, type Locator } from "@playwright/test";
+import { expect, test, type CDPSession, type Locator, type Page } from "@playwright/test";
 import sharp from "sharp";
 
 const spriteUrl = "/fontawesome/fontawesome-pro-solid.svg";
@@ -86,6 +86,13 @@ async function touchDrag(session: CDPSession, from: { x: number; y: number }, to
   await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
 }
 
+async function readCenterPixel(element: Locator) {
+  const screenshot = await element.screenshot({ animations: "disabled" });
+  const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
+  const offset = (Math.floor(info.height / 2) * info.width + Math.floor(info.width / 2)) * info.channels;
+  return Array.from(data.subarray(offset, offset + 3));
+}
+
 async function readHorizontalPixels(element: Locator, distanceFromCenter: number) {
   const screenshot = await element.screenshot({ animations: "disabled" });
   const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
@@ -103,19 +110,17 @@ async function readBackgroundsBehind(popup: Locator, foregrounds: Locator[]) {
   expect(popupBounds).not.toBeNull();
   const foregroundHandles = await Promise.all(foregrounds.map((foreground) => foreground.elementHandle()));
   for (const handle of foregroundHandles) expect(handle).not.toBeNull();
-  const foregroundBounds = await Promise.all(foregroundHandles.map((handle) => handle!.boundingBox()));
+  const foregroundBounds = await Promise.all(foregroundHandles.map((handle) => handle.boundingBox()));
   for (const bounds of foregroundBounds) expect(bounds).not.toBeNull();
   await Promise.all(
     foregroundHandles.map((handle) =>
-      handle!.evaluate((node) =>
-        (node as HTMLElement).style.setProperty("visibility", "hidden", "important"),
-      ),
+      handle.evaluate((node) => (node as HTMLElement).style.setProperty("visibility", "hidden", "important")),
     ),
   );
   const screenshot = await popup.screenshot({ animations: "disabled" }).finally(async () => {
     await Promise.all(
       foregroundHandles.map((handle) =>
-        handle!.evaluate((node) => (node as HTMLElement).style.removeProperty("visibility")),
+        handle.evaluate((node) => (node as HTMLElement).style.removeProperty("visibility")),
       ),
     );
   });
@@ -225,20 +230,18 @@ async function expectLocalSeparatorContrasts(popup: Locator, separators: Locator
   expect(popupBounds).not.toBeNull();
   const separatorHandles = await Promise.all(separators.map((separator) => separator.elementHandle()));
   for (const handle of separatorHandles) expect(handle).not.toBeNull();
-  const separatorBounds = await Promise.all(separatorHandles.map((handle) => handle!.boundingBox()));
+  const separatorBounds = await Promise.all(separatorHandles.map((handle) => handle.boundingBox()));
   for (const bounds of separatorBounds) expect(bounds).not.toBeNull();
   const renderedScreenshot = await popup.screenshot({ animations: "disabled" });
   await Promise.all(
     separatorHandles.map((handle) =>
-      handle!.evaluate((node) =>
-        (node as HTMLElement).style.setProperty("visibility", "hidden", "important"),
-      ),
+      handle.evaluate((node) => (node as HTMLElement).style.setProperty("visibility", "hidden", "important")),
     ),
   );
   const backgroundScreenshot = await popup.screenshot({ animations: "disabled" }).finally(async () => {
     await Promise.all(
       separatorHandles.map((handle) =>
-        handle!.evaluate((node) => (node as HTMLElement).style.removeProperty("visibility")),
+        handle.evaluate((node) => (node as HTMLElement).style.removeProperty("visibility")),
       ),
     );
   });
@@ -276,7 +279,7 @@ async function expectLocalSeparatorContrasts(popup: Locator, separators: Locator
   });
 }
 
-async function setResolvedTheme(page: import("@playwright/test").Page, theme: "dark" | "light") {
+async function setResolvedTheme(page: Page, theme: "dark" | "light") {
   await page.evaluate((mode) => localStorage.setItem("tienos-appearance", JSON.stringify(mode)), theme);
   await page.reload();
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden({ timeout: 10_000 });
