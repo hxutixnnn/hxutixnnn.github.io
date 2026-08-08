@@ -1934,7 +1934,7 @@ test("fits and fixes an open System Settings window on compact screens", async (
         }
       );
     })
-    .toEqual({ x: 8, y: 46, width: 304, height: 266 });
+    .toEqual({ x: 8, y: 46, width: 304, height: 194 });
 
   const compactBounds = await settingsWindow.boundingBox();
   const compactDragHandle = await page.locator(".settings-history").boundingBox();
@@ -2134,12 +2134,36 @@ test("uses measured menu geometry for initial and constrained settings frames", 
 
   await page.setViewportSize({ width: 1100, height: 500 });
   const frame = page.locator(".settings-rnd");
-  const expectedAvailableHeight = `${500 - Math.ceil(menuBottom)}px`;
+  const dockTop = await page
+    .locator("[data-dock-surface]")
+    .evaluate((element) => element.getBoundingClientRect().top);
+  const expectedAvailableHeight = `${Math.floor(dockTop) - Math.ceil(menuBottom)}px`;
   await expect(frame).toHaveCSS("min-height", expectedAvailableHeight);
   await expect(frame).toHaveCSS("max-height", expectedAvailableHeight);
   const constrainedBounds = await settingsWindow.boundingBox();
   expect(constrainedBounds!.y).toBeGreaterThanOrEqual(menuBottom);
-  expect(constrainedBounds!.y + constrainedBounds!.height).toBeLessThanOrEqual(500);
+  expect(constrainedBounds!.y + constrainedBounds!.height).toBeLessThanOrEqual(dockTop);
+});
+
+test("Dock reports and activates the single System Settings window", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  const dock = page.getByRole("navigation", { name: "Dock" });
+  const app = dock.getByRole("button", { name: "System Settings" });
+  await expect(dock.getByRole("button")).toHaveCount(1);
+  await expect(app).toHaveAttribute("aria-pressed", "true");
+  await app.click();
+  await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
+  await expect(page.getByRole("region", { name: "System Settings" })).toBeFocused();
+  await page.getByRole("button", { name: "Close System Settings" }).click();
+  await expect(app).toHaveAttribute("aria-pressed", "false");
+  await app.focus();
+  await app.press("Enter");
+  await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
+  await expect(app).toHaveAttribute("aria-pressed", "true");
+  const dockBounds = await dock.boundingBox();
+  expect(dockBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(dockBounds!.y + dockBounds!.height).toBeLessThanOrEqual(900);
 });
 
 test("keeps the default menu corners on a small viewport", async ({ page }) => {
