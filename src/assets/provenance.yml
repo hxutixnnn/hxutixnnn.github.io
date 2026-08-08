@@ -35,11 +35,11 @@ assets:
     license: MIT for original interface; Unsplash License for wallpaper; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpaper Copyright Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline captured at 1440x900 for Light wallpaper review.
-    sha256: deefab2828582ccadc4da02cbc8ae62a2fd2d1b37f0c0b7d267daa28620fa5e6
+    sha256: c143f7a8b7071816201db6f8362e9fb453f7810d6eb2a476055ad6ede2cdead3
   - path: tests/e2e/main-screen.spec.ts-snapshots/light-wallpaper-mobile-chromium-linux.png
     author: tienOS contributors; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpaper; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpaper Copyright Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline captured at 320x568 for Light wallpaper review.
-    sha256: 7bcbce33bf9b51fdcdc5e400c99c91c6cee31865579fe4fc48d7de07a2cfe306
+    sha256: 3e450de10c1b8e9961539a0d9f086cf33a113941615da5007bf8efd61ff39f75

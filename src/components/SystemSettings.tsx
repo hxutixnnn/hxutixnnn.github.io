@@ -502,7 +502,7 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
         {/* The ARIA separator pattern is keyboard interactive despite having no native HTML element. */}
         {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
         <div
-          className="settings-splitter group relative z-10 touch-none select-none border-0 bg-transparent p-0 outline-none before:absolute before:inset-y-0 before:left-1/2 before:w-px before:-translate-x-1/2 before:bg-white/10 before:transition-[width,background-color] hover:before:w-0.5 hover:before:bg-[var(--tienos-color-focus)] focus-visible:before:w-0.5 focus-visible:before:bg-[var(--tienos-color-focus)] active:before:w-1 active:before:bg-[var(--tienos-color-focus)] motion-reduce:before:transition-none [@media(forced-colors:active)]:before:bg-[CanvasText]"
+          className="settings-splitter group relative z-10 touch-none select-none border-0 bg-transparent p-0 outline-none [@media(forced-colors:active)]:focus-visible:!outline-none"
           role="separator"
           aria-label="Resize Settings sidebar"
           aria-orientation="vertical"
@@ -514,9 +514,15 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
           onPointerDown={resizeSidebar}
           onPointerMove={moveSidebar}
           onKeyDown={resizeSidebarWithKeyboard}
-        />
+        >
+          <span
+            data-splitter-grip=""
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-1/2 h-7 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-transparent shadow-none transition-[background-color,box-shadow] group-hover:bg-[var(--tienos-color-focus)] group-hover:shadow-[0_0_8px_var(--tienos-color-focus)] group-focus-visible:bg-[var(--tienos-color-focus)] group-focus-visible:shadow-[0_0_0_2px_var(--tienos-color-window),0_0_0_4px_var(--tienos-color-focus)] group-active:bg-[var(--tienos-color-focus)] group-active:shadow-[0_0_10px_var(--tienos-color-focus)] motion-reduce:transition-none [@media(forced-colors:active)]:bg-transparent [@media(forced-colors:active)]:group-hover:bg-[CanvasText] [@media(forced-colors:active)]:group-focus-visible:bg-[CanvasText] [@media(forced-colors:active)]:group-focus-visible:shadow-none [@media(forced-colors:active)]:group-active:bg-[CanvasText] [@media(forced-colors:active)]:group-active:shadow-none"
+          />
+        </div>
 
-        <div className="settings-detail flex min-h-0 min-w-0 flex-col [background:linear-gradient(160deg,rgb(255_255_255/0.07),transparent_42%),var(--tienos-color-detail)] p-[8px_20px_0] shadow-[inset_1px_0_0_rgb(255_255_255/0.08)] contrast-more:[background:var(--tienos-color-detail)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-detail)] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none max-[700px]:p-[12px_10px_0]">
+        <div className="settings-detail flex min-h-0 min-w-0 flex-col bg-transparent p-[8px_20px_0] max-[700px]:p-[12px_10px_0]">
           <div
             className="settings-history settings-drag-handle -ml-3 mb-[9px] flex h-[35px] shrink-0 touch-none select-none items-center self-start overflow-hidden rounded-[22px] border border-[var(--tienos-color-border)] [&_button]:grid [&_button]:h-full [&_button]:w-[36px] [&_button]:place-items-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[12px] [&_button]:text-[var(--tienos-color-text-tertiary)] [&>span]:h-6 [&>span]:w-px [&>span]:bg-[var(--tienos-color-separator)] max-[700px]:h-[36px] max-[700px]:[&_button]:w-[38px]"
             aria-label="Navigation history"
