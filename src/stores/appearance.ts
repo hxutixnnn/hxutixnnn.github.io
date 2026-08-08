@@ -22,6 +22,14 @@ function decodeWallpaper(theme: ResolvedTheme) {
   });
 }
 
+function persistAppearance(mode: AppearanceMode) {
+  try {
+    window.localStorage.setItem(appearanceStorageKey, JSON.stringify(mode));
+  } catch {
+    // The preference still works for this session when storage is unavailable.
+  }
+}
+
 function isAppearanceMode(value: unknown): value is AppearanceMode {
   return value === "auto" || value === "light" || value === "dark";
 }
@@ -71,33 +79,40 @@ applyTheme(initialMode, initialTheme);
 
 type AppearanceState = {
   mode: AppearanceMode;
+  pendingMode: AppearanceMode | null;
   resolvedTheme: ResolvedTheme;
-  setMode: (mode: AppearanceMode) => void;
+  setMode: (mode: AppearanceMode) => Promise<boolean>;
   syncSystemTheme: () => void;
 };
 
 export const useAppearanceStore = create<AppearanceState>((set, get) => ({
   mode: initialMode,
+  pendingMode: null,
   resolvedTheme: initialTheme,
   setMode: (mode) => {
     const resolvedTheme = resolveTheme(mode);
     const request = ++themeRequest;
-    try {
-      window.localStorage.setItem(appearanceStorageKey, JSON.stringify(mode));
-    } catch {
-      // The preference still works for this session when storage is unavailable.
-    }
-    set({ mode });
-    if (typeof Image === "undefined" || !("decode" in Image.prototype)) {
+    const commit = () => {
+      if (request !== themeRequest) return false;
+      persistAppearance(mode);
       applyTheme(mode, resolvedTheme);
-      set({ resolvedTheme });
-      return;
+      set({ mode, pendingMode: null, resolvedTheme });
+      return true;
+    };
+    const rollback = () => {
+      if (request === themeRequest) set({ pendingMode: null });
+      return false;
+    };
+    if (
+      resolvedTheme === get().resolvedTheme ||
+      typeof Image === "undefined" ||
+      !("decode" in Image.prototype)
+    ) {
+      commit();
+      return Promise.resolve(true);
     }
-    void decodeWallpaper(resolvedTheme).then(() => {
-      if (request !== themeRequest || get().mode !== mode) return;
-      applyTheme(mode, resolvedTheme);
-      set({ resolvedTheme });
-    });
+    set({ pendingMode: mode });
+    return decodeWallpaper(resolvedTheme).then(commit, rollback);
   },
   syncSystemTheme: () => {
     if (get().mode !== "auto") return;
@@ -108,10 +123,13 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
       set({ resolvedTheme });
       return;
     }
-    void decodeWallpaper(resolvedTheme).then(() => {
-      if (request !== themeRequest || get().mode !== "auto") return;
-      applyTheme("auto", resolvedTheme);
-      set({ resolvedTheme });
-    });
+    void decodeWallpaper(resolvedTheme).then(
+      () => {
+        if (request !== themeRequest || get().mode !== "auto") return;
+        applyTheme("auto", resolvedTheme);
+        set({ resolvedTheme });
+      },
+      () => undefined,
+    );
   },
 }));

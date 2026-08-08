@@ -266,6 +266,26 @@
     </style>
     <noscript>
       <style>
+        @media (prefers-color-scheme: light) {
+          :root {
+            --tienos-wallpaper: url("/wallpapers/tienos-light.jpg") !important;
+          }
+          body,
+          .tienos-desktop {
+            background: #dbeafe !important;
+            color: #0f172a !important;
+          }
+          #tienos-boot {
+            background: #f8fafc;
+            color: #0f172a;
+          }
+          .tienos-boot-track {
+            background: rgb(15 23 42 / 0.2);
+          }
+          .tienos-boot-progress {
+            background: #0f172a;
+          }
+        }
         #tienos-boot {
           animation: tienos-boot-dismiss 160ms ease 420ms forwards;
         }

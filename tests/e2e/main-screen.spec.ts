@@ -7,8 +7,9 @@ const startupViewports = [
   { name: "mobile", width: 320, height: 568 },
 ] as const;
 const paintCriticalAssets = [
-  { name: "wallpaper", url: "**/wallpapers/tienos-default.jpg" },
-  { name: "icon sprite", url: "**/fontawesome/fontawesome-pro-solid.svg" },
+  { name: "Dark wallpaper", url: "**/wallpapers/tienos-default.jpg", colorScheme: "dark" },
+  { name: "Light wallpaper", url: "**/wallpapers/tienos-light.jpg", colorScheme: "light" },
+  { name: "icon sprite", url: "**/fontawesome/fontawesome-pro-solid.svg", colorScheme: "dark" },
 ] as const;
 
 type DismissalFrame = {
@@ -214,7 +215,11 @@ function expectDismissalFrameGeometry(
   }
 }
 
-async function expectCapturedFramesToMatchStableReveal(frames: Buffer[], stableFrame: Buffer) {
+async function expectCapturedFramesToMatchStableReveal(
+  frames: Buffer[],
+  stableFrame: Buffer,
+  theme: "dark" | "light" = "dark",
+) {
   const decoded = await Promise.all(
     [...frames, stableFrame].map(async (frame) => {
       const { data, info } = await sharp(frame).removeAlpha().raw().toBuffer({ resolveWithObject: true });
@@ -239,9 +244,12 @@ async function expectCapturedFramesToMatchStableReveal(frames: Buffer[], stableF
       pixel(frame, frame.width - 3, frame.height - 3),
     ];
     const logoCenter = pixel(frame, Math.floor(frame.width / 2), Math.floor(frame.height / 2 - 38));
+    const background = theme === "light" ? [248, 250, 252] : [5, 5, 5];
     return (
-      corners.every((color) => color.every((channel) => Math.abs(channel - 5) <= 3)) &&
-      logoCenter.every((channel) => channel >= 180)
+      corners.every((color) => color.every((channel, index) => Math.abs(channel - background[index]) <= 3)) &&
+      (theme === "light"
+        ? logoCenter.every((channel) => channel <= 60)
+        : logoCenter.every((channel) => channel >= 180))
     );
   };
   const bootIndex = captured.findLastIndex(isOpaqueSplash);
@@ -1220,7 +1228,7 @@ for (const asset of paintCriticalAssets) {
     }) => {
       await recordDismissalFrames(page);
       await page.setViewportSize(startupViewport);
-      await page.emulateMedia({ reducedMotion: "reduce", colorScheme: "dark" });
+      await page.emulateMedia({ reducedMotion: "reduce", colorScheme: asset.colorScheme });
 
       let assetGate = createDelayGate();
       let assetIntercepted = false;
@@ -1253,6 +1261,12 @@ for (const asset of paintCriticalAssets) {
       await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
       await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="sparkle"]'), "sparkle");
       await expect(page.locator(".tienos-wallpaper")).not.toHaveCSS("background-image", "none");
+      await expect(page.locator(".tienos-wallpaper")).toHaveCSS(
+        "background-image",
+        new RegExp(asset.colorScheme === "light" ? "tienos-light\\.jpg" : "tienos-default\\.jpg"),
+      );
+      await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-size", "cover");
+      await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-position", "50% 50%");
       await expectStyledDismissalFrames(page, { settings: true });
 
       assetGate = createDelayGate();
@@ -1544,85 +1558,105 @@ test("supports compact touch menu popups, submenu collision, activation, and dis
   await context.close();
 });
 
-test("reveals the static desktop without JavaScript", async ({ browser }) => {
+for (const colorScheme of ["dark", "light"] as const) {
   for (const viewport of startupViewports) {
-    const context = await browser.newContext({
-      colorScheme: "dark",
-      javaScriptEnabled: false,
-      reducedMotion: "no-preference",
-      viewport,
+    test(`reveals the resolved ${colorScheme} static desktop without JavaScript on ${viewport.name}`, async ({
+      browser,
+    }) => {
+      const context = await browser.newContext({
+        colorScheme,
+        javaScriptEnabled: false,
+        reducedMotion: "no-preference",
+        viewport,
+      });
+      const page = await context.newPage();
+      await page.emulateMedia({ colorScheme });
+      const wallpaperUrl =
+        colorScheme === "light" ? "**/wallpapers/tienos-light.jpg" : "**/wallpapers/tienos-default.jpg";
+      await page.route(wallpaperUrl, (route) => route.abort("failed"));
+      const session = await context.newCDPSession(page);
+      const renderedFrames: Buffer[] = [];
+      session.on("Page.screencastFrame", ({ data, sessionId }) => {
+        renderedFrames.push(Buffer.from(data, "base64"));
+        void session.send("Page.screencastFrameAck", { sessionId });
+      });
+      await session.send("Page.startScreencast", { format: "png", everyNthFrame: 1 });
+
+      await page.goto("/", { waitUntil: "domcontentloaded" });
+      const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
+      await expect(bootScreen).toBeHidden();
+      await page.waitForTimeout(100);
+      const coldStableFrame = await page.screenshot();
+      const warmFrameStart = renderedFrames.length;
+
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(bootScreen).toBeHidden();
+      await page.waitForTimeout(100);
+      const warmStableFrame = await page.screenshot();
+      const warmFrameEnd = renderedFrames.length;
+      await session.send("Page.stopScreencast");
+      await expectCapturedFramesToMatchStableReveal(
+        renderedFrames.slice(0, warmFrameStart),
+        coldStableFrame,
+        colorScheme,
+      );
+      await expectCapturedFramesToMatchStableReveal(
+        renderedFrames.slice(warmFrameStart, warmFrameEnd),
+        warmStableFrame,
+        colorScheme,
+      );
+
+      await page.unroute(wallpaperUrl);
+      await page.reload({ waitUntil: "domcontentloaded" });
+      await expect(bootScreen).toBeHidden();
+      await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
+      const staticDock = page.getByRole("complementary", {
+        name: "Dock preview (non-interactive)",
+      });
+      await expect(staticDock).toBeVisible();
+      await expect(staticDock.getByRole("button")).toHaveCount(0);
+      await expect(staticDock).toContainText(
+        "System Settings is shown running. Launcher controls require JavaScript.",
+      );
+      await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
+      await expect(page.getByRole("img", { name: "Battery full" })).toBeVisible();
+      const noScriptFont = await page
+        .locator("body")
+        .evaluate((element) => getComputedStyle(element).fontFamily);
+      expect(noScriptFont).not.toMatch(/(^|,\s*)(serif|"?Times New Roman"?|Times)(,|$)/i);
+      await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("position", "fixed");
+      const wallpaper = page.locator(".tienos-wallpaper");
+      const vignette = page.locator(".tienos-vignette");
+      await expect(wallpaper).toHaveCSS("filter", "saturate(1.08)");
+      await expect(wallpaper).not.toHaveCSS("transform", "none");
+      await expect(wallpaper).toHaveCSS(
+        "background-image",
+        new RegExp(colorScheme === "light" ? "tienos-light\\.jpg" : "tienos-default\\.jpg"),
+      );
+      await expect(wallpaper).toHaveCSS("background-size", "cover");
+      await expect(wallpaper).toHaveCSS("background-position", "50% 50%");
+      const wallpaperState = await wallpaper.evaluate((element) => {
+        const styles = getComputedStyle(element);
+        const matrix = new DOMMatrixReadOnly(styles.transform);
+        return { scale: styles.scale, transformScale: matrix.a };
+      });
+      expect(wallpaperState.scale).toBe("none");
+      expect(wallpaperState.transformScale).toBeCloseTo(1.02);
+      await expect(vignette).toHaveCSS("background-image", /linear-gradient.*radial-gradient/);
+      const menuBarSurface = page.locator("[data-menu-bar-surface]");
+      await expect(menuBarSurface).toHaveCSS("backdrop-filter", "none");
+      await expect(menuBarSurface).toHaveCSS("background-image", "none");
+      await expect(menuBarSurface).toHaveCSS("border-radius", "0px");
+      await expect(menuBarSurface).toHaveCSS("box-shadow", "none");
+      await expect(page.getByRole("navigation", { name: "tienOS menu bar" })).toHaveCSS(
+        "text-shadow",
+        "rgba(0, 0, 0, 0.4) 0px 1px 3px",
+      );
+
+      await context.close();
     });
-    const page = await context.newPage();
-    await page.route("**/wallpapers/tienos-default.jpg", (route) => route.abort("failed"));
-    const session = await context.newCDPSession(page);
-    const renderedFrames: Buffer[] = [];
-    session.on("Page.screencastFrame", ({ data, sessionId }) => {
-      renderedFrames.push(Buffer.from(data, "base64"));
-      void session.send("Page.screencastFrameAck", { sessionId });
-    });
-    await session.send("Page.startScreencast", { format: "png", everyNthFrame: 1 });
-
-    await page.goto("/", { waitUntil: "domcontentloaded" });
-    const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
-    await expect(bootScreen).toBeHidden();
-    await page.waitForTimeout(100);
-    const coldStableFrame = await page.screenshot();
-    const warmFrameStart = renderedFrames.length;
-
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(bootScreen).toBeHidden();
-    await page.waitForTimeout(100);
-    const warmStableFrame = await page.screenshot();
-    const warmFrameEnd = renderedFrames.length;
-    await session.send("Page.stopScreencast");
-    await expectCapturedFramesToMatchStableReveal(renderedFrames.slice(0, warmFrameStart), coldStableFrame);
-    await expectCapturedFramesToMatchStableReveal(
-      renderedFrames.slice(warmFrameStart, warmFrameEnd),
-      warmStableFrame,
-    );
-
-    await page.unroute("**/wallpapers/tienos-default.jpg");
-    await page.reload({ waitUntil: "domcontentloaded" });
-    await expect(bootScreen).toBeHidden();
-    await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
-    const staticDock = page.getByRole("complementary", { name: "Dock preview (non-interactive)" });
-    await expect(staticDock).toBeVisible();
-    await expect(staticDock.getByRole("button")).toHaveCount(0);
-    await expect(staticDock).toContainText(
-      "System Settings is shown running. Launcher controls require JavaScript.",
-    );
-    await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
-    await expect(page.getByRole("img", { name: "Battery full" })).toBeVisible();
-    const noScriptFont = await page
-      .locator("body")
-      .evaluate((element) => getComputedStyle(element).fontFamily);
-    expect(noScriptFont).not.toMatch(/(^|,\s*)(serif|"?Times New Roman"?|Times)(,|$)/i);
-    await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("position", "fixed");
-    const wallpaper = page.locator(".tienos-wallpaper");
-    const vignette = page.locator(".tienos-vignette");
-    await expect(wallpaper).toHaveCSS("filter", "saturate(1.08)");
-    await expect(wallpaper).not.toHaveCSS("transform", "none");
-    const wallpaperState = await wallpaper.evaluate((element) => {
-      const styles = getComputedStyle(element);
-      const matrix = new DOMMatrixReadOnly(styles.transform);
-      return { scale: styles.scale, transformScale: matrix.a };
-    });
-    expect(wallpaperState.scale).toBe("none");
-    expect(wallpaperState.transformScale).toBeCloseTo(1.02);
-    await expect(vignette).toHaveCSS("background-image", /linear-gradient.*radial-gradient/);
-    const menuBarSurface = page.locator("[data-menu-bar-surface]");
-    await expect(menuBarSurface).toHaveCSS("backdrop-filter", "none");
-    await expect(menuBarSurface).toHaveCSS("background-image", "none");
-    await expect(menuBarSurface).toHaveCSS("border-radius", "0px");
-    await expect(menuBarSurface).toHaveCSS("box-shadow", "none");
-    await expect(page.getByRole("navigation", { name: "tienOS menu bar" })).toHaveCSS(
-      "text-shadow",
-      "rgba(0, 0, 0, 0.4) 0px 1px 3px",
-    );
-
-    await context.close();
   }
-});
+}
 
 test("opens System Settings by default and supports close and reopen", async ({ page }) => {
   await page.goto("/");
@@ -2450,6 +2484,41 @@ test.describe("appearance modes", () => {
     await expect
       .poll(() => page.evaluate(() => localStorage.getItem("tienos-appearance")))
       .toBe(JSON.stringify("dark"));
+  });
+
+  test("keeps the painted theme consistent when a wallpaper cannot decode", async ({ page }) => {
+    await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("auto")));
+    await page.route("**/wallpapers/tienos-light.jpg", (route) => route.abort("failed"));
+    const unhandledRejections: string[] = [];
+    page.on("pageerror", (error) => unhandledRejections.push(error.message));
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.goto("/");
+    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+    await page.emulateMedia({ colorScheme: "light" });
+    await page.waitForTimeout(100);
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+
+    await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+    await page.getByRole("menuitem", { name: "System Settings…" }).click();
+    await page.getByRole("button", { name: "Appearance" }).click();
+
+    await page
+      .getByRole("radiogroup", { name: "Appearance mode" })
+      .getByRole("radio", { name: "Light" })
+      .click();
+    await page.waitForTimeout(100);
+
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-default\.jpg/);
+    await expect(
+      page.getByRole("radiogroup", { name: "Appearance mode" }).getByRole("radio", { name: "Auto" }),
+    ).toBeChecked();
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem("tienos-appearance")))
+      .toBe(JSON.stringify("auto"));
+    expect(unhandledRejections).toEqual([]);
   });
 
   test("bootstraps a persisted theme before the first desktop paint and rejects malformed storage", async ({

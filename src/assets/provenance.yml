@@ -10,6 +10,7 @@ assets:
   - path: public/wallpapers/tienos-light.jpg
     author: Paweł Czerwiński
     source: https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik
+    exact_source: https://images.unsplash.com/photo-1558470598-a5dda9640f68?auto=format&fit=crop&w=2400&h=1500&q=36
     license: Unsplash License (https://unsplash.com/license)
     copyright: Copyright Paweł Czerwiński; used under the Unsplash License.
     modified: Cropped by the Unsplash image service to 2400x1500, JPEG quality 36; delivery metadata stripped by the service.
