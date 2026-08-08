@@ -134,27 +134,6 @@ async function readBackgroundsBehind(popup: Locator, foregrounds: Locator[]) {
   });
 }
 
-async function readRenderedPixelsAt(popup: Locator, elements: Locator[]) {
-  const popupBounds = await popup.boundingBox();
-  expect(popupBounds).not.toBeNull();
-  const elementBounds = await Promise.all(elements.map((element) => element.boundingBox()));
-  for (const bounds of elementBounds) expect(bounds).not.toBeNull();
-  const screenshot = await popup.screenshot({ animations: "disabled" });
-  const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
-  return elementBounds.map((bounds) => {
-    const x = Math.max(
-      0,
-      Math.min(info.width - 1, Math.floor(bounds!.x + bounds!.width / 2 - popupBounds!.x)),
-    );
-    const y = Math.max(
-      0,
-      Math.min(info.height - 1, Math.floor(bounds!.y + bounds!.height / 2 - popupBounds!.y)),
-    );
-    const offset = (y * info.width + x) * info.channels;
-    return pixelColor(Array.from(data.subarray(offset, offset + 3)));
-  });
-}
-
 type Rgba = { red: number; green: number; blue: number; alpha: number };
 
 function parseColor(value: string): Rgba {
@@ -241,13 +220,59 @@ async function expectLocalRenderedContrasts(
 }
 
 async function expectLocalSeparatorContrasts(popup: Locator, separators: Locator[], label: string) {
-  const renderedSeparators = await readRenderedPixelsAt(popup, separators);
-  const backgrounds = await readBackgroundsBehind(popup, separators);
-  renderedSeparators.forEach((separator, index) => {
-    expect(
-      contrastRatio(separator, backgrounds[index]),
-      `${label} separator ${index + 1}`,
-    ).toBeGreaterThanOrEqual(3);
+  if (separators.length === 0) return;
+  const popupBounds = await popup.boundingBox();
+  expect(popupBounds).not.toBeNull();
+  const separatorHandles = await Promise.all(separators.map((separator) => separator.elementHandle()));
+  for (const handle of separatorHandles) expect(handle).not.toBeNull();
+  const separatorBounds = await Promise.all(separatorHandles.map((handle) => handle!.boundingBox()));
+  for (const bounds of separatorBounds) expect(bounds).not.toBeNull();
+  const renderedScreenshot = await popup.screenshot({ animations: "disabled" });
+  await Promise.all(
+    separatorHandles.map((handle) =>
+      handle!.evaluate((node) =>
+        (node as HTMLElement).style.setProperty("visibility", "hidden", "important"),
+      ),
+    ),
+  );
+  const backgroundScreenshot = await popup.screenshot({ animations: "disabled" }).finally(async () => {
+    await Promise.all(
+      separatorHandles.map((handle) =>
+        handle!.evaluate((node) => (node as HTMLElement).style.removeProperty("visibility")),
+      ),
+    );
+  });
+  const [rendered, backgrounds] = await Promise.all(
+    [renderedScreenshot, backgroundScreenshot].map((screenshot) =>
+      sharp(screenshot).raw().toBuffer({ resolveWithObject: true }),
+    ),
+  );
+  separatorBounds.forEach((bounds, separatorIndex) => {
+    for (const horizontalOffset of [-55, 55]) {
+      const x = Math.max(
+        0,
+        Math.min(
+          rendered.info.width - 1,
+          Math.floor(bounds!.x + bounds!.width / 2 + horizontalOffset - popupBounds!.x),
+        ),
+      );
+      const y = Math.max(
+        0,
+        Math.min(rendered.info.height - 1, Math.floor(bounds!.y + bounds!.height / 2 - popupBounds!.y)),
+      );
+      const renderedOffset = (y * rendered.info.width + x) * rendered.info.channels;
+      const backgroundOffset = (y * backgrounds.info.width + x) * backgrounds.info.channels;
+      const separatorColor = pixelColor(
+        Array.from(rendered.data.subarray(renderedOffset, renderedOffset + 3)),
+      );
+      const backgroundColor = pixelColor(
+        Array.from(backgrounds.data.subarray(backgroundOffset, backgroundOffset + 3)),
+      );
+      expect(
+        contrastRatio(separatorColor, backgroundColor),
+        `${label} separator ${separatorIndex + 1} at ${horizontalOffset < 0 ? "left" : "right"}`,
+      ).toBeGreaterThanOrEqual(3);
+    }
   });
 }
 
@@ -492,6 +517,11 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
           (rightBrightness - leftBrightness) * region.direction,
           `${theme} ${family} should render the ${region.name} wallpaper boundary`,
         ).toBeGreaterThan(20);
+        await expectLocalSeparatorContrasts(
+          popup,
+          await popup.locator('[role="separator"]').all(),
+          `${theme} ${family} ${region.name}`,
+        );
         await page.screenshot({
           animations: "disabled",
           path: testInfo.outputPath(`popup-${theme}-${family}-${region.name}.png`),
