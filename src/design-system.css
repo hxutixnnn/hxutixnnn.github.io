@@ -27,11 +27,11 @@
   --tienos-color-separator: rgb(255 255 255 / 0.1);
   --tienos-color-border: rgb(255 255 255 / 0.2);
   --tienos-color-menu: rgb(20 27 36 / 0.62);
-  --tienos-color-menu-highlight: rgb(255 255 255 / 0.1);
+  --tienos-color-menu-highlight: rgb(255 255 255 / 0.08);
   --tienos-color-menu-text-primary: #fff;
   --tienos-color-menu-text-secondary: rgb(255 255 255 / 0.92);
   --tienos-color-menu-text-disabled: rgb(255 255 255 / 0.76);
-  --tienos-color-menu-text-shortcut: rgb(255 255 255 / 0.92);
+  --tienos-color-menu-text-shortcut: #fff;
   --tienos-color-window: rgb(17 22 30 / 0.66);
   --tienos-color-sidebar: rgb(20 25 33 / 0.64);
   --tienos-color-detail: rgb(13 18 25 / 0.42);

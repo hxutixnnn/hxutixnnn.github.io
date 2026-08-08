@@ -98,6 +98,42 @@ async function readHorizontalPixels(element: Locator, distanceFromCenter: number
   });
 }
 
+async function readBackgroundsBehind(popup: Locator, foregrounds: Locator[]) {
+  const popupBounds = await popup.boundingBox();
+  expect(popupBounds).not.toBeNull();
+  const foregroundHandles = await Promise.all(foregrounds.map((foreground) => foreground.elementHandle()));
+  for (const handle of foregroundHandles) expect(handle).not.toBeNull();
+  const foregroundBounds = await Promise.all(foregroundHandles.map((handle) => handle!.boundingBox()));
+  for (const bounds of foregroundBounds) expect(bounds).not.toBeNull();
+  await Promise.all(
+    foregroundHandles.map((handle) =>
+      handle!.evaluate((node) =>
+        (node as HTMLElement).style.setProperty("visibility", "hidden", "important"),
+      ),
+    ),
+  );
+  const screenshot = await popup.screenshot({ animations: "disabled" }).finally(async () => {
+    await Promise.all(
+      foregroundHandles.map((handle) =>
+        handle!.evaluate((node) => (node as HTMLElement).style.removeProperty("visibility")),
+      ),
+    );
+  });
+  const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
+  return foregroundBounds.map((bounds) => {
+    const x = Math.max(
+      0,
+      Math.min(info.width - 1, Math.floor(bounds!.x + bounds!.width / 2 - popupBounds!.x)),
+    );
+    const y = Math.max(
+      0,
+      Math.min(info.height - 1, Math.floor(bounds!.y + bounds!.height / 2 - popupBounds!.y)),
+    );
+    const offset = (y * info.width + x) * info.channels;
+    return pixelColor(Array.from(data.subarray(offset, offset + 3)));
+  });
+}
+
 type Rgba = { red: number; green: number; blue: number; alpha: number };
 
 function parseColor(value: string): Rgba {
@@ -150,6 +186,27 @@ async function expectColorContrast(
     ),
   );
   expect(contrastRatio(composite(value, background), background)).toBeGreaterThanOrEqual(minimum);
+}
+
+async function expectLocalRenderedContrasts(
+  popup: Locator,
+  entries: { foreground: Locator; minimum: number; label: string }[],
+) {
+  const foregroundColors = await Promise.all(
+    entries.map(async ({ foreground }) =>
+      parseColor(await foreground.evaluate((node) => getComputedStyle(node).color)),
+    ),
+  );
+  const backgrounds = await readBackgroundsBehind(
+    popup,
+    entries.map(({ foreground }) => foreground),
+  );
+  entries.forEach(({ minimum, label }, index) => {
+    expect(
+      contrastRatio(composite(foregroundColors[index], backgrounds[index]), backgrounds[index]),
+      label,
+    ).toBeGreaterThanOrEqual(minimum);
+  });
 }
 
 async function setResolvedTheme(page: import("@playwright/test").Page, theme: "dark" | "light") {
@@ -373,7 +430,6 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
         { name: "dark-to-bright", position: centerX - 220, direction: 1 },
         { name: "bright-to-dark", position: centerX - 440, direction: -1 },
       ];
-      const samples: number[][][] = [];
       for (const region of regions) {
         await wallpaper.evaluate(
           (node, values) => {
@@ -387,7 +443,6 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
           { pattern, position: region.position },
         );
         const boundaryPixels = await readHorizontalPixels(popup, 55);
-        samples.push(boundaryPixels);
         const [leftBrightness, rightBrightness] = boundaryPixels.map((pixel) =>
           pixel.reduce((sum, channel) => sum + channel, 0),
         );
@@ -400,15 +455,15 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
           path: testInfo.outputPath(`popup-${theme}-${family}-${region.name}.png`),
         });
       }
-      return pixelColor(
-        samples
-          .flat()
-          .reduce((brightest, pixel) =>
-            pixel.reduce((sum, channel) => sum + channel, 0) >
-            brightest.reduce((sum, channel) => sum + channel, 0)
-              ? pixel
-              : brightest,
-          ),
+      await wallpaper.evaluate(
+        (node, values) => {
+          (node as HTMLElement).style.setProperty(
+            "background-position",
+            `${values.centerX - 330}px 0`,
+            "important",
+          );
+        },
+        { centerX },
       );
     };
 
@@ -417,56 +472,60 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
     const expectedBackground = theme === "dark" ? "rgba(20, 27, 36, 0.62)" : "rgba(245, 248, 252, 0.62)";
     await expect(systemPopup).toHaveCSS("background-color", expectedBackground);
     await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
-    const systemBrightBackground = await sampleAgainstWallpapers(systemPopup, "system");
-    await expectColorContrast(
-      page.getByRole("menuitem", { name: "About This OS" }),
-      "color",
-      systemBrightBackground,
-      4.5,
-    );
-    await expectColorContrast(
-      page.getByRole("menuitem", { name: "System Settings…" }).locator("kbd"),
-      "color",
-      systemBrightBackground,
-      4.5,
-    );
-    await expectColorContrast(
-      page.getByRole("menuitem", { name: "Recent Items" }).locator("svg"),
-      "color",
-      systemBrightBackground,
-      3,
-    );
+    await sampleAgainstWallpapers(systemPopup, "system");
+    const systemLabels = await systemPopup.locator(".tienos-menu-item > span").all();
+    const systemShortcuts = await systemPopup.locator("kbd").all();
+    await expectLocalRenderedContrasts(systemPopup, [
+      ...systemLabels.map((foreground, index) => ({
+        foreground,
+        minimum: 4.5,
+        label: `${theme} system row ${index + 1} should remain legible over bright wallpaper`,
+      })),
+      ...systemShortcuts.map((foreground, index) => ({
+        foreground,
+        minimum: 4.5,
+        label: `${theme} system shortcut ${index + 1} should remain legible over bright wallpaper`,
+      })),
+      {
+        foreground: page.getByRole("menuitem", { name: "Recent Items" }).locator("svg"),
+        minimum: 3,
+        label: `${theme} submenu chevron should remain legible over bright wallpaper`,
+      },
+    ]);
 
     await page.getByRole("menuitem", { name: "Recent Items" }).hover();
     const submenuPopup = page.locator(".tienos-menu-popup:visible").last();
     await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
     await expect(submenuPopup).toHaveCSS("background-color", expectedBackground);
-    const submenuBrightBackground = await sampleAgainstWallpapers(submenuPopup, "submenu");
-    await expectColorContrast(
-      page.getByRole("menuitem", { name: "No Recent Items" }),
-      "color",
-      submenuBrightBackground,
-      3,
-    );
+    await sampleAgainstWallpapers(submenuPopup, "submenu");
+    await expectLocalRenderedContrasts(submenuPopup, [
+      {
+        foreground: page.getByRole("menuitem", { name: "No Recent Items" }),
+        minimum: 3,
+        label: `${theme} disabled submenu row should remain legible over bright wallpaper`,
+      },
+    ]);
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
 
     await page.getByRole("menuitem", { name: "Navigator" }).click();
     const navigatorPopup = page.locator(".tienos-menu-popup:visible");
     await expect(navigatorPopup).toHaveCSS("background-color", expectedBackground);
-    const navigatorBrightBackground = await sampleAgainstWallpapers(navigatorPopup, "navigator");
-    await expectColorContrast(
-      page.getByRole("menuitem", { name: "About Navigator" }),
-      "color",
-      navigatorBrightBackground,
-      4.5,
-    );
-    await expectColorContrast(
-      page.getByRole("menuitem", { name: "Preferences…" }).locator("kbd"),
-      "color",
-      navigatorBrightBackground,
-      4.5,
-    );
+    await sampleAgainstWallpapers(navigatorPopup, "navigator");
+    const navigatorLabels = await navigatorPopup.locator(".tienos-menu-item > span").all();
+    const navigatorShortcuts = await navigatorPopup.locator("kbd").all();
+    await expectLocalRenderedContrasts(navigatorPopup, [
+      ...navigatorLabels.map((foreground, index) => ({
+        foreground,
+        minimum: 4.5,
+        label: `${theme} navigator row ${index + 1} should remain legible over bright wallpaper`,
+      })),
+      ...navigatorShortcuts.map((foreground, index) => ({
+        foreground,
+        minimum: 4.5,
+        label: `${theme} navigator shortcut ${index + 1} should remain legible over bright wallpaper`,
+      })),
+    ]);
     await page.keyboard.press("Escape");
   }
 });
