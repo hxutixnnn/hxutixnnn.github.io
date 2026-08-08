@@ -368,12 +368,12 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
     );
   };
 
-  return (
+  const settingsWindow = (
     <Rnd
       className="settings-rnd z-30"
       size={{ width: frame.width, height: frame.height }}
       position={{ x: frame.x, y: frame.y }}
-      bounds="window"
+      bounds="[data-settings-drag-boundary]"
       minWidth={compact ? frame.width : Math.min(desktopMinimum.width, viewport.width)}
       minHeight={minimumHeight}
       maxWidth={viewport.width}
@@ -383,17 +383,11 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
       dragHandleClassName="settings-drag-handle"
       cancel=".settings-navigation,.settings-scroll-area,button,input,select,label"
       resizeHandleStyles={resizeHandleStyles}
-      onDrag={(_, position) => {
-        const nextFrame = clampFrame(
-          { ...frame, x: position.x, y: position.y },
-          viewport,
-          menuBottom,
-          bottomBoundary,
-        );
-        position.node.style.transform = `translate(${nextFrame.x}px, ${nextFrame.y}px)`;
-        setFrame(nextFrame);
-        return false;
-      }}
+      onDrag={(_, position) =>
+        setFrame((currentFrame) =>
+          clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom, bottomBoundary),
+        )
+      }
       onDragStop={(_, position) =>
         setFrame((currentFrame) =>
           clampFrame({ ...currentFrame, x: position.x, y: position.y }, viewport, menuBottom, bottomBoundary),
@@ -754,5 +748,20 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
         </div>
       </section>
     </Rnd>
+  );
+
+  return (
+    <>
+      <div
+        data-settings-drag-boundary
+        aria-hidden="true"
+        className="pointer-events-none fixed inset-x-0"
+        style={{
+          top: Math.ceil(menuBottom),
+          bottom: Math.max(0, viewport.height - bottomBoundary),
+        }}
+      />
+      {settingsWindow}
+    </>
   );
 }

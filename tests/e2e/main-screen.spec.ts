@@ -314,6 +314,7 @@ async function touchDrag(
     type: "touchMove",
     touchPoints: [{ x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 }],
   });
+  await whileDragging?.();
   await session.send("Input.dispatchTouchEvent", {
     type: "touchMove",
     touchPoints: [{ x: to.x, y: to.y }],
@@ -1861,6 +1862,7 @@ test("uses a visible high-contrast scrollbar palette in Light mode", async ({ pa
 });
 
 test("drags and resizes the System Settings window with react-rnd", async ({ page }) => {
+  test.slow();
   await page.setViewportSize({ width: 1100, height: 900 });
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
@@ -2301,7 +2303,7 @@ test("Dock supports touch and compact viewport boundaries", async ({ browser }, 
   await expectCompactBounds(21);
 
   const session = await context.newCDPSession(page);
-  const expectLiveWindowClamp = async () => {
+  const readLiveWindowClamp = async () => {
     const [menuBounds, windowBounds, dockBounds] = await Promise.all([
       page.locator("[data-menu-bar-surface]").boundingBox(),
       settingsWindow.boundingBox(),
@@ -2309,29 +2311,44 @@ test("Dock supports touch and compact viewport boundaries", async ({ browser }, 
     ]);
     expect(windowBounds!.y).toBeGreaterThanOrEqual(menuBounds!.y + menuBounds!.height);
     expect(windowBounds!.y + windowBounds!.height).toBeLessThanOrEqual(dockBounds!.y);
+    return windowBounds!;
   };
   const beforeDrag = await settingsWindow.boundingBox();
   const dragHandle = await page.locator(".settings-sidebar-panel").boundingBox();
+  const liveDragPositions: Array<{ x: number; y: number }> = [];
   await touchDrag(
     session,
     { x: dragHandle!.x + dragHandle!.width - 12, y: dragHandle!.y + 20 },
-    { x: dragHandle!.x + dragHandle!.width - 12, y: 389 },
-    expectLiveWindowClamp,
+    { x: dragHandle!.x + dragHandle!.width + 48, y: 389 },
+    async () => {
+      const bounds = await readLiveWindowClamp();
+      liveDragPositions.push({ x: bounds.x, y: bounds.y });
+    },
   );
   const afterDrag = await settingsWindow.boundingBox();
-  expect(Math.round(afterDrag!.x)).toBe(Math.round(beforeDrag!.x));
+  expect(liveDragPositions).toHaveLength(2);
+  expect(liveDragPositions[0].x).toBeGreaterThan(beforeDrag!.x);
+  expect(liveDragPositions[1].x).toBeGreaterThan(liveDragPositions[0].x);
+  expect(Math.round(afterDrag!.x)).toBeGreaterThan(Math.round(beforeDrag!.x));
   expect(Math.round(afterDrag!.y)).toBe(Math.round(beforeDrag!.y));
-  await expectLiveWindowClamp();
+  await readLiveWindowClamp();
 
   const resizeHandle = await page.locator('.settings-rnd div[style*="se-resize"]').boundingBox();
   const beforeResize = await settingsWindow.boundingBox();
+  const liveResizeWidths: number[] = [];
   await touchDrag(
     session,
     { x: resizeHandle!.x + 5, y: resizeHandle!.y + 5 },
     { x: 843, y: 389 },
-    expectLiveWindowClamp,
+    async () => {
+      const bounds = await readLiveWindowClamp();
+      liveResizeWidths.push(bounds.width);
+    },
   );
   const afterResize = await settingsWindow.boundingBox();
+  expect(liveResizeWidths).toHaveLength(2);
+  expect(liveResizeWidths[0]).toBeGreaterThan(beforeResize!.width);
+  expect(liveResizeWidths[1]).toBeGreaterThan(liveResizeWidths[0]);
   expect(afterResize!.width).toBeGreaterThan(beforeResize!.width);
   expect(Math.round(afterResize!.height)).toBe(Math.round(beforeResize!.height));
   expect(Math.round(afterResize!.x)).toBe(Math.round(beforeResize!.x));
