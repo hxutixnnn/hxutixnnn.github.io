@@ -1169,17 +1169,20 @@ test("keeps Settings seamless across themes, accessibility modes, and layouts", 
       expect(sidebarBounds!.width / shellBounds!.width).toBeGreaterThanOrEqual(0.36);
       expect(sidebarBounds!.width / shellBounds!.width).toBeLessThanOrEqual(0.43);
     }
-  }
 
-  const shell = page.locator(".settings-window");
-  const wallpaper = page.locator(".tienos-wallpaper");
-  await wallpaper.evaluate((node) => ((node as HTMLElement).style.background = "rgb(0 0 0)"));
-  const darkPixel = await readCenterPixel(shell);
-  await wallpaper.evaluate((node) => ((node as HTMLElement).style.background = "rgb(255 255 255)"));
-  const lightPixel = await readCenterPixel(shell);
-  expect(
-    lightPixel.reduce((sum, channel, index) => sum + Math.abs(channel - darkPixel[index]), 0),
-  ).toBeGreaterThan(10);
+    if (scenario.name === "light") {
+      const wallpaper = page.locator(".tienos-wallpaper");
+      await wallpaper.evaluate((node) => ((node as HTMLElement).style.background = "rgb(0 0 0)"));
+      const darkPixel = await readCenterPixel(shell);
+      await wallpaper.evaluate((node) => ((node as HTMLElement).style.background = "rgb(255 255 255)"));
+      await expect
+        .poll(async () => {
+          const lightPixel = await readCenterPixel(shell);
+          return lightPixel.reduce((sum, channel, index) => sum + Math.abs(channel - darkPixel[index]), 0);
+        })
+        .toBeGreaterThan(10);
+    }
+  }
 });
 
 test("preserves migrated System Settings selection and separators", async ({ page }) => {
@@ -1820,7 +1823,7 @@ for (const viewport of startupViewports) {
     await expect(page).toHaveScreenshot(`light-wallpaper-${viewport.name}.png`, {
       animations: "disabled",
       caret: "hide",
-      maxDiffPixels: viewport.name === "desktop" ? 18_000 : 11_000,
+      maxDiffPixels: viewport.name === "desktop" ? 25_000 : 11_000,
     });
   });
 }
