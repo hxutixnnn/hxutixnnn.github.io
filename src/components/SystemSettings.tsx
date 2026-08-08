@@ -491,6 +491,14 @@ export function SystemSettings({
     rndRef.current?.updatePosition({ x: frame.x, y: frame.y });
   }, [frame, fullscreen]);
 
+  useLayoutEffect(() => {
+    if (fullscreen || normalScrollTopRef.current === null) return;
+    if (detailsViewportRef.current) {
+      detailsViewportRef.current.scrollTop = normalScrollTopRef.current;
+    }
+    normalScrollTopRef.current = null;
+  }, [frame, fullscreen]);
+
   const toggleFullscreen = () => {
     if (fullscreen) {
       fullscreenRef.current = false;
@@ -504,11 +512,6 @@ export function SystemSettings({
       rndRef.current?.updateSize({ width: restoredFrame.width, height: restoredFrame.height });
       rndRef.current?.updatePosition({ x: restoredFrame.x, y: restoredFrame.y });
       setFrame(restoredFrame);
-      requestAnimationFrame(() => {
-        if (detailsViewportRef.current && normalScrollTopRef.current !== null) {
-          detailsViewportRef.current.scrollTop = normalScrollTopRef.current;
-        }
-      });
       normalFrameRef.current = null;
       return;
     }

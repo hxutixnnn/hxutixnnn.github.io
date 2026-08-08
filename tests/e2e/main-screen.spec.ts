@@ -291,7 +291,7 @@ async function expectCapturedFramesToMatchStableReveal(
   expect(priorOpacity).toBeLessThan(0.01);
 }
 
-async function expectConventionalRoundedGeometry(element: Locator) {
+async function expectConventionalRoundedGeometry(element: Locator, { allowFullRectangleClip = false } = {}) {
   await expect(element).toBeVisible();
   const geometry = await element.evaluate((node) => {
     const styles = getComputedStyle(node);
@@ -303,7 +303,11 @@ async function expectConventionalRoundedGeometry(element: Locator) {
     };
   });
   expect(geometry.borderRadius).not.toBe("0px");
-  expect(geometry.clipPath).toBe("none");
+  if (allowFullRectangleClip) {
+    expect(geometry.clipPath.replaceAll("0px", "0")).toMatch(/^polygon\(0 0, 100% 0, 100% 100%, 0 100%\)$/);
+  } else {
+    expect(geometry.clipPath).toBe("none");
+  }
   expect(geometry.maskImage).toBe("none");
   expect(geometry.webkitMaskImage).toBe("none");
 }
@@ -733,14 +737,23 @@ test("uses conventional rounded geometry without shape masks", async ({ page }) 
   ];
 
   for (const element of representatives) {
-    await expectConventionalRoundedGeometry(element);
+    await expectConventionalRoundedGeometry(element, {
+      allowFullRectangleClip: element === settingsWindow,
+    });
   }
 
-  const circles = [page.locator(".settings-light").first(), page.locator(".settings-avatar")];
+  const circles = [page.locator("[data-traffic-dot]").first(), page.locator(".settings-avatar")];
   for (const circle of circles) {
-    await expect(circle).toHaveCSS("border-radius", "50%");
-    const box = await circle.boundingBox();
-    expect(box?.width).toBe(box?.height);
+    const geometry = await circle.evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      return {
+        width: box.width,
+        height: box.height,
+        radius: parseFloat(getComputedStyle(element).borderTopLeftRadius),
+      };
+    });
+    expect(geometry.width).toBe(geometry.height);
+    expect(geometry.radius).toBeGreaterThanOrEqual(geometry.width / 2);
   }
 });
 
