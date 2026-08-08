@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { transitionResolvedTheme } from "../theme-transition";
 
 export type AppearanceMode = "auto" | "light" | "dark";
 export type ResolvedTheme = "light" | "dark";
@@ -102,16 +103,21 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
   setMode: (mode) => {
     const resolvedTheme = resolveTheme(mode);
     const request = ++themeRequest;
-    const commit = () => {
+    const commit = async () => {
       if (request !== themeRequest) return false;
       if (mode === "auto" && resolvedTheme !== resolveTheme("auto")) {
         void get().setMode("auto");
         return false;
       }
-      persistAppearance(mode);
-      applyTheme(mode, resolvedTheme);
-      set({ mode, pendingMode: null, resolvedTheme, wallpaperReady: true });
-      return true;
+      const changesResolvedTheme = resolvedTheme !== get().resolvedTheme;
+      const apply = () => {
+        persistAppearance(mode);
+        applyTheme(mode, resolvedTheme);
+        set({ mode, pendingMode: null, resolvedTheme, wallpaperReady: true });
+      };
+      if (changesResolvedTheme) await transitionResolvedTheme(apply);
+      else apply();
+      return request === themeRequest;
     };
     const rollback = () => {
       if (request === themeRequest) {
@@ -125,8 +131,7 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
       typeof Image === "undefined" ||
       !("decode" in Image.prototype)
     ) {
-      commit();
-      return Promise.resolve(true);
+      return commit();
     }
     set({ pendingMode: mode });
     return decodeWallpaper(resolvedTheme).then(commit, rollback);
@@ -139,22 +144,22 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
     if (get().mode !== "auto") return;
     const resolvedTheme = systemTheme();
     const request = ++themeRequest;
+    const commit = (wallpaperReady: boolean) => {
+      if (request !== themeRequest || get().mode !== "auto") return;
+      const apply = () => {
+        applyTheme("auto", resolvedTheme, wallpaperReady);
+        set({ resolvedTheme, wallpaperReady });
+      };
+      if (resolvedTheme !== get().resolvedTheme) void transitionResolvedTheme(apply);
+      else apply();
+    };
     if (typeof Image === "undefined" || !("decode" in Image.prototype)) {
-      applyTheme("auto", resolvedTheme);
-      set({ resolvedTheme, wallpaperReady: true });
+      commit(true);
       return;
     }
     void decodeWallpaper(resolvedTheme).then(
-      () => {
-        if (request !== themeRequest || get().mode !== "auto") return;
-        applyTheme("auto", resolvedTheme);
-        set({ resolvedTheme, wallpaperReady: true });
-      },
-      () => {
-        if (request !== themeRequest || get().mode !== "auto") return;
-        applyTheme("auto", resolvedTheme, false);
-        set({ resolvedTheme, wallpaperReady: false });
-      },
+      () => commit(true),
+      () => commit(false),
     );
   },
 }));
