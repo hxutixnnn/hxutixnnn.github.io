@@ -566,6 +566,7 @@ test("applies design-system tokens to component styles", async ({ page }) => {
     element.setAttribute("data-ending-style", "");
     const styles = getComputedStyle(element);
     const transition = {
+      property: styles.transitionProperty,
       duration: styles.transitionDuration,
       timing: styles.transitionTimingFunction,
     };
@@ -586,7 +587,11 @@ test("applies design-system tokens to component styles", async ({ page }) => {
     element.style.removeProperty("transition");
     return { transition, transforms };
   });
-  expect(popupState.transition).toEqual({ duration: "0.777s, 0.888s", timing: "ease, ease" });
+  expect(popupState.transition).toEqual({
+    property: "opacity, transform",
+    duration: "0.777s, 0.888s",
+    timing: "ease, ease",
+  });
   for (const state of popupState.transforms) {
     expect(state.scale).toBe("none");
     expect(state.translate).toBe("none");
