@@ -53,10 +53,12 @@ async function waitForThemeAnimations(page: Page) {
         () =>
           document
             .getAnimations()
-            .filter((animation) =>
-              (
-                animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-              )?.pseudoElement?.startsWith("::view-transition"),
+            .filter(
+              (animation) =>
+                animation.effect !== null &&
+                "pseudoElement" in animation.effect &&
+                typeof animation.effect.pseudoElement === "string" &&
+                animation.effect.pseudoElement.startsWith("::view-transition"),
             ).length,
       ),
     )
@@ -67,10 +69,12 @@ async function pauseThemeAnimationsAtMidpoint(page: Page) {
   return page.evaluate(() => {
     const animations = document
       .getAnimations()
-      .filter((animation) =>
-        (
-          animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-        )?.pseudoElement?.startsWith("::view-transition"),
+      .filter(
+        (animation) =>
+          animation.effect !== null &&
+          "pseudoElement" in animation.effect &&
+          typeof animation.effect.pseudoElement === "string" &&
+          animation.effect.pseudoElement.startsWith("::view-transition"),
       );
     for (const animation of animations) {
       animation.pause();
@@ -83,8 +87,9 @@ async function pauseThemeAnimationsAtMidpoint(page: Page) {
     ) => {
       const animation = animations.find(
         (candidate) =>
-          (candidate.effect as (AnimationEffect & { pseudoElement?: string | null }) | null)
-            ?.pseudoElement === pseudo &&
+          candidate.effect !== null &&
+          "pseudoElement" in candidate.effect &&
+          candidate.effect.pseudoElement === pseudo &&
           candidate instanceof CSSAnimation &&
           candidate.animationName === animationName,
       ) as CSSAnimation | undefined;
@@ -114,9 +119,10 @@ async function finishThemeAnimations(page: Page) {
   await page.evaluate(() => {
     for (const animation of document.getAnimations()) {
       if (
-        (
-          animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-        )?.pseudoElement?.startsWith("::view-transition")
+        animation.effect !== null &&
+        "pseudoElement" in animation.effect &&
+        typeof animation.effect.pseudoElement === "string" &&
+        animation.effect.pseudoElement.startsWith("::view-transition")
       )
         animation.finish();
     }
@@ -207,10 +213,12 @@ async function captureNativeThemeTransition(
         () =>
           document
             .getAnimations()
-            .filter((animation) =>
-              (
-                animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-              )?.pseudoElement?.startsWith("::view-transition"),
+            .filter(
+              (animation) =>
+                animation.effect !== null &&
+                "pseudoElement" in animation.effect &&
+                typeof animation.effect.pseudoElement === "string" &&
+                animation.effect.pseudoElement.startsWith("::view-transition"),
             ).length,
       ),
     )
@@ -1801,10 +1809,12 @@ for (const startupViewport of startupViewports) {
         () =>
           document
             .getAnimations()
-            .filter((animation) =>
-              (
-                animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-              )?.pseudoElement?.startsWith("::view-transition"),
+            .filter(
+              (animation) =>
+                animation.effect !== null &&
+                "pseudoElement" in animation.effect &&
+                typeof animation.effect.pseudoElement === "string" &&
+                animation.effect.pseudoElement.startsWith("::view-transition"),
             ).length,
       ),
     ).toBe(0);
@@ -2304,10 +2314,12 @@ test("supports adopted Appearance controls across input and accessibility modes"
       () =>
         document
           .getAnimations()
-          .filter((animation) =>
-            (
-              animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-            )?.pseudoElement?.startsWith("::view-transition"),
+          .filter(
+            (animation) =>
+              animation.effect !== null &&
+              "pseudoElement" in animation.effect &&
+              typeof animation.effect.pseudoElement === "string" &&
+              animation.effect.pseudoElement.startsWith("::view-transition"),
           ).length,
     ),
   ).toBe(0);
@@ -3002,10 +3014,12 @@ test.describe("appearance modes", () => {
         () =>
           document
             .getAnimations()
-            .filter((animation) =>
-              (
-                animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-              )?.pseudoElement?.startsWith("::view-transition"),
+            .filter(
+              (animation) =>
+                animation.effect !== null &&
+                "pseudoElement" in animation.effect &&
+                typeof animation.effect.pseudoElement === "string" &&
+                animation.effect.pseudoElement.startsWith("::view-transition"),
             ).length,
       ),
     ).toBe(0);
@@ -3049,7 +3063,10 @@ test.describe("appearance modes", () => {
         const input = document.querySelector<HTMLInputElement>('[placeholder="Search"]');
         return { start: input?.selectionStart, end: input?.selectionEnd, value: input?.value };
       })(),
-      geometry: document.querySelector<HTMLElement>(".settings-window")?.getBoundingClientRect().toJSON(),
+      geometry: (() => {
+        const rect = document.querySelector<HTMLElement>(".settings-window")?.getBoundingClientRect();
+        return rect ? { height: rect.height, width: rect.width, x: rect.x, y: rect.y } : undefined;
+      })(),
     }));
     expect(preservedState.scrollTop).toBeGreaterThan(0);
     await captureNativeThemeTransition(
@@ -3070,7 +3087,10 @@ test.describe("appearance modes", () => {
           const input = document.querySelector<HTMLInputElement>('[placeholder="Search"]');
           return { start: input?.selectionStart, end: input?.selectionEnd, value: input?.value };
         })(),
-        geometry: document.querySelector<HTMLElement>(".settings-window")?.getBoundingClientRect().toJSON(),
+        geometry: (() => {
+          const rect = document.querySelector<HTMLElement>(".settings-window")?.getBoundingClientRect();
+          return rect ? { height: rect.height, width: rect.width, x: rect.x, y: rect.y } : undefined;
+        })(),
       })),
     ).toEqual(preservedState);
     await page.keyboard.press("Escape");
@@ -3095,6 +3115,8 @@ test.describe("appearance modes", () => {
     await page.addInitScript(() => {
       localStorage.setItem("tienos-appearance", JSON.stringify("auto"));
       Object.defineProperty(document, "startViewTransition", { configurable: true, value: undefined });
+      // The captured method is always invoked below with an explicit receiver.
+      // eslint-disable-next-line @typescript-eslint/unbound-method
       const animate = HTMLElement.prototype.animate;
       HTMLElement.prototype.animate = function (keyframes, options) {
         if (this.dataset.themeTransitionLayer && typeof options === "object") {
@@ -3129,8 +3151,14 @@ test.describe("appearance modes", () => {
       scrollTop: document.querySelector<HTMLElement>(
         '.settings-scroll-viewport[aria-label="Settings details"]',
       )?.scrollTop,
-      window: document.querySelector<HTMLElement>(".settings-window")?.getBoundingClientRect().toJSON(),
-      portal: document.querySelector<HTMLElement>('[role="listbox"]')?.getBoundingClientRect().toJSON(),
+      window: (() => {
+        const rect = document.querySelector<HTMLElement>(".settings-window")?.getBoundingClientRect();
+        return rect ? { height: rect.height, width: rect.width, x: rect.x, y: rect.y } : undefined;
+      })(),
+      portal: (() => {
+        const rect = document.querySelector<HTMLElement>('[role="listbox"]')?.getBoundingClientRect();
+        return rect ? { height: rect.height, width: rect.width, x: rect.x, y: rect.y } : undefined;
+      })(),
     }));
     expect(preservedFallbackState.scrollTop).toBeGreaterThan(0);
     const oldWallpaperTransform = await page.locator(".tienos-wallpaper").evaluate((node) => {
@@ -3168,8 +3196,14 @@ test.describe("appearance modes", () => {
         transform: styles.transform,
         transitionProperty: styles.transitionProperty,
         scrollTop: details.scrollTop,
-        window: layer.querySelector<HTMLElement>(".settings-window")?.getBoundingClientRect().toJSON(),
-        portal: layer.querySelector<HTMLElement>('[role="listbox"]')?.getBoundingClientRect().toJSON(),
+        window: (() => {
+          const rect = layer.querySelector<HTMLElement>(".settings-window")?.getBoundingClientRect();
+          return rect ? { height: rect.height, width: rect.width, x: rect.x, y: rect.y } : undefined;
+        })(),
+        portal: (() => {
+          const rect = layer.querySelector<HTMLElement>('[role="listbox"]')?.getBoundingClientRect();
+          return rect ? { height: rect.height, width: rect.width, x: rect.x, y: rect.y } : undefined;
+        })(),
       };
     });
     expect(fallbackFrame.animationName).toBe("none");
@@ -3198,8 +3232,14 @@ test.describe("appearance modes", () => {
         scrollTop: document.querySelector<HTMLElement>(
           '.settings-scroll-viewport[aria-label="Settings details"]',
         )?.scrollTop,
-        window: document.querySelector<HTMLElement>(".settings-window")?.getBoundingClientRect().toJSON(),
-        portal: document.querySelector<HTMLElement>('[role="listbox"]')?.getBoundingClientRect().toJSON(),
+        window: (() => {
+          const rect = document.querySelector<HTMLElement>(".settings-window")?.getBoundingClientRect();
+          return rect ? { height: rect.height, width: rect.width, x: rect.x, y: rect.y } : undefined;
+        })(),
+        portal: (() => {
+          const rect = document.querySelector<HTMLElement>('[role="listbox"]')?.getBoundingClientRect();
+          return rect ? { height: rect.height, width: rect.width, x: rect.x, y: rect.y } : undefined;
+        })(),
       })),
     ).toEqual(preservedFallbackState);
     await expect(page).toHaveScreenshot("fallback-wallpaper-failure-midpoint.png", {
@@ -3409,10 +3449,12 @@ test.describe("appearance modes", () => {
         () =>
           document
             .getAnimations()
-            .filter((animation) =>
-              (
-                animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-              )?.pseudoElement?.startsWith("::view-transition"),
+            .filter(
+              (animation) =>
+                animation.effect !== null &&
+                "pseudoElement" in animation.effect &&
+                typeof animation.effect.pseudoElement === "string" &&
+                animation.effect.pseudoElement.startsWith("::view-transition"),
             ).length,
       ),
     ).toBe(0);
@@ -3440,10 +3482,12 @@ test.describe("appearance modes", () => {
           () =>
             document
               .getAnimations()
-              .filter((animation) =>
-                (
-                  animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-                )?.pseudoElement?.startsWith("::view-transition"),
+              .filter(
+                (animation) =>
+                  animation.effect !== null &&
+                  "pseudoElement" in animation.effect &&
+                  typeof animation.effect.pseudoElement === "string" &&
+                  animation.effect.pseudoElement.startsWith("::view-transition"),
               ).length,
         ),
       )
@@ -3500,10 +3544,12 @@ test.describe("appearance modes", () => {
         () =>
           document
             .getAnimations()
-            .filter((animation) =>
-              (
-                animation.effect as (AnimationEffect & { pseudoElement?: string | null }) | null
-              )?.pseudoElement?.startsWith("::view-transition"),
+            .filter(
+              (animation) =>
+                animation.effect !== null &&
+                "pseudoElement" in animation.effect &&
+                typeof animation.effect.pseudoElement === "string" &&
+                animation.effect.pseudoElement.startsWith("::view-transition"),
             ).length,
       ),
     ).toBe(0);

@@ -23,10 +23,10 @@ describe("resolved theme transitions", () => {
 
   afterEach(() => {
     cancelResolvedThemeTransition();
-    delete (document as Document & { startViewTransition?: unknown }).startViewTransition;
+    Reflect.deleteProperty(document, "startViewTransition");
     delete document.documentElement.dataset.themeTransaction;
     if (nativeAnimate) Object.defineProperty(HTMLElement.prototype, "animate", nativeAnimate);
-    else delete (HTMLElement.prototype as HTMLElement & { animate?: unknown }).animate;
+    else Reflect.deleteProperty(HTMLElement.prototype, "animate");
     vi.restoreAllMocks();
   });
 
