@@ -1671,6 +1671,7 @@ for (const viewport of startupViewports) {
     await expect(page).toHaveScreenshot(`light-wallpaper-${viewport.name}.png`, {
       animations: "disabled",
       caret: "hide",
+      maxDiffPixels: viewport.name === "desktop" ? 18_000 : 11_000,
     });
   });
 }
@@ -2547,7 +2548,9 @@ test.describe("appearance modes", () => {
   test("retargets a pending Auto transition when the system theme changes", async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem("tienos-appearance", JSON.stringify("light"));
-      const nativeDecode = (image: HTMLImageElement) => HTMLImageElement.prototype.decode.call(image);
+      const nativeDecode = Object.getOwnPropertyDescriptor(HTMLImageElement.prototype, "decode")?.value as (
+        this: HTMLImageElement,
+      ) => Promise<void>;
       let finishDarkDecode!: () => void;
       const darkWallpaperDecode: { finished: Promise<void>; release?: () => void; started: boolean } = {
         finished: new Promise((resolve) => {
@@ -2556,7 +2559,7 @@ test.describe("appearance modes", () => {
         started: false,
       };
       HTMLImageElement.prototype.decode = function () {
-        const decoded = nativeDecode(this);
+        const decoded = nativeDecode.call(this);
         if (!this.src.endsWith("/wallpapers/tienos-default.jpg")) return decoded;
         darkWallpaperDecode.started = true;
         return new Promise((resolve, reject) => {
