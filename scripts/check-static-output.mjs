@@ -103,13 +103,24 @@ if (cssGzip > 30 * 1024) {
   throw new Error(`CSS budget exceeded: ${(cssGzip / 1024).toFixed(1)} KiB gzip`);
 }
 
-const wallpaperPath = resolve(dist, "wallpapers/tienos-default.jpg");
-if (!(await exists(wallpaperPath))) throw new Error("Missing default tienOS wallpaper");
-const wallpaperSize = (await stat(wallpaperPath)).size;
-if (wallpaperSize > 250 * 1024) {
-  throw new Error(`Wallpaper budget exceeded: ${(wallpaperSize / 1024).toFixed(1)} KiB`);
+const wallpaperPaths = [
+  resolve(dist, "wallpapers/tienos-default.jpg"),
+  resolve(dist, "wallpapers/tienos-light.jpg"),
+];
+for (const wallpaperPath of wallpaperPaths) {
+  if (!(await exists(wallpaperPath))) throw new Error(`Missing tienOS wallpaper: ${wallpaperPath}`);
+}
+const wallpaperSizes = await Promise.all(wallpaperPaths.map(async (path) => (await stat(path)).size));
+if (wallpaperSizes.some((size) => size > 250 * 1024)) {
+  throw new Error(
+    `Per-wallpaper budget exceeded: ${wallpaperSizes.map((size) => `${(size / 1024).toFixed(1)} KiB`).join(", ")}`,
+  );
+}
+const wallpaperTotal = wallpaperSizes.reduce((total, size) => total + size, 0);
+if (wallpaperTotal > 400 * 1024) {
+  throw new Error(`Wallpaper output budget exceeded: ${(wallpaperTotal / 1024).toFixed(1)} KiB`);
 }
 
 console.log(
-  `Static output verified: useful HTML fallback, ${(jsGzip / 1024).toFixed(1)} KiB JS gzip, ${(cssGzip / 1024).toFixed(1)} KiB CSS gzip, ${(wallpaperSize / 1024).toFixed(1)} KiB wallpaper.`,
+  `Static output verified: useful HTML fallback, ${(jsGzip / 1024).toFixed(1)} KiB JS gzip, ${(cssGzip / 1024).toFixed(1)} KiB CSS gzip, ${(wallpaperTotal / 1024).toFixed(1)} KiB wallpapers.`,
 );

@@ -20,6 +20,10 @@ Tien OS uses the pinned [`@base-ui/react@1.6.0`](https://github.com/base-ui/reac
 
 Note: the earlier `@base-ui-components/react` package name was renamed by the upstream project to `@base-ui/react`; this repository depends on the current name.
 
+## Wallpapers
+
+The Light-mode wallpaper “assorted-color smoke” is Copyright Paweł Czerwiński and is distributed under the [Unsplash License](https://unsplash.com/license), which permits free commercial and non-commercial use, copying, modification, and distribution without attribution. The authoritative photo page is <https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik>, and the exact reproducible image-service URL is <https://images.unsplash.com/photo-1558470598-a5dda9640f68?fit=crop&fm=jpg&w=2400&h=1500&q=36>. It was resized, cropped, and compressed for local web delivery; it is not sold or redistributed as a standalone stock-photo service.
+
 ## Interface icons
 
 tienOS includes a subset of Font Awesome Pro 7.3.1 Classic Solid icons, copyright 2026 Fonticons, Inc., under the repository owner's Font Awesome Pro Commercial License. The required license material is distributed with the icons at [`public/fontawesome/LICENSE.txt`](public/fontawesome/LICENSE.txt).

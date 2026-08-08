@@ -23,9 +23,22 @@
         document.documentElement.dataset.theme = theme;
         document.documentElement.style.colorScheme = theme;
         document.querySelector('meta[name="theme-color"]').content = theme === "dark" ? "#07121d" : "#dbeafe";
+        const wallpaper =
+          theme === "light" ? "/wallpapers/tienos-light.jpg" : "/wallpapers/tienos-default.jpg";
+        const preload = document.createElement("link");
+        preload.rel = "preload";
+        preload.as = "image";
+        preload.href = wallpaper;
+        document.head.append(preload);
       })();
     </script>
     <style>
+      :root {
+        --tienos-wallpaper: url("/wallpapers/tienos-default.jpg");
+      }
+      :root[data-theme="light"] {
+        --tienos-wallpaper: url("/wallpapers/tienos-light.jpg");
+      }
       #tienos-boot {
         position: fixed;
         inset: 0;
@@ -114,7 +127,7 @@
           pointer-events: none;
         }
         .tienos-wallpaper {
-          background: url("/wallpapers/tienos-default.jpg") center / cover;
+          background: var(--tienos-wallpaper) center / cover;
         }
         .tienos-vignette {
           background: linear-gradient(180deg, rgb(0 0 0 / 0.35), rgb(0 0 0 / 0.2));
@@ -253,6 +266,26 @@
     </style>
     <noscript>
       <style>
+        @media (prefers-color-scheme: light) {
+          :root {
+            --tienos-wallpaper: url("/wallpapers/tienos-light.jpg") !important;
+          }
+          body,
+          .tienos-desktop {
+            background: #dbeafe !important;
+            color: #0f172a !important;
+          }
+          #tienos-boot {
+            background: #f8fafc;
+            color: #0f172a;
+          }
+          .tienos-boot-track {
+            background: rgb(15 23 42 / 0.2);
+          }
+          .tienos-boot-progress {
+            background: #0f172a;
+          }
+        }
         #tienos-boot {
           animation: tienos-boot-dismiss 160ms ease 420ms forwards;
         }
@@ -360,7 +393,7 @@
         class="tienos-desktop relative min-h-screen overflow-hidden bg-[#07121d] text-white [[data-theme=light]_&]:bg-[#dbeafe] [[data-theme=light]_&]:text-[#0f172a]"
       >
         <div
-          class="tienos-wallpaper pointer-events-none absolute inset-0 [transform:scale(1.02)] bg-[url(/wallpapers/tienos-default.jpg)] bg-cover bg-center saturate-[1.08] motion-safe:animate-[tienos-drift_24s_ease-in-out_infinite_alternate]"
+          class="tienos-wallpaper pointer-events-none absolute inset-0 [transform:scale(1.02)] bg-[image:var(--tienos-wallpaper)] bg-cover bg-center saturate-[1.08] motion-safe:animate-[tienos-drift_24s_ease-in-out_infinite_alternate]"
           aria-hidden="true"
         ></div>
         <div

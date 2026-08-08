@@ -50,7 +50,7 @@ Nested radii must preserve concentric spacing.
 
 Use 120ms for immediate control feedback and 200ms for ordinary state transitions.
 Spatial motion must communicate state or direct manipulation.
-Continuous wallpaper motion runs only when reduced motion is not requested.
+Continuous wallpaper motion runs only when reduced motion is not requested. Light mode uses the bright Paweł Czerwiński ink-cloud wallpaper while Dark mode retains the original blurred wallpaper; Auto follows the live system theme. The resolved image is the only startup wallpaper preloaded and decoded before splash dismissal, and runtime changes decode their destination before the theme is painted.
 
 ## Component contracts
 

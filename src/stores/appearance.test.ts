@@ -7,9 +7,9 @@ import {
 } from "./appearance";
 
 describe("appearance store", () => {
-  beforeEach(() => {
+  beforeEach(async () => {
     localStorage.clear();
-    useAppearanceStore.getState().setMode("auto");
+    await useAppearanceStore.getState().setMode("auto");
   });
 
   it("safely falls back to Auto for missing, malformed, and unsupported preferences", () => {
@@ -36,12 +36,12 @@ describe("appearance store", () => {
     storage.mockRestore();
   });
 
-  it("persists explicit modes and applies their resolved theme", () => {
-    useAppearanceStore.getState().setMode("light");
+  it("persists explicit modes and applies their resolved theme", async () => {
+    await useAppearanceStore.getState().setMode("light");
     expect(localStorage.getItem(appearanceStorageKey)).toBe(JSON.stringify("light"));
     expect(document.documentElement).toHaveAttribute("data-theme", "light");
 
-    useAppearanceStore.getState().setMode("dark");
+    await useAppearanceStore.getState().setMode("dark");
     expect(useAppearanceStore.getState()).toMatchObject({ mode: "dark", resolvedTheme: "dark" });
     expect(document.documentElement).toHaveAttribute("data-theme", "dark");
   });
