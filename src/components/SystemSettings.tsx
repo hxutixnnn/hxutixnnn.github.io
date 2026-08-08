@@ -25,7 +25,7 @@ import { useAppearanceStore, type AppearanceMode } from "../stores/appearance";
 type SystemSettingsProps = {
   focusRequest?: number;
   minimized?: boolean;
-  minimizeRequest?: number;
+  lifecycleRequest?: { id: number; action: "minimize" | "restore" } | null;
   onMinimizedChange?: (minimized: boolean) => void;
   onVisibilityChange?: (visibility: WindowVisibility) => void;
   onActiveChange?: (active: boolean) => void;
@@ -246,7 +246,7 @@ function applyFrameDuringResize(element: HTMLElement, frame: SettingsFrame) {
 export function SystemSettings({
   focusRequest = 0,
   minimized = false,
-  minimizeRequest = 0,
+  lifecycleRequest = null,
   onMinimizedChange = () => undefined,
   onVisibilityChange = () => undefined,
   onActiveChange = () => undefined,
@@ -279,16 +279,20 @@ export function SystemSettings({
   const animationTimerRef = useRef<number>(0);
   const rndRef = useRef<Rnd>(null);
   const handledFocusRequestRef = useRef(0);
-  const handledMinimizeRequestRef = useRef(0);
+  const handledLifecycleRequestRef = useRef(0);
   const windowRef = useRef<HTMLElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const compactRef = useRef(compact);
   const detailsViewportRef = useRef<HTMLDivElement>(null);
 
-  const updateVisibility = useCallback((nextVisibility: WindowVisibility) => {
-    visibilityRef.current = nextVisibility;
-    setVisibility(nextVisibility);
-  }, []);
+  const updateVisibility = useCallback(
+    (nextVisibility: WindowVisibility) => {
+      visibilityRef.current = nextVisibility;
+      onVisibilityChange(nextVisibility);
+      setVisibility(nextVisibility);
+    },
+    [onVisibilityChange],
+  );
 
   const setGenieTarget = useCallback(() => {
     const element = windowRef.current;
@@ -401,13 +405,15 @@ export function SystemSettings({
   }, [onMinimizedChange, setGenieTarget, updateVisibility, visibility]);
 
   useEffect(() => {
-    if (minimizeRequest <= handledMinimizeRequestRef.current) return;
-    handledMinimizeRequestRef.current = minimizeRequest;
+    if (!lifecycleRequest || lifecycleRequest.id <= handledLifecycleRequestRef.current) return;
+    handledLifecycleRequestRef.current = lifecycleRequest.id;
+    if (lifecycleRequest.action !== "minimize") {
+      if (visibilityRef.current === "visible") onVisibilityChange("visible");
+      return;
+    }
     const frame = requestAnimationFrame(beginMinimize);
     return () => cancelAnimationFrame(frame);
-  }, [beginMinimize, minimizeRequest]);
-
-  useEffect(() => onVisibilityChange(visibility), [onVisibilityChange, visibility]);
+  }, [beginMinimize, lifecycleRequest, onVisibilityChange]);
 
   useEffect(() => {
     if (visibility !== "minimizing" && visibility !== "restoring") return;
@@ -613,39 +619,39 @@ export function SystemSettings({
         >
           <div
             data-sidebar-panel=""
-            className="settings-sidebar-panel settings-drag-handle flex h-full min-h-0 flex-col overflow-hidden rounded-[calc(var(--tienos-radius-window)_-_8px)] border border-white/20 [background:linear-gradient(145deg,rgb(255_255_255/0.13),transparent_46%),var(--tienos-color-sidebar)] p-[10px_9px_8px] shadow-[0_12px_30px_rgb(0_0_0/0.2),inset_0_1px_0_rgb(255_255_255/0.25),inset_0_-1px_0_rgb(0_0_0/0.1)] backdrop-blur-[24px] backdrop-saturate-[1.35] contrast-more:border-[var(--tienos-color-border)] contrast-more:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
+            className="settings-sidebar-panel settings-drag-handle flex h-full min-h-0 flex-col overflow-visible rounded-[calc(var(--tienos-radius-window)_-_8px)] border border-white/20 [background:linear-gradient(145deg,rgb(255_255_255/0.13),transparent_46%),var(--tienos-color-sidebar)] p-[10px_9px_8px] shadow-[0_12px_30px_rgb(0_0_0/0.2),inset_0_1px_0_rgb(255_255_255/0.25),inset_0_-1px_0_rgb(0_0_0/0.1)] backdrop-blur-[24px] backdrop-saturate-[1.35] contrast-more:border-[var(--tienos-color-border)] contrast-more:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
           >
             <div
-              className="settings-drag-handle mx-0.5 mb-[29px] flex touch-none select-none gap-2.5 max-[700px]:mb-5 max-[700px]:gap-[7px]"
+              className="settings-drag-handle relative z-10 mx-[-4px] mb-[29px] h-[13px] w-[132px] shrink-0 touch-none select-none max-[700px]:mb-5 max-[700px]:h-[11px]"
               aria-label="Window controls"
             >
               <button
                 type="button"
-                className="settings-light relative grid size-[13px] shrink-0 touch-manipulation place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:size-[11px]"
+                className="settings-light absolute top-[-15.5px] left-0 size-[44px] touch-manipulation rounded-full focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:top-[-15px]"
                 aria-label="Close System Settings"
                 title="Close"
                 onClick={onClose}
               >
-                <span className="size-[13px] rounded-full border border-black/10 bg-[#ff5f57] max-[700px]:size-[11px]" />
+                <span className="pointer-events-none absolute top-1/2 right-0 size-[13px] -translate-y-1/2 rounded-full border border-black/10 bg-[#ff5f57] max-[700px]:top-[20.5px] max-[700px]:size-[11px]" />
               </button>
               <button
                 type="button"
-                className="settings-light relative grid size-[13px] shrink-0 touch-manipulation place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:size-[11px]"
+                className="settings-light absolute top-[-15.5px] left-[44px] size-[44px] touch-manipulation rounded-full focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:top-[-15px]"
                 aria-label="Minimize System Settings"
                 title="Minimize"
                 onClick={beginMinimize}
               >
-                <span className="size-[13px] rounded-full border border-black/10 bg-[#febc2e] max-[700px]:size-[11px]" />
+                <span className="pointer-events-none absolute top-1/2 left-1/2 size-[13px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-black/10 bg-[#febc2e] max-[700px]:top-[20.5px] max-[700px]:size-[11px]" />
               </button>
               <button
                 type="button"
-                className="settings-light relative grid size-[13px] shrink-0 touch-manipulation place-items-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:size-[11px]"
+                className="settings-light absolute top-[-15.5px] left-[88px] size-[44px] touch-manipulation rounded-full focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:top-[-15px]"
                 aria-label="Toggle fullscreen System Settings"
                 aria-pressed={fullscreen}
                 title={fullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
                 onClick={toggleFullscreen}
               >
-                <span className="size-[13px] rounded-full border border-black/10 bg-[#28c840] max-[700px]:size-[11px]" />
+                <span className="pointer-events-none absolute top-1/2 left-0 size-[13px] -translate-y-1/2 rounded-full border border-black/10 bg-[#28c840] max-[700px]:top-[20.5px] max-[700px]:size-[11px]" />
               </button>
             </div>
 

@@ -2915,7 +2915,7 @@ test("Dock activation minimizes only the active frontmost Settings window", asyn
     "System Settings is running and minimized",
   );
   await dockApp.click();
-  await expect(window).toBeVisible();
+  await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
   await expect(window).toBeFocused();
   await expect(window).toHaveCount(1);
 });
@@ -3224,6 +3224,8 @@ test("keyboard minimize and close preserve descendant focus and single-window st
 test("Settings portal activity and traffic-light hit regions keep unambiguous ownership", async ({
   page,
 }) => {
+  test.setTimeout(45_000);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
   await expect(page.locator("#root")).not.toHaveAttribute("inert");
   const dockApp = page
@@ -3240,31 +3242,39 @@ test("Settings portal activity and traffic-light hit regions keep unambiguous ow
   await dockApp.click();
   await expect(dockStatus).toHaveText("System Settings is running and minimized");
   await dockApp.click();
-  await expect(window).toBeVisible();
+  await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
 
   const minimize = page.getByRole("button", { name: "Minimize System Settings" });
-  const yellow = await minimize.boundingBox();
+  const close = page.getByRole("button", { name: "Close System Settings" });
+  const fullscreen = page.getByRole("button", { name: "Toggle fullscreen System Settings" });
+  const [red, yellow, green] = await Promise.all([
+    close.boundingBox(),
+    minimize.boundingBox(),
+    fullscreen.boundingBox(),
+  ]);
+  expect(red).not.toBeNull();
   expect(yellow).not.toBeNull();
-  await page.mouse.click(yellow!.x + yellow!.width / 2, yellow!.y + yellow!.height + 8);
+  expect(green).not.toBeNull();
+  for (const box of [red!, yellow!, green!]) {
+    expect(box.width).toBeCloseTo(44, 0);
+    expect(box.height).toBeCloseTo(44, 0);
+  }
+  expect(red!.x + red!.width).toBeLessThanOrEqual(yellow!.x);
+  expect(yellow!.x + yellow!.width).toBeLessThanOrEqual(green!.x);
+  await minimize.click({ position: { x: 2, y: yellow!.height / 2 } });
   await expect(dockStatus).toHaveText("System Settings is running and minimized");
   await expect(page.locator('button[aria-label="Toggle fullscreen System Settings"]')).toHaveAttribute(
     "aria-pressed",
     "false",
   );
   await dockApp.click();
-  await expect(window).toBeVisible();
+  await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
 
-  const fullscreen = page.getByRole("button", { name: "Toggle fullscreen System Settings" });
-  const green = await fullscreen.boundingBox();
-  expect(green).not.toBeNull();
-  await page.mouse.click(green!.x + green!.width / 2, green!.y + green!.height + 8);
+  await fullscreen.click({ position: { x: green!.width - 2, y: green!.height / 2 } });
   await expect(fullscreen).toHaveAttribute("aria-pressed", "true");
   await fullscreen.click();
 
-  const close = page.getByRole("button", { name: "Close System Settings" });
-  const red = await close.boundingBox();
-  expect(red).not.toBeNull();
-  await page.mouse.click(red!.x + red!.width / 2, red!.y + red!.height + 8);
+  await close.click({ position: { x: 2, y: red!.height / 2 } });
   await expect(window).toHaveCount(0);
 });
 
@@ -3297,5 +3307,51 @@ test("fullscreen exit reconciles saved geometry across the compact breakpoint", 
     .toBe(true);
   await expect(fullscreen).toBeFocused();
   await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
+  const compactWindow = await window.boundingBox();
+  const compactControls = await Promise.all(
+    ["Close System Settings", "Minimize System Settings", "Toggle fullscreen System Settings"].map((name) =>
+      page.getByRole("button", { name }).boundingBox(),
+    ),
+  );
+  for (const control of compactControls) {
+    expect(control).not.toBeNull();
+    expect(control!.width).toBeCloseTo(44, 0);
+    expect(control!.height).toBeCloseTo(44, 0);
+    expect(control!.x).toBeGreaterThanOrEqual(compactWindow!.x);
+    expect(control!.x + control!.width).toBeLessThanOrEqual(compactWindow!.x + compactWindow!.width);
+  }
   await page.screenshot({ path: testInfo.outputPath("settings-fullscreen-compact-exit.png") });
+});
+
+test("same-tick and repeated Dock activation reverse one minimize transition", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await expect(page.locator("#root")).not.toHaveAttribute("inert");
+
+  const states = await page.evaluate(async () => {
+    const minimize = document.querySelector<HTMLButtonElement>(
+      'button[aria-label="Minimize System Settings"]',
+    )!;
+    const dock = document.querySelector<HTMLButtonElement>("[data-dock-settings]")!;
+    const readVisibility = () =>
+      document.querySelector<HTMLElement>("[data-genie-window]")!.dataset.windowVisibility;
+    const nextPaint = () =>
+      new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+
+    minimize.click();
+    dock.click();
+    await nextPaint();
+    const afterInterruption = readVisibility();
+    dock.click();
+    dock.click();
+    await nextPaint();
+    return [afterInterruption, readVisibility()];
+  });
+
+  expect(states).toEqual(["visible", "visible"]);
+  await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
+  await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
+  await expect(page.getByRole("navigation", { name: "Dock" }).getByRole("status")).toHaveText(
+    "System Settings is running",
+  );
 });

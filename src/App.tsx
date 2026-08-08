@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Dock } from "./components/Dock";
 import { MenuBar } from "./components/MenuBar";
 import { SystemSettings, type WindowVisibility } from "./components/SystemSettings";
@@ -13,10 +13,17 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
   const [settingsOpen, setSettingsOpen] = useState(true);
   const [settingsMinimized, setSettingsMinimized] = useState(false);
   const [settingsActive, setSettingsActive] = useState(true);
-  const [settingsVisibility, setSettingsVisibility] = useState<WindowVisibility>("visible");
+  const settingsVisibilityRef = useRef<WindowVisibility>("visible");
   const [settingsFocusRequest, setSettingsFocusRequest] = useState(0);
-  const [settingsMinimizeRequest, setSettingsMinimizeRequest] = useState(0);
+  const lifecycleRequestIdRef = useRef(0);
+  const [settingsLifecycleRequest, setSettingsLifecycleRequest] = useState<{
+    id: number;
+    action: "minimize" | "restore";
+  } | null>(null);
   const syncSystemTheme = useAppearanceStore((state) => state.syncSystemTheme);
+  const handleSettingsVisibilityChange = useCallback((visibility: WindowVisibility) => {
+    settingsVisibilityRef.current = visibility;
+  }, []);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -89,15 +96,15 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
           <SystemSettings
             focusRequest={settingsFocusRequest}
             minimized={settingsMinimized}
-            minimizeRequest={settingsMinimizeRequest}
+            lifecycleRequest={settingsLifecycleRequest}
             onMinimizedChange={setSettingsMinimized}
-            onVisibilityChange={setSettingsVisibility}
+            onVisibilityChange={handleSettingsVisibilityChange}
             onActiveChange={setSettingsActive}
             onClose={() => {
               setSettingsOpen(false);
               setSettingsMinimized(false);
               setSettingsActive(false);
-              setSettingsVisibility("visible");
+              settingsVisibilityRef.current = "visible";
             }}
           />
         </>
@@ -106,7 +113,9 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
         settingsOpen={settingsOpen}
         settingsMinimized={settingsMinimized}
         onActivateSettings={() => {
+          const settingsVisibility = settingsVisibilityRef.current;
           if (!settingsOpen) {
+            settingsVisibilityRef.current = "visible";
             setSettingsOpen(true);
             setSettingsMinimized(false);
             setSettingsActive(true);
@@ -114,6 +123,11 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
             return;
           }
           if (settingsVisibility === "minimizing") {
+            settingsVisibilityRef.current = "restoring";
+            setSettingsLifecycleRequest({
+              id: ++lifecycleRequestIdRef.current,
+              action: "restore",
+            });
             setSettingsFocusRequest((request) => request + 1);
             return;
           }
@@ -125,7 +139,11 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
           }
           if (settingsVisibility === "restoring") return;
           if (settingsActive) {
-            setSettingsMinimizeRequest((request) => request + 1);
+            settingsVisibilityRef.current = "minimizing";
+            setSettingsLifecycleRequest({
+              id: ++lifecycleRequestIdRef.current,
+              action: "minimize",
+            });
             return;
           }
           setSettingsActive(true);
