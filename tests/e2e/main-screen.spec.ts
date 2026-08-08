@@ -3184,3 +3184,118 @@ test("transition state is inert, tracks Dock movement, and repeated activation s
     timeout: 1_000,
   });
 });
+
+test("keyboard minimize and close preserve descendant focus and single-window state", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.locator("#root")).not.toHaveAttribute("inert");
+  const dockApp = page
+    .getByRole("navigation", { name: "Dock" })
+    .getByRole("button", { name: "System Settings" });
+  const dockStatus = page.getByRole("navigation", { name: "Dock" }).getByRole("status");
+  const window = page.getByRole("region", { name: "System Settings" });
+  const search = page.getByPlaceholder("Search");
+
+  await search.focus();
+  await dockApp.click();
+  await expect(dockStatus).toHaveText("System Settings is running and minimized");
+  await dockApp.click();
+  await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
+  await expect(search).toBeFocused({ timeout: 1_000 });
+
+  const minimize = page.getByRole("button", { name: "Minimize System Settings" });
+  await minimize.focus();
+  await minimize.press("Space");
+  await expect(dockStatus).toHaveText("System Settings is running and minimized");
+  await dockApp.click();
+  await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
+  await expect(minimize).toBeFocused({ timeout: 1_000 });
+
+  const close = page.getByRole("button", { name: "Close System Settings" });
+  await close.focus();
+  await close.press("Enter");
+  await expect(window).toHaveCount(0);
+  await expect(page.getByRole("navigation", { name: "Dock" }).getByRole("status")).toHaveText(
+    "System Settings is not running",
+  );
+  await dockApp.press("Enter");
+  await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
+});
+
+test("Settings portal activity and traffic-light hit regions keep unambiguous ownership", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator("#root")).not.toHaveAttribute("inert");
+  const dockApp = page
+    .getByRole("navigation", { name: "Dock" })
+    .getByRole("button", { name: "System Settings" });
+  const dockStatus = page.getByRole("navigation", { name: "Dock" }).getByRole("status");
+  const window = page.getByRole("region", { name: "System Settings" });
+
+  await page.getByRole("button", { name: "Appearance" }).click();
+  await page.getByRole("combobox", { name: "Text highlight color" }).click();
+  const portal = page.locator("[data-settings-portal]");
+  await expect(portal).toBeVisible();
+  await portal.getByRole("option", { name: "Blue" }).click();
+  await dockApp.click();
+  await expect(dockStatus).toHaveText("System Settings is running and minimized");
+  await dockApp.click();
+  await expect(window).toBeVisible();
+
+  const minimize = page.getByRole("button", { name: "Minimize System Settings" });
+  const yellow = await minimize.boundingBox();
+  expect(yellow).not.toBeNull();
+  await page.mouse.click(yellow!.x + yellow!.width / 2, yellow!.y + yellow!.height + 8);
+  await expect(dockStatus).toHaveText("System Settings is running and minimized");
+  await expect(page.locator('button[aria-label="Toggle fullscreen System Settings"]')).toHaveAttribute(
+    "aria-pressed",
+    "false",
+  );
+  await dockApp.click();
+  await expect(window).toBeVisible();
+
+  const fullscreen = page.getByRole("button", { name: "Toggle fullscreen System Settings" });
+  const green = await fullscreen.boundingBox();
+  expect(green).not.toBeNull();
+  await page.mouse.click(green!.x + green!.width / 2, green!.y + green!.height + 8);
+  await expect(fullscreen).toHaveAttribute("aria-pressed", "true");
+  await fullscreen.click();
+
+  const close = page.getByRole("button", { name: "Close System Settings" });
+  const red = await close.boundingBox();
+  expect(red).not.toBeNull();
+  await page.mouse.click(red!.x + red!.width / 2, red!.y + red!.height + 8);
+  await expect(window).toHaveCount(0);
+});
+
+test("fullscreen exit reconciles saved geometry across the compact breakpoint", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/");
+  await expect(page.locator("#root")).not.toHaveAttribute("inert");
+  const window = page.getByRole("region", { name: "System Settings" });
+  const fullscreen = page.getByRole("button", { name: "Toggle fullscreen System Settings" });
+  await fullscreen.click();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect.poll(async () => (await window.boundingBox())?.width).toBeCloseTo(390, 0);
+  await fullscreen.click();
+
+  const dockTop = await page
+    .locator("[data-dock-surface]")
+    .evaluate((element) => Math.floor(element.getBoundingClientRect().top));
+  await expect
+    .poll(async () => {
+      const box = await window.boundingBox();
+      return (
+        box !== null &&
+        Math.abs(box.x - 8) <= 1 &&
+        Math.abs(box.y - 46) <= 1 &&
+        Math.abs(box.width - 374) <= 1 &&
+        Math.abs(box.height - (dockTop - 54)) <= 1
+      );
+    })
+    .toBe(true);
+  await expect(fullscreen).toBeFocused();
+  await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
+  await page.screenshot({ path: testInfo.outputPath("settings-fullscreen-compact-exit.png") });
+});

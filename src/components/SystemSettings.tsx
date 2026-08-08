@@ -373,8 +373,10 @@ export function SystemSettings({
       animationTimerRef.current = window.setTimeout(
         () => {
           updateVisibility("visible");
-          (restoreFocusRef.current?.isConnected ? restoreFocusRef.current : windowRef.current)?.focus({
-            preventScroll: true,
+          requestAnimationFrame(() => {
+            (restoreFocusRef.current?.isConnected ? restoreFocusRef.current : windowRef.current)?.focus({
+              preventScroll: true,
+            });
           });
         },
         window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 420,
@@ -387,10 +389,6 @@ export function SystemSettings({
   const beginMinimize = useCallback(() => {
     if (visibility === "minimized" || visibility === "minimizing") return;
     window.clearTimeout(animationTimerRef.current);
-    const activeElement = document.activeElement;
-    if (activeElement instanceof HTMLElement && windowRef.current?.contains(activeElement)) {
-      restoreFocusRef.current = activeElement;
-    }
     setGenieTarget();
     updateVisibility("minimizing");
     animationTimerRef.current = window.setTimeout(
@@ -430,8 +428,10 @@ export function SystemSettings({
     animationTimerRef.current = window.setTimeout(
       () => {
         updateVisibility("visible");
-        (restoreFocusRef.current?.isConnected ? restoreFocusRef.current : windowRef.current)?.focus({
-          preventScroll: true,
+        requestAnimationFrame(() => {
+          (restoreFocusRef.current?.isConnected ? restoreFocusRef.current : windowRef.current)?.focus({
+            preventScroll: true,
+          });
         });
       },
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 80 : 420,
@@ -458,9 +458,12 @@ export function SystemSettings({
     if (fullscreen) {
       fullscreenRef.current = false;
       setFullscreen(false);
-      const restoredFrame =
+      const savedFrame =
         normalFrameRef.current ??
         (compact ? compactFrame(viewport, menuBottom, bottomBoundary) : desktopFrame(viewport));
+      const restoredFrame = compact
+        ? compactFrame(viewport, menuBottom, bottomBoundary)
+        : clampFrame(savedFrame, viewport, menuBottom, bottomBoundary);
       rndRef.current?.updateSize({ width: restoredFrame.width, height: restoredFrame.height });
       rndRef.current?.updatePosition({ x: restoredFrame.x, y: restoredFrame.y });
       setFrame(restoredFrame);
@@ -596,7 +599,12 @@ export function SystemSettings({
         aria-label="System Settings"
         aria-hidden={visibility !== "visible" || undefined}
         inert={visibility !== "visible"}
-        onFocusCapture={() => onActiveChange(true)}
+        onFocusCapture={(event) => {
+          if (event.target instanceof HTMLElement && event.target !== windowRef.current) {
+            restoreFocusRef.current = event.target;
+          }
+          onActiveChange(true);
+        }}
         tabIndex={-1}
       >
         <aside

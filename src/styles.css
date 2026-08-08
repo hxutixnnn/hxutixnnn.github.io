@@ -149,10 +149,15 @@
 .settings-light:first-child::before {
   right: -29px;
   left: 0;
+  clip-path: inset(0 57% 0 0);
+}
+.settings-light:nth-child(2)::before {
+  clip-path: inset(0 24%);
 }
 .settings-light:last-child::before {
   right: 0;
   left: -29px;
+  clip-path: inset(0 0 0 57%);
 }
 @media (max-width: 700px) {
   .settings-light::before {
@@ -164,10 +169,15 @@
   .settings-light:first-child::before {
     right: -33px;
     left: 0;
+    clip-path: inset(0 67% 0 0);
+  }
+  .settings-light:nth-child(2)::before {
+    clip-path: inset(0 29.5%);
   }
   .settings-light:last-child::before {
     right: 0;
     left: -33px;
+    clip-path: inset(0 0 0 67%);
   }
 }
 @media (prefers-reduced-motion: reduce) {

@@ -30,7 +30,11 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
     const deactivateForDesktopPointer = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
-      if (target.closest("[data-genie-window],[data-dock-surface]")) return;
+      if (target.closest("[data-genie-window],[data-settings-portal]")) {
+        setSettingsActive(true);
+        return;
+      }
+      if (target.closest("[data-dock-surface]")) return;
       setSettingsActive(false);
     };
     document.addEventListener("pointerdown", deactivateForDesktopPointer, true);
