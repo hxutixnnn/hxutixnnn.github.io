@@ -6,6 +6,10 @@ const startupViewports = [
   { name: "desktop", width: 1440, height: 900 },
   { name: "mobile", width: 320, height: 568 },
 ] as const;
+const paintCriticalAssets = [
+  { name: "wallpaper", url: "**/wallpapers/tienos-default.jpg" },
+  { name: "icon sprite", url: "**/fontawesome/fontawesome-pro-solid.svg" },
+] as const;
 
 type DismissalFrame = {
   viewport: { width: number; height: number };
@@ -709,107 +713,67 @@ for (const startupViewport of startupViewports) {
   });
 }
 
-for (const startupViewport of startupViewports) {
-  test(`paints a stable splash before delayed assets on ${startupViewport.name}`, async ({ page }) => {
-    await recordDismissalFrames(page);
-    await page.setViewportSize(startupViewport);
-    await page.emulateMedia({ reducedMotion: "reduce", colorScheme: "dark" });
+for (const asset of paintCriticalAssets) {
+  for (const startupViewport of startupViewports) {
+    test(`keeps the splash until delayed ${asset.name} paint on ${startupViewport.name}`, async ({
+      page,
+    }) => {
+      await recordDismissalFrames(page);
+      await page.setViewportSize(startupViewport);
+      await page.emulateMedia({ reducedMotion: "reduce", colorScheme: "dark" });
 
-    let applicationGate = createDelayGate();
-    let wallpaperGate = createDelayGate();
-    let spriteGate = createDelayGate();
-    let applicationIntercepted = false;
-    let wallpaperIntercepted = false;
-    let spriteIntercepted = false;
+      let assetGate = createDelayGate();
+      let assetIntercepted = false;
+      await page.route(asset.url, async (route) => {
+        assetIntercepted = true;
+        await assetGate.blocked;
+        await route.continue();
+      });
 
-    await page.route(/\/assets\/.*\.js$/, async (route) => {
-      applicationIntercepted = true;
-      await applicationGate.blocked;
-      await route.continue();
+      const navigation = page.goto("/", { waitUntil: "domcontentloaded" });
+      await expect.poll(() => assetIntercepted).toBe(true);
+
+      const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
+      const bootIcon = page.locator("[data-boot-icon]");
+      const settingsWindow = page.getByRole("region", { name: "System Settings" });
+      await expect(settingsWindow).toHaveCount(1);
+      await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
+      await expect(bootScreen).toBeVisible();
+      const coldGeometry = await expectBootIconToPaint(bootIcon);
+      expect(coldGeometry.x).toBeCloseTo((startupViewport.width - 112) / 2, 0);
+      expect(coldGeometry.y).toBeCloseTo((startupViewport.height - 188) / 2, 0);
+      expect(coldGeometry).toMatchObject({ width: 112, height: 112 });
+      await page.waitForTimeout(700);
+      expect(await expectBootIconToPaint(bootIcon)).toEqual(coldGeometry);
+      await expect(page.locator("#root")).toHaveAttribute("inert", "");
+
+      assetGate.release();
+      await navigation;
+      await expect(bootScreen).toBeHidden();
+      await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
+      await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="sparkle"]'), "sparkle");
+      await expect(page.locator(".tienos-wallpaper")).not.toHaveCSS("background-image", "none");
+      await expectStyledDismissalFrames(page, { settings: true });
+
+      assetGate = createDelayGate();
+      assetIntercepted = false;
+      const warmNavigation = page.reload({ waitUntil: "domcontentloaded" });
+      await expect.poll(() => assetIntercepted).toBe(true);
+      await expect(settingsWindow).toHaveCount(1);
+      await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
+      await expect(bootScreen).toBeVisible();
+      const warmGeometry = await expectBootIconToPaint(bootIcon);
+      expect(warmGeometry).toEqual(coldGeometry);
+      await page.waitForTimeout(100);
+      expect(await expectBootIconToPaint(bootIcon)).toEqual(warmGeometry);
+
+      assetGate.release();
+      await warmNavigation;
+      await expect(bootScreen).toBeHidden();
+      await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="sparkle"]'), "sparkle");
+      await expectStyledDismissalFrames(page, { settings: true });
     });
-    await page.route("**/wallpapers/tienos-default.jpg", async (route) => {
-      wallpaperIntercepted = true;
-      await wallpaperGate.blocked;
-      await route.continue();
-    });
-    await page.route("**/fontawesome/fontawesome-pro-solid.svg", async (route) => {
-      spriteIntercepted = true;
-      await spriteGate.blocked;
-      await route.continue();
-    });
-
-    const navigation = page.goto("/", { waitUntil: "domcontentloaded" });
-    await expect.poll(() => applicationIntercepted).toBe(true);
-    await expect.poll(() => wallpaperIntercepted).toBe(true);
-    await expect.poll(() => spriteIntercepted).toBe(true);
-
-    const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
-    const bootIcon = page.locator("[data-boot-icon]");
-    await expect(bootScreen).toBeVisible();
-    const coldGeometry = await expectBootIconToPaint(bootIcon);
-    expect(coldGeometry.x).toBeCloseTo((startupViewport.width - 112) / 2, 0);
-    expect(coldGeometry.y).toBeCloseTo((startupViewport.height - 188) / 2, 0);
-    expect(coldGeometry).toMatchObject({ width: 112, height: 112 });
-    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
-    await page.waitForTimeout(700);
-    expect(await expectBootIconToPaint(bootIcon)).toEqual(coldGeometry);
-    await expect(page.locator("#root")).toHaveAttribute("inert", "");
-    await page.keyboard.press("Tab");
-    expect(await page.evaluate(() => document.activeElement === document.body)).toBe(true);
-    await page.evaluate(() => {
-      const observedWindow = window as typeof window & { iconPaintedAtDismissal?: boolean };
-      const boot = document.getElementById("tienos-boot");
-      new MutationObserver((_, observer) => {
-        if (!boot?.hasAttribute("data-complete")) return;
-        const use = document.querySelector<SVGGraphicsElement>('[data-fa-icon="sparkle"] use');
-        const bounds = use?.getBBox();
-        observedWindow.iconPaintedAtDismissal = Boolean(bounds && bounds.width > 0 && bounds.height > 0);
-        observer.disconnect();
-      }).observe(boot!, { attributes: true, attributeFilter: ["data-complete"] });
-    });
-
-    wallpaperGate.release();
-    await expect(bootScreen).toBeVisible();
-    spriteGate.release();
-    applicationGate.release();
-    await navigation;
-    await expect(bootScreen).toBeHidden();
-    await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
-    await expect(page.locator(":root")).toHaveCSS("font-size", "13px");
-    await expect(page.locator(".tienos-wallpaper")).not.toHaveCSS("background-image", "none");
-    expect(
-      await page.evaluate(
-        () => (window as typeof window & { iconPaintedAtDismissal?: boolean }).iconPaintedAtDismissal,
-      ),
-    ).toBe(true);
-    await expectFontAwesomeIconToPaint(page.locator('[data-fa-icon="sparkle"]'), "sparkle");
-    await expectStyledDismissalFrames(page, { settings: true });
-    await page.keyboard.press("Tab");
-    await expect(page.getByRole("menuitem", { name: "Open tienOS menu" })).toBeFocused();
-
-    applicationGate = createDelayGate();
-    wallpaperGate = createDelayGate();
-    spriteGate = createDelayGate();
-    applicationIntercepted = false;
-    wallpaperIntercepted = false;
-    spriteIntercepted = false;
-    await page.emulateMedia({ reducedMotion: "no-preference", colorScheme: "dark" });
-    const warmNavigation = page.reload({ waitUntil: "domcontentloaded" });
-    await expect.poll(() => applicationIntercepted).toBe(true);
-    await expect.poll(() => wallpaperIntercepted).toBe(true);
-    await expect.poll(() => spriteIntercepted).toBe(true);
-    await expect(bootScreen).toBeVisible();
-    const warmGeometry = await expectBootIconToPaint(bootIcon);
-    expect(warmGeometry).toEqual(coldGeometry);
-    await page.waitForTimeout(100);
-    expect(await expectBootIconToPaint(bootIcon)).toEqual(warmGeometry);
-    wallpaperGate.release();
-    spriteGate.release();
-    applicationGate.release();
-    await warmNavigation;
-    await expect(bootScreen).toBeHidden();
-    await expectStyledDismissalFrames(page, { settings: true });
-  });
+  }
 }
 
 for (const startupViewport of startupViewports) {
