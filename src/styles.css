@@ -77,9 +77,11 @@
   animation-timing-function: var(--tienos-ease-theme);
 }
 ::view-transition-old(root) {
+  pointer-events: none;
   animation: tienos-theme-fade-out var(--tienos-motion-theme) var(--tienos-ease-theme) both;
 }
 ::view-transition-new(root) {
+  pointer-events: none;
   animation: tienos-theme-fade-in var(--tienos-motion-theme) var(--tienos-ease-theme) both;
 }
 @keyframes tienos-theme-fade-out {
