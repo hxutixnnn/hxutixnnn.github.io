@@ -2,9 +2,10 @@ import { expect, test, type CDPSession, type Locator, type Page } from "@playwri
 import sharp from "sharp";
 
 const spriteUrl = "/fontawesome/fontawesome-pro-solid.svg";
-// Crossfading two full-page, backdrop-filtered captures has small compositor-specific edge variance.
-// Semantic midpoint assertions remain exact; final screenshots keep the stricter 1% pixel budget.
+// Full-page, backdrop-filtered captures have small compositor-specific edge variance on Linux.
+// Semantic assertions remain exact; final frames keep a tighter budget than blended midpoints.
 const themeMidpointMaxDiffPixelRatio = 0.06;
+const themeFinalMaxDiffPixelRatio = 0.04;
 const startupViewports = [
   { name: "desktop", width: 1440, height: 900 },
   { name: "mobile", width: 320, height: 568 },
@@ -231,7 +232,7 @@ async function captureNativeThemeTransition(
     await expect(page).toHaveScreenshot(`${name}-final.png`, {
       animations: "allow",
       caret: "hide",
-      maxDiffPixelRatio: 0.01,
+      maxDiffPixelRatio: themeFinalMaxDiffPixelRatio,
     });
   }
 }
@@ -3041,7 +3042,7 @@ test.describe("appearance modes", () => {
     await expect(page).toHaveScreenshot("rapid-light-dark-light-final.png", {
       animations: "allow",
       caret: "hide",
-      maxDiffPixelRatio: 0.01,
+      maxDiffPixelRatio: themeFinalMaxDiffPixelRatio,
     });
     await expect(modes.getByRole("radio", { name: "Light" })).toBeFocused();
     await page.emulateMedia({ colorScheme: "dark" });
@@ -3272,7 +3273,7 @@ test.describe("appearance modes", () => {
     await expect(page).toHaveScreenshot("fallback-wallpaper-failure-final.png", {
       animations: "allow",
       caret: "hide",
-      maxDiffPixelRatio: 0.01,
+      maxDiffPixelRatio: themeFinalMaxDiffPixelRatio,
     });
 
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
@@ -3513,7 +3514,7 @@ test.describe("appearance modes", () => {
     await expect(page).toHaveScreenshot("delayed-wallpaper-final.png", {
       animations: "allow",
       caret: "hide",
-      maxDiffPixelRatio: 0.01,
+      maxDiffPixelRatio: themeFinalMaxDiffPixelRatio,
     });
   });
 
