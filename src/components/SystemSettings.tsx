@@ -24,8 +24,9 @@ import { useAppearanceStore, type AppearanceMode } from "../stores/appearance";
 
 type SystemSettingsProps = {
   focusRequest?: number;
+  lifecycleGeneration?: number;
   minimized?: boolean;
-  lifecycleRequest?: { id: number; action: "minimize" | "restore" } | null;
+  lifecycleRequest?: { generation: number; id: number; action: "minimize" | "restore" } | null;
   onMinimizedChange?: (minimized: boolean) => void;
   onVisibilityChange?: (visibility: WindowVisibility) => void;
   onActiveChange?: (active: boolean) => void;
@@ -245,6 +246,7 @@ function applyFrameDuringResize(element: HTMLElement, frame: SettingsFrame) {
 
 export function SystemSettings({
   focusRequest = 0,
+  lifecycleGeneration = 0,
   minimized = false,
   lifecycleRequest = null,
   onMinimizedChange = () => undefined,
@@ -431,7 +433,12 @@ export function SystemSettings({
   }, [onMinimizedChange, setGenieTarget, settleWindowTransition, updateVisibility, visibility]);
 
   useEffect(() => {
-    if (!lifecycleRequest || lifecycleRequest.id <= handledLifecycleRequestRef.current) return;
+    if (
+      !lifecycleRequest ||
+      lifecycleRequest.generation !== lifecycleGeneration ||
+      lifecycleRequest.id <= handledLifecycleRequestRef.current
+    )
+      return;
     handledLifecycleRequestRef.current = lifecycleRequest.id;
     if (lifecycleRequest.action !== "minimize") {
       if (visibilityRef.current === "visible") onVisibilityChange("visible");
@@ -439,7 +446,7 @@ export function SystemSettings({
     }
     const frame = requestAnimationFrame(beginMinimize);
     return () => cancelAnimationFrame(frame);
-  }, [beginMinimize, lifecycleRequest, onVisibilityChange]);
+  }, [beginMinimize, lifecycleGeneration, lifecycleRequest, onVisibilityChange]);
 
   useEffect(() => {
     if (visibility !== "minimizing" && visibility !== "restoring") return;

@@ -11,18 +11,33 @@ type AppProps = {
 
 export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
   const [settingsOpen, setSettingsOpen] = useState(true);
+  const settingsOpenRef = useRef(true);
   const [settingsMinimized, setSettingsMinimized] = useState(false);
   const [settingsActive, setSettingsActive] = useState(true);
   const settingsVisibilityRef = useRef<WindowVisibility>("visible");
   const [settingsFocusRequest, setSettingsFocusRequest] = useState(0);
+  const lifecycleGenerationRef = useRef(0);
+  const [settingsLifecycleGeneration, setSettingsLifecycleGeneration] = useState(0);
   const lifecycleRequestIdRef = useRef(0);
   const [settingsLifecycleRequest, setSettingsLifecycleRequest] = useState<{
+    generation: number;
     id: number;
     action: "minimize" | "restore";
   } | null>(null);
   const syncSystemTheme = useAppearanceStore((state) => state.syncSystemTheme);
   const handleSettingsVisibilityChange = useCallback((visibility: WindowVisibility) => {
     settingsVisibilityRef.current = visibility;
+  }, []);
+  const openFreshSettings = useCallback(() => {
+    const generation = ++lifecycleGenerationRef.current;
+    settingsOpenRef.current = true;
+    settingsVisibilityRef.current = "visible";
+    setSettingsLifecycleGeneration(generation);
+    setSettingsLifecycleRequest(null);
+    setSettingsOpen(true);
+    setSettingsMinimized(false);
+    setSettingsActive(true);
+    setSettingsFocusRequest((request) => request + 1);
   }, []);
 
   useEffect(() => {
@@ -79,7 +94,10 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
       <MenuBar
         onAction={(action) => {
           if (action !== "System Settings…") return;
-          setSettingsOpen(true);
+          if (!settingsOpenRef.current) {
+            openFreshSettings();
+            return;
+          }
           setSettingsMinimized(false);
           setSettingsActive(true);
           setSettingsFocusRequest((request) => request + 1);
@@ -94,13 +112,28 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
             />
           )}
           <SystemSettings
+            key={settingsLifecycleGeneration}
+            lifecycleGeneration={settingsLifecycleGeneration}
             focusRequest={settingsFocusRequest}
             minimized={settingsMinimized}
             lifecycleRequest={settingsLifecycleRequest}
-            onMinimizedChange={setSettingsMinimized}
-            onVisibilityChange={handleSettingsVisibilityChange}
-            onActiveChange={setSettingsActive}
+            onMinimizedChange={(minimized) => {
+              if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
+              setSettingsMinimized(minimized);
+            }}
+            onVisibilityChange={(visibility) => {
+              if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
+              handleSettingsVisibilityChange(visibility);
+            }}
+            onActiveChange={(active) => {
+              if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
+              setSettingsActive(active);
+            }}
             onClose={() => {
+              if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
+              lifecycleGenerationRef.current += 1;
+              settingsOpenRef.current = false;
+              setSettingsLifecycleRequest(null);
               setSettingsOpen(false);
               setSettingsMinimized(false);
               setSettingsActive(false);
@@ -114,17 +147,14 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
         settingsMinimized={settingsMinimized}
         onActivateSettings={() => {
           const settingsVisibility = settingsVisibilityRef.current;
-          if (!settingsOpen) {
-            settingsVisibilityRef.current = "visible";
-            setSettingsOpen(true);
-            setSettingsMinimized(false);
-            setSettingsActive(true);
-            setSettingsFocusRequest((request) => request + 1);
+          if (!settingsOpenRef.current) {
+            openFreshSettings();
             return;
           }
           if (settingsVisibility === "minimizing") {
             settingsVisibilityRef.current = "restoring";
             setSettingsLifecycleRequest({
+              generation: lifecycleGenerationRef.current,
               id: ++lifecycleRequestIdRef.current,
               action: "restore",
             });
@@ -141,6 +171,7 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
           if (settingsActive) {
             settingsVisibilityRef.current = "minimizing";
             setSettingsLifecycleRequest({
+              generation: lifecycleGenerationRef.current,
               id: ++lifecycleRequestIdRef.current,
               action: "minimize",
             });

@@ -3456,10 +3456,74 @@ test("same-tick and repeated Dock activation reverse one minimize transition", a
     return [afterInterruption, readVisibility()];
   });
 
-  expect(states).toEqual(["visible", "visible"]);
+  expect(states).toEqual(["restoring", "visible"]);
   await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
   await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
   await expect(page.getByRole("navigation", { name: "Dock" }).getByRole("status")).toHaveText(
     "System Settings is running",
   );
+});
+
+test("fresh Settings lifecycles discard stale and in-flight requests", async ({ page }) => {
+  test.setTimeout(30_000);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+  await expect(page.locator("#root")).not.toHaveAttribute("inert");
+  const window = page.locator("[data-genie-window]");
+  const dock = page.getByRole("navigation", { name: "Dock" });
+  const dockApp = dock.getByRole("button", { name: "System Settings" });
+  const dockStatus = dock.getByRole("status");
+  const initialFrame = await window.boundingBox();
+
+  await dockApp.click();
+  await expect(dockStatus).toHaveText("System Settings is running and minimized");
+  await dockApp.click();
+  await expect(window).toHaveAttribute("data-window-visibility", "visible");
+  await page.getByRole("button", { name: "Close System Settings" }).click();
+  await expect(dockStatus).toHaveText("System Settings is not running");
+  await dockApp.click();
+  await expect(window).toHaveAttribute("data-window-visibility", "visible");
+  await expect(window).toBeFocused();
+  await expect(window).toHaveCount(1);
+  await expect.poll(() => window.boundingBox()).toEqual(initialFrame);
+  await page.waitForTimeout(500);
+  await expect(window).toHaveAttribute("data-window-visibility", "visible");
+
+  await page
+    .getByRole("button", { name: "Minimize System Settings" })
+    .evaluate((button: HTMLButtonElement) => button.click());
+  await expect(window).toHaveAttribute("data-window-visibility", "minimizing");
+  await page
+    .locator('button[aria-label="Close System Settings"]')
+    .evaluate((button: HTMLButtonElement) => button.click());
+  await expect(window).toHaveCount(0);
+  await expect(dockStatus).toHaveText("System Settings is not running");
+  await dockApp.click();
+  await expect(window).toHaveAttribute("data-window-visibility", "visible");
+  await expect(window).toBeFocused();
+  await expect(window).toHaveCount(1);
+
+  const rapidVisibility = await dockApp.evaluate(async (button: HTMLButtonElement) => {
+    button.click();
+    button.click();
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+    return document.querySelector<HTMLElement>("[data-genie-window]")?.dataset.windowVisibility;
+  });
+  expect(rapidVisibility).toBe("visible");
+  await expect(window).toHaveCount(1);
+
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.getByRole("button", { name: "Minimize System Settings" }).click();
+  await expect(dockStatus).toHaveText("System Settings is running and minimized");
+  await dockApp.click();
+  await expect(window).toHaveAttribute("data-window-visibility", "visible");
+  await page.getByRole("button", { name: "Close System Settings" }).click();
+  await dockApp.click();
+  await expect(window).toHaveAttribute("data-window-visibility", "visible");
+  await expect(window).toBeFocused();
+  await expect(window).toHaveCount(1);
+  await page.waitForTimeout(150);
+  await expect(dockStatus).toHaveText("System Settings is running");
 });
