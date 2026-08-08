@@ -2821,6 +2821,14 @@ test("Dock supports touch and compact viewport boundaries", async ({ browser }, 
   const settingsWindow = page.getByRole("region", { name: "System Settings" });
   await expect(settingsWindow).toBeFocused();
   await expect(settingsWindow).toHaveCount(1);
+  await expect
+    .poll(() =>
+      page.locator(".settings-rnd").evaluate((window) => {
+        const visibility = window.getAttribute("data-window-visibility");
+        return visibility === null || visibility === "visible";
+      }),
+    )
+    .toBe(true);
 
   const expectCompactBounds = async (safeAreaBottom: number) => {
     await expect
@@ -2953,6 +2961,7 @@ test.describe("appearance modes", () => {
     await page.clock.setFixedTime(new Date("2026-08-08T12:34:56Z"));
     await page.emulateMedia({ colorScheme: "dark" });
     await page.goto("/");
+    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
     await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
     await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-default\.jpg/);
@@ -3134,10 +3143,7 @@ test.describe("appearance modes", () => {
     await page.emulateMedia({ colorScheme: "dark" });
     await page.goto("/");
     await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
-    await page
-      .getByRole("navigation", { name: "Dock" })
-      .getByRole("button", { name: "System Settings" })
-      .click();
+    await expect(page.getByRole("region", { name: "System Settings" })).toBeVisible();
     await page.getByRole("button", { name: "Appearance" }).click();
     const details = page.locator('.settings-scroll-viewport[aria-label="Settings details"]');
     await details.evaluate((node) => {
