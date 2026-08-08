@@ -501,7 +501,7 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
         {/* The ARIA separator pattern is keyboard interactive despite having no native HTML element. */}
         {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
         <div
-          className="settings-splitter group relative z-10 touch-none select-none border-0 bg-transparent p-0 outline-none"
+          className="settings-splitter group relative z-10 touch-none select-none border-0 bg-transparent p-0 outline-none [@media(forced-colors:active)]:focus-visible:!outline-none"
           role="separator"
           aria-label="Resize Settings sidebar"
           aria-orientation="vertical"

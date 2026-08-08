@@ -1124,6 +1124,9 @@ test("keeps Settings seamless across themes, accessibility modes, and layouts", 
       })),
     ).toEqual({ hover: false, focusVisible: true });
     await expect(grip).not.toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+    if (fallback === "forced-colors") {
+      await expect(splitter).toHaveCSS("outline-style", "none");
+    }
     await splitter.evaluate((node) => (node as HTMLElement).blur());
     await expect(grip).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
 
