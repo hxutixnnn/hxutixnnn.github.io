@@ -8,6 +8,7 @@ const root = document.getElementById("root");
 if (!root) {
   throw new Error("tienOS root element is missing.");
 }
+const applicationRoot = root;
 
 type BootController = {
   failed: () => void;
@@ -82,15 +83,12 @@ const desktopAssetsReady = bootController
 
 async function mountApplication() {
   const stylesReady = bootController
-    ? await Promise.race([
-        applicationStylesReady.then(() => true),
-        bootController.released.then(() => false),
-      ])
+    ? await Promise.race([applicationStylesReady.then(() => true), bootController.released.then(() => false)])
     : await applicationStylesReady.then(() => true);
 
   if (!stylesReady || bootController?.isFinished()) return;
 
-  createRoot(root).render(
+  createRoot(applicationRoot).render(
     <StrictMode>
       <App desktopAssetsReady={desktopAssetsReady} onDesktopReady={bootController?.ready} />
     </StrictMode>,
