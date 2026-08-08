@@ -93,6 +93,63 @@ async function readCenterPixel(element: Locator) {
   return Array.from(data.subarray(offset, offset + 3));
 }
 
+type Rgba = { red: number; green: number; blue: number; alpha: number };
+
+function parseColor(value: string): Rgba {
+  const channels = value.match(/[\d.]+/g)?.map(Number);
+  if (!channels || channels.length < 3) throw new Error(`Unsupported computed color: ${value}`);
+  return {
+    red: channels[0],
+    green: channels[1],
+    blue: channels[2],
+    alpha: channels[3] ?? 1,
+  };
+}
+
+function composite(foreground: Rgba, background: Rgba): Rgba {
+  return {
+    red: foreground.red * foreground.alpha + background.red * (1 - foreground.alpha),
+    green: foreground.green * foreground.alpha + background.green * (1 - foreground.alpha),
+    blue: foreground.blue * foreground.alpha + background.blue * (1 - foreground.alpha),
+    alpha: 1,
+  };
+}
+
+function contrastRatio(first: Rgba, second: Rgba) {
+  const luminance = ({ red, green, blue }: Rgba) => {
+    const linearize = (channel: number) => {
+      const value = channel / 255;
+      return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+    };
+    return 0.2126 * linearize(red) + 0.7152 * linearize(green) + 0.0722 * linearize(blue);
+  };
+  const lighter = Math.max(luminance(first), luminance(second));
+  const darker = Math.min(luminance(first), luminance(second));
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+async function expectColorContrast(
+  foreground: Locator,
+  foregroundProperty: "color" | "background-color",
+  background: Rgba,
+  minimum: number,
+) {
+  const value = parseColor(
+    await foreground.evaluate(
+      (node, property) => getComputedStyle(node).getPropertyValue(property),
+      foregroundProperty,
+    ),
+  );
+  expect(contrastRatio(composite(value, background), background)).toBeGreaterThanOrEqual(minimum);
+}
+
+async function setResolvedTheme(page: import("@playwright/test").Page, theme: "dark" | "light") {
+  await page.evaluate((mode) => localStorage.setItem("tienos-appearance", JSON.stringify(mode)), theme);
+  await page.reload();
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden({ timeout: 10_000 });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+}
+
 test("applies design-system tokens to component styles", async ({ page }) => {
   await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
   await page.goto("/");
@@ -290,34 +347,12 @@ test("keeps keyboard focus visible in forced colors", async ({ page }) => {
   expect(forcedColors.focus).not.toBe(forcedColors.background);
 });
 
-test("uses opaque menu surfaces with reduced transparency", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
-  const session = await page.context().newCDPSession(page);
-  await session.send("Emulation.setEmulatedMedia", {
-    features: [{ name: "prefers-reduced-transparency", value: "reduce" }],
-  });
-  await page.goto("/");
-  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
-
-  await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
-  const popup = page.locator(".tienos-menu-popup").first();
-  await expect(popup).toHaveCSS("background-color", "rgb(20, 27, 36)");
-  await expect(popup).toHaveCSS("backdrop-filter", "none");
-  await page.getByRole("menuitem", { name: "System Settings…" }).click();
-  await expect(page.locator(".settings-window")).toHaveCSS("backdrop-filter", "none");
-  await expect(page.locator(".settings-sidebar-panel")).toHaveCSS("backdrop-filter", "none");
-  await expect(page.locator("[data-menu-bar-surface]")).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-});
-
 test("menu popup families are translucent and wallpaper-responsive", async ({ page }, testInfo) => {
   test.setTimeout(150_000);
+  await page.goto("/");
   for (const theme of ["dark", "light"] as const) {
-    await page.addInitScript(
-      (mode) => localStorage.setItem("tienos-appearance", JSON.stringify(mode)),
-      theme,
-    );
-    await page.goto("/");
-    await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+    await setResolvedTheme(page, theme);
+    await page.getByRole("button", { name: "Close System Settings" }).click();
 
     const wallpaper = page.locator(".tienos-wallpaper");
     const sampleAgainstWallpapers = async (popup: Locator, family: string) => {
@@ -336,12 +371,7 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
         (sum, channel, index) => sum + Math.abs(channel - samples[0][index]),
         0,
       );
-      // A submenu is composited over its translucent parent near their shared edge, so its
-      // wallpaper signal is intentionally subtler than either top-level family.
-      const minimumResponse = family === "submenu" ? 2 : 45;
-      expect(darkToBright, `${theme} ${family} should transmit wallpaper color`).toBeGreaterThan(
-        minimumResponse,
-      );
+      expect(darkToBright, `${theme} ${family} should transmit wallpaper color`).toBeGreaterThan(45);
       const reviewRegion = family === "system" ? "dark" : family === "submenu" ? "midtone" : "bright";
       const reviewColor =
         reviewRegion === "dark"
@@ -360,47 +390,103 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
 
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
     const systemPopup = page.locator(".tienos-menu-popup:visible").first();
-    await expect(systemPopup).toHaveCSS("background-color", /rgba\(.+, 0\.(58|62)\)/);
+    const expectedBackground = theme === "dark" ? "rgba(20, 27, 36, 0.58)" : "rgba(245, 248, 252, 0.62)";
+    await expect(systemPopup).toHaveCSS("background-color", expectedBackground);
     await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
     await sampleAgainstWallpapers(systemPopup, "system");
 
     await page.getByRole("menuitem", { name: "Recent Items" }).hover();
     const submenuPopup = page.locator(".tienos-menu-popup:visible").last();
     await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
+    await expect(submenuPopup).toHaveCSS("background-color", expectedBackground);
     await sampleAgainstWallpapers(submenuPopup, "submenu");
     await page.keyboard.press("Escape");
     await page.keyboard.press("Escape");
 
     await page.getByRole("menuitem", { name: "Navigator" }).click();
     const navigatorPopup = page.locator(".tienos-menu-popup:visible");
+    await expect(navigatorPopup).toHaveCSS("background-color", expectedBackground);
     await sampleAgainstWallpapers(navigatorPopup, "navigator");
     await page.keyboard.press("Escape");
   }
 });
 
-test("high contrast keeps popup surfaces opaque and legible", async ({ page }) => {
-  await page.addInitScript(() => localStorage.setItem("tienos-appearance", JSON.stringify("dark")));
+test("accessibility modes keep every popup family opaque and legible", async ({ page }) => {
+  test.setTimeout(150_000);
   const session = await page.context().newCDPSession(page);
-  await session.send("Emulation.setEmulatedMedia", {
-    features: [{ name: "prefers-contrast", value: "more" }],
-  });
   await page.goto("/");
-  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden({ timeout: 10_000 });
-  await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+  const modes = [
+    { name: "reduced transparency", feature: "prefers-reduced-transparency", value: "reduce" },
+    { name: "increased contrast", feature: "prefers-contrast", value: "more" },
+    { name: "forced colors", feature: "forced-colors", value: "active" },
+  ];
 
-  const popup = page.locator(".tienos-menu-popup:visible");
-  await expect(popup).toHaveCSS("background-color", "rgb(20, 27, 36)");
-  await expect(popup).toHaveCSS("background-image", "none");
-  await expect(page.getByRole("menuitem", { name: "System Settings…" })).toHaveCSS(
-    "color",
-    "rgba(255, 255, 255, 0.9)",
-  );
-  await expect(page.getByRole("menuitem", { name: "No Recent Items" })).toHaveCount(0);
-  await page.getByRole("menuitem", { name: "Recent Items" }).hover();
-  await expect(page.getByRole("menuitem", { name: "No Recent Items" })).toHaveCSS(
-    "color",
-    "rgba(255, 255, 255, 0.62)",
-  );
+  for (const theme of ["dark", "light"] as const) {
+    for (const mode of modes) {
+      await session.send("Emulation.setEmulatedMedia", {
+        features: [{ name: mode.feature, value: mode.value }],
+      });
+      await setResolvedTheme(page, theme);
+      await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+
+      const systemPopup = page.locator(".tienos-menu-popup:visible").first();
+      const popupBackground = parseColor(
+        await systemPopup.evaluate((node) => getComputedStyle(node).backgroundColor),
+      );
+      expect(popupBackground.alpha, `${theme} ${mode.name} popup should be opaque`).toBe(1);
+      await expect(systemPopup).toHaveCSS("background-image", "none");
+
+      const primaryItem = page.getByRole("menuitem", { name: "About This OS" });
+      const shortcut = page.getByRole("menuitem", { name: "System Settings…" }).locator("kbd");
+      const recentItems = page.getByRole("menuitem", { name: "Recent Items" });
+      const chevron = recentItems.locator("svg");
+      const separator = systemPopup.locator('[role="separator"]').first();
+      await expectColorContrast(primaryItem, "color", popupBackground, 4.5);
+      await expectColorContrast(shortcut, "color", popupBackground, 3);
+      await expectColorContrast(chevron, "color", popupBackground, 3);
+      await expectColorContrast(separator, "background-color", popupBackground, 1.1);
+
+      await page.getByRole("menuitem", { name: "System Settings…" }).hover();
+      const selectedItem = page.locator(".tienos-menu-item[data-highlighted]");
+      const selectedBackground = parseColor(
+        await selectedItem.evaluate((node) => getComputedStyle(node).backgroundColor),
+      );
+      expect(contrastRatio(selectedBackground, popupBackground)).toBeGreaterThanOrEqual(1.1);
+      await expectColorContrast(selectedItem, "color", selectedBackground, 4.5);
+      await expectColorContrast(selectedItem.locator("kbd"), "color", selectedBackground, 4.5);
+
+      await recentItems.hover();
+      const submenuPopup = page.locator(".tienos-menu-popup:visible").last();
+      await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
+      const submenuBackground = parseColor(
+        await submenuPopup.evaluate((node) => getComputedStyle(node).backgroundColor),
+      );
+      expect(submenuBackground.alpha, `${theme} ${mode.name} submenu should be opaque`).toBe(1);
+      await expectColorContrast(
+        page.getByRole("menuitem", { name: "No Recent Items" }),
+        "color",
+        submenuBackground,
+        3,
+      );
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+
+      await page.getByRole("menuitem", { name: "Navigator" }).click();
+      const navigatorPopup = page.locator(".tienos-menu-popup:visible");
+      await expect(navigatorPopup).toHaveCount(1);
+      const navigatorBackground = parseColor(
+        await navigatorPopup.evaluate((node) => getComputedStyle(node).backgroundColor),
+      );
+      expect(navigatorBackground.alpha, `${theme} ${mode.name} navigator should be opaque`).toBe(1);
+      await expectColorContrast(
+        page.getByRole("menuitem", { name: "About Navigator" }),
+        "color",
+        navigatorBackground,
+        4.5,
+      );
+      await page.keyboard.press("Escape");
+    }
+  }
 });
 
 test("restores the pre-PR-16 menu bar while Settings carries layered glass", async ({ page }, testInfo) => {
