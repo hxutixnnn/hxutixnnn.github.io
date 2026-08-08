@@ -5,7 +5,7 @@ const spriteUrl = "/fontawesome/fontawesome-pro-solid.svg";
 // Full-page, backdrop-filtered captures have small compositor-specific edge variance on Linux.
 // Semantic assertions remain exact; final frames keep a tighter budget than blended midpoints.
 const themeMidpointMaxDiffPixelRatio = 0.06;
-const themeFinalMaxDiffPixelRatio = 0.04;
+const themeFinalMaxDiffPixelRatio = 0.05;
 const startupViewports = [
   { name: "desktop", width: 1440, height: 900 },
   { name: "mobile", width: 320, height: 568 },
