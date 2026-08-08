@@ -97,81 +97,73 @@ type AppearanceState = {
   syncSystemTheme: () => void;
 };
 
-export const useAppearanceStore = create<AppearanceState>((set, get) => ({
-  desktopReady: false,
-  mode: initialMode,
-  pendingMode: null,
-  resolvedTheme: initialTheme,
-  wallpaperReady: true,
-  markDesktopReady: () => set({ desktopReady: true }),
-  setMode: (mode) => {
-    const resolvedTheme = resolveTheme(mode);
-    const request = ++themeRequest;
-    cancelResolvedThemeTransition();
-    const commit = async () => {
-      if (request !== themeRequest) return false;
-      if (mode === "auto" && resolvedTheme !== resolveTheme("auto")) {
-        void get().setMode("auto");
-        return false;
-      }
-      const changesResolvedTheme = resolvedTheme !== get().resolvedTheme;
-      const apply = () => {
-        persistAppearance(mode);
-        applyTheme(mode, resolvedTheme);
-        set({ mode, pendingMode: null, resolvedTheme, wallpaperReady: true });
-      };
-      if (changesResolvedTheme) {
-        await transitionResolvedTheme(apply, () => request === themeRequest, get().desktopReady);
-      } else apply();
-      return request === themeRequest;
-    };
-    const rollback = () => {
-      if (request === themeRequest) {
-        set({ pendingMode: null });
-        if (mode !== "auto" && get().mode === "auto") get().syncSystemTheme();
-      }
+export const useAppearanceStore = create<AppearanceState>((set, get) => {
+  const commitTheme = async (
+    mode: AppearanceMode,
+    resolvedTheme: ResolvedTheme,
+    wallpaperReady: boolean,
+    request: number,
+    animate: boolean,
+  ) => {
+    if (request !== themeRequest) return false;
+    if (mode === "auto" && resolvedTheme !== resolveTheme("auto")) {
+      void get().setMode("auto");
       return false;
+    }
+    const apply = () => {
+      persistAppearance(mode);
+      applyTheme(mode, resolvedTheme, wallpaperReady);
+      set({ mode, pendingMode: null, resolvedTheme, wallpaperReady });
     };
-    if (
-      (resolvedTheme === get().resolvedTheme && get().wallpaperReady) ||
-      typeof Image === "undefined" ||
-      !("decode" in Image.prototype)
-    ) {
-      return commit();
-    }
-    set({ pendingMode: mode });
-    return decodeWallpaper(resolvedTheme).then(commit, rollback);
-  },
-  syncSystemTheme: () => {
-    if (get().pendingMode !== null) {
-      if (get().pendingMode === "auto") void get().setMode("auto");
-      return;
-    }
-    if (get().mode !== "auto") return;
-    const resolvedTheme = systemTheme();
-    const request = ++themeRequest;
-    cancelResolvedThemeTransition();
-    const commit = (wallpaperReady: boolean) => {
-      if (request !== themeRequest || get().mode !== "auto") return;
-      const apply = () => {
-        applyTheme("auto", resolvedTheme, wallpaperReady);
-        set({ resolvedTheme, wallpaperReady });
-      };
-      if (resolvedTheme !== get().resolvedTheme) {
-        void transitionResolvedTheme(
-          apply,
-          () => request === themeRequest && get().mode === "auto",
-          get().desktopReady,
-        );
-      } else apply();
-    };
-    if (typeof Image === "undefined" || !("decode" in Image.prototype)) {
-      commit(true);
-      return;
-    }
-    void decodeWallpaper(resolvedTheme).then(
-      () => commit(true),
-      () => commit(false),
-    );
-  },
-}));
+    if (resolvedTheme !== get().resolvedTheme) {
+      await transitionResolvedTheme(apply, () => request === themeRequest, animate);
+    } else apply();
+    return request === themeRequest;
+  };
+
+  return {
+    desktopReady: false,
+    mode: initialMode,
+    pendingMode: null,
+    resolvedTheme: initialTheme,
+    wallpaperReady: true,
+    markDesktopReady: () => set({ desktopReady: true }),
+    setMode: (mode) => {
+      const resolvedTheme = resolveTheme(mode);
+      const request = ++themeRequest;
+      const animate = get().desktopReady;
+      cancelResolvedThemeTransition();
+      if (
+        (resolvedTheme === get().resolvedTheme && get().wallpaperReady) ||
+        typeof Image === "undefined" ||
+        !("decode" in Image.prototype)
+      ) {
+        return commitTheme(mode, resolvedTheme, true, request, animate);
+      }
+      set({ pendingMode: mode });
+      return decodeWallpaper(resolvedTheme).then(
+        () => commitTheme(mode, resolvedTheme, true, request, animate),
+        () => commitTheme(mode, resolvedTheme, false, request, animate),
+      );
+    },
+    syncSystemTheme: () => {
+      if (get().pendingMode !== null) {
+        if (get().pendingMode === "auto") void get().setMode("auto");
+        return;
+      }
+      if (get().mode !== "auto") return;
+      const resolvedTheme = systemTheme();
+      const request = ++themeRequest;
+      const animate = get().desktopReady;
+      cancelResolvedThemeTransition();
+      if (typeof Image === "undefined" || !("decode" in Image.prototype)) {
+        void commitTheme("auto", resolvedTheme, true, request, animate);
+        return;
+      }
+      void decodeWallpaper(resolvedTheme).then(
+        () => commitTheme("auto", resolvedTheme, true, request, animate),
+        () => commitTheme("auto", resolvedTheme, false, request, animate),
+      );
+    },
+  };
+});

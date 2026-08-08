@@ -82,7 +82,7 @@ const assetReadiness = Promise.all([applicationStylesReady, loadWallpaper(), loa
 const desktopAssetsReady = bootController
   ? Promise.race([assetReadiness, bootController.released])
   : assetReadiness;
-const desktopReady = Promise.all([assetReadiness, bootController?.released ?? Promise.resolve()]).then(() =>
+const desktopReady = (bootController?.released ?? assetReadiness).then(() =>
   useAppearanceStore.getState().markDesktopReady(),
 );
 

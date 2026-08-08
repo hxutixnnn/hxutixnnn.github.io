@@ -1663,6 +1663,7 @@ for (const asset of paintCriticalAssets) {
 }
 
 test("applies pre-ready Auto changes directly and animates after reveal", async ({ page }) => {
+  test.slow();
   await page.addInitScript(() => {
     localStorage.setItem("tienos-appearance", JSON.stringify("auto"));
     const tracker = { count: 0 };
@@ -1684,17 +1685,17 @@ test("applies pre-ready Auto changes directly and animates after reveal", async 
     }
   });
   await page.emulateMedia({ colorScheme: "light" });
-  const lightWallpaperGate = createDelayGate();
-  let lightWallpaperIntercepted = false;
-  await page.route("**/wallpapers/tienos-light.jpg", async (route) => {
-    lightWallpaperIntercepted = true;
-    await lightWallpaperGate.blocked;
+  const iconSpriteGate = createDelayGate();
+  let iconSpriteIntercepted = false;
+  await page.route("**/fontawesome/fontawesome-pro-solid.svg", async (route) => {
+    iconSpriteIntercepted = true;
+    await iconSpriteGate.blocked;
     await route.continue();
   });
   await page.route("**/wallpapers/tienos-default.jpg", (route) => route.abort("failed"));
 
   await page.goto("/", { waitUntil: "domcontentloaded" });
-  await expect.poll(() => lightWallpaperIntercepted).toBe(true);
+  await expect.poll(() => iconSpriteIntercepted).toBe(true);
   const bootScreen = page.getByRole("status", { name: "Starting tienOS" });
   await expect(bootScreen).toBeVisible();
   await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
@@ -1710,8 +1711,7 @@ test("applies pre-ready Auto changes directly and animates after reveal", async 
     ),
   ).toBe(0);
 
-  lightWallpaperGate.release();
-  await expect(bootScreen).toBeHidden();
+  await expect(bootScreen).toBeHidden({ timeout: 10_000 });
   await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
   await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
   await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", "none");
@@ -1731,6 +1731,7 @@ test("applies pre-ready Auto changes directly and animates after reveal", async 
   await waitForThemeAnimations(page);
   expectProductionThemeAnimations(await pauseThemeAnimationsAtMidpoint(page));
   await finishThemeAnimations(page);
+  iconSpriteGate.release();
 });
 
 for (const startupViewport of startupViewports) {
@@ -3231,16 +3232,15 @@ test.describe("appearance modes", () => {
       .getByRole("radio", { name: "Light" });
     await lightMode.click();
 
-    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "light");
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    await expect(page.locator(":root")).toHaveAttribute("data-wallpaper-fallback", "light");
     await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", "none");
-    await expect(
-      page.getByRole("radiogroup", { name: "Appearance mode" }).getByRole("radio", { name: "Auto" }),
-    ).toBeChecked();
+    await expect(lightMode).toBeChecked();
     await expect(lightMode).toBeFocused();
     await expect
       .poll(() => page.evaluate(() => localStorage.getItem("tienos-appearance")))
-      .toBe(JSON.stringify("auto"));
+      .toBe(JSON.stringify("light"));
     expect(unhandledRejections).toEqual([]);
   });
 
@@ -3251,22 +3251,32 @@ test.describe("appearance modes", () => {
         this: HTMLImageElement,
       ) => Promise<void>;
       let finishDarkDecode!: () => void;
-      const darkWallpaperDecode: { finished: Promise<void>; release?: () => void; started: boolean } = {
+      const darkWallpaperDecode: {
+        finished: Promise<void>;
+        rejectFollowing: boolean;
+        release?: () => void;
+        started: boolean;
+      } = {
         finished: new Promise((resolve) => {
           finishDarkDecode = resolve;
         }),
+        rejectFollowing: false,
         started: false,
       };
       HTMLImageElement.prototype.decode = function () {
         const decoded = nativeDecode.call(this);
         if (!this.src.endsWith("/wallpapers/tienos-default.jpg")) return decoded;
         darkWallpaperDecode.started = true;
-        return new Promise((resolve, reject) => {
-          darkWallpaperDecode.release = () =>
-            void decoded.then((value) => {
-              resolve(value);
-              queueMicrotask(finishDarkDecode);
-            }, reject);
+        if (darkWallpaperDecode.release) {
+          return darkWallpaperDecode.rejectFollowing
+            ? Promise.reject(new Error("dark wallpaper decode failed"))
+            : decoded;
+        }
+        return new Promise((_, reject) => {
+          darkWallpaperDecode.release = () => {
+            reject(new Error("stale dark wallpaper decode failed"));
+            queueMicrotask(finishDarkDecode);
+          };
         });
       };
       Object.defineProperty(window, "darkWallpaperDecode", { value: darkWallpaperDecode });
@@ -3315,6 +3325,47 @@ test.describe("appearance modes", () => {
     await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
     await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-light\.jpg/);
+    await expect(autoMode).toBeFocused();
+
+    const lightMode = page
+      .getByRole("radiogroup", { name: "Appearance mode" })
+      .getByRole("radio", { name: "Light" });
+    await lightMode.click();
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "light");
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.evaluate(() => {
+      (
+        window as typeof window & {
+          darkWallpaperDecode: { rejectFollowing: boolean };
+        }
+      ).darkWallpaperDecode.rejectFollowing = true;
+    });
+    await autoMode.click();
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator(":root")).toHaveAttribute("data-wallpaper-fallback", "dark");
+    await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", "none");
+    await expect(autoMode).toBeChecked();
+    await expect(autoMode).toBeFocused();
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem("tienos-appearance")))
+      .toBe(JSON.stringify("auto"));
+
+    await page.evaluate(() => {
+      (
+        window as typeof window & {
+          darkWallpaperDecode: { rejectFollowing: boolean };
+        }
+      ).darkWallpaperDecode.rejectFollowing = false;
+    });
+    await lightMode.click();
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "light");
+    await expect(page.locator(":root")).not.toHaveAttribute("data-wallpaper-fallback");
+    await autoMode.click();
+    await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
+    await expect(page.locator(":root")).toHaveAttribute("data-theme", "dark");
+    await expect(page.locator(":root")).not.toHaveAttribute("data-wallpaper-fallback");
+    await expect(page.locator(".tienos-wallpaper")).toHaveCSS("background-image", /tienos-default\.jpg/);
     await expect(autoMode).toBeFocused();
   });
 
