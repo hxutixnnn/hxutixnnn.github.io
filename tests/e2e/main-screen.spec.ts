@@ -134,6 +134,27 @@ async function readBackgroundsBehind(popup: Locator, foregrounds: Locator[]) {
   });
 }
 
+async function readRenderedPixelsAt(popup: Locator, elements: Locator[]) {
+  const popupBounds = await popup.boundingBox();
+  expect(popupBounds).not.toBeNull();
+  const elementBounds = await Promise.all(elements.map((element) => element.boundingBox()));
+  for (const bounds of elementBounds) expect(bounds).not.toBeNull();
+  const screenshot = await popup.screenshot({ animations: "disabled" });
+  const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
+  return elementBounds.map((bounds) => {
+    const x = Math.max(
+      0,
+      Math.min(info.width - 1, Math.floor(bounds!.x + bounds!.width / 2 - popupBounds!.x)),
+    );
+    const y = Math.max(
+      0,
+      Math.min(info.height - 1, Math.floor(bounds!.y + bounds!.height / 2 - popupBounds!.y)),
+    );
+    const offset = (y * info.width + x) * info.channels;
+    return pixelColor(Array.from(data.subarray(offset, offset + 3)));
+  });
+}
+
 type Rgba = { red: number; green: number; blue: number; alpha: number };
 
 function parseColor(value: string): Rgba {
@@ -190,11 +211,21 @@ async function expectColorContrast(
 
 async function expectLocalRenderedContrasts(
   popup: Locator,
-  entries: { foreground: Locator; minimum: number; label: string }[],
+  entries: {
+    foreground: Locator;
+    minimum: number;
+    label: string;
+    property?: "color" | "background-color";
+  }[],
 ) {
   const foregroundColors = await Promise.all(
-    entries.map(async ({ foreground }) =>
-      parseColor(await foreground.evaluate((node) => getComputedStyle(node).color)),
+    entries.map(async ({ foreground, property = "color" }) =>
+      parseColor(
+        await foreground.evaluate(
+          (node, cssProperty) => getComputedStyle(node).getPropertyValue(cssProperty),
+          property,
+        ),
+      ),
     ),
   );
   const backgrounds = await readBackgroundsBehind(
@@ -206,6 +237,17 @@ async function expectLocalRenderedContrasts(
       contrastRatio(composite(foregroundColors[index], backgrounds[index]), backgrounds[index]),
       label,
     ).toBeGreaterThanOrEqual(minimum);
+  });
+}
+
+async function expectLocalSeparatorContrasts(popup: Locator, separators: Locator[], label: string) {
+  const renderedSeparators = await readRenderedPixelsAt(popup, separators);
+  const backgrounds = await readBackgroundsBehind(popup, separators);
+  renderedSeparators.forEach((separator, index) => {
+    expect(
+      contrastRatio(separator, backgrounds[index]),
+      `${label} separator ${index + 1}`,
+    ).toBeGreaterThanOrEqual(3);
   });
 }
 
@@ -559,11 +601,11 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
       const shortcut = page.getByRole("menuitem", { name: "System Settings…" }).locator("kbd");
       const recentItems = page.getByRole("menuitem", { name: "Recent Items" });
       const chevron = recentItems.locator("svg");
-      const separator = systemPopup.locator('[role="separator"]').first();
       await expectColorContrast(primaryItem, "color", popupBackground, 4.5);
       await expectColorContrast(shortcut, "color", popupBackground, 3);
       await expectColorContrast(chevron, "color", popupBackground, 3);
-      await expectColorContrast(separator, "background-color", popupBackground, 1.1);
+      const systemSeparators = await systemPopup.locator('[role="separator"]').all();
+      await expectLocalSeparatorContrasts(systemPopup, systemSeparators, `${theme} ${mode.name} system`);
 
       await page.getByRole("menuitem", { name: "System Settings…" }).hover();
       const selectedItem = page.locator(".tienos-menu-item[data-highlighted]");
@@ -602,6 +644,12 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
         "color",
         navigatorBackground,
         4.5,
+      );
+      const navigatorSeparators = await navigatorPopup.locator('[role="separator"]').all();
+      await expectLocalSeparatorContrasts(
+        navigatorPopup,
+        navigatorSeparators,
+        `${theme} ${mode.name} navigator`,
       );
       await page.keyboard.press("Escape");
     }

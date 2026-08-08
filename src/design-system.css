@@ -83,7 +83,7 @@
   :root {
     --tienos-color-text-secondary: rgb(255 255 255 / 0.78);
     --tienos-color-text-tertiary: rgb(255 255 255 / 0.62);
-    --tienos-color-separator: rgb(255 255 255 / 0.3);
+    --tienos-color-separator: rgb(255 255 255 / 0.4);
     --tienos-color-border: rgb(255 255 255 / 0.48);
     --tienos-color-menu: #141b24;
     --tienos-color-scrollbar-track: rgb(0 0 0 / 0.3);
@@ -93,7 +93,7 @@
   :root[data-theme="light"] {
     --tienos-color-text-secondary: rgb(15 23 42 / 0.82);
     --tienos-color-text-tertiary: rgb(15 23 42 / 0.7);
-    --tienos-color-separator: rgb(15 23 42 / 0.32);
+    --tienos-color-separator: rgb(15 23 42 / 0.52);
     --tienos-color-border: rgb(15 23 42 / 0.48);
     --tienos-color-menu: #f5f8fc;
     --tienos-color-scrollbar-track: rgb(15 23 42 / 0.18);
@@ -103,6 +103,7 @@
 
 @media (prefers-reduced-transparency: reduce) {
   :root {
+    --tienos-color-separator: rgb(255 255 255 / 0.4);
     --tienos-color-menu: #141b24;
     --tienos-color-window: #1d1d1f;
     --tienos-color-sidebar: #181819;
@@ -113,6 +114,7 @@
   }
 
   :root[data-theme="light"] {
+    --tienos-color-separator: rgb(15 23 42 / 0.52);
     --tienos-color-menu: #f5f8fc;
     --tienos-color-window: #f2f4f8;
     --tienos-color-sidebar: #e2e7ef;
