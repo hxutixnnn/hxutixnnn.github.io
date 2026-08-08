@@ -654,7 +654,7 @@ export function SystemSettings({
               >
                 <span
                   data-traffic-dot="close"
-                  className="pointer-events-none absolute top-1/2 left-[6px] size-[13px] -translate-y-1/2 rounded-full border border-black/10 bg-[#ff5f57] max-[700px]:top-[20.5px] max-[700px]:size-[11px]"
+                  className="pointer-events-none absolute top-1/2 left-1/2 size-[13px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-black/10 bg-[#ff5f57] max-[700px]:top-[20.5px] max-[700px]:size-[11px]"
                 />
               </button>
               <button
@@ -666,7 +666,7 @@ export function SystemSettings({
               >
                 <span
                   data-traffic-dot="minimize"
-                  className="pointer-events-none absolute top-1/2 left-[-15px] size-[13px] -translate-y-1/2 rounded-full border border-black/10 bg-[#febc2e] max-[700px]:top-[20.5px] max-[700px]:left-[-20px] max-[700px]:size-[11px]"
+                  className="pointer-events-none absolute top-1/2 left-1/2 size-[13px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-black/10 bg-[#febc2e] max-[700px]:top-[20.5px] max-[700px]:size-[11px]"
                 />
               </button>
               <button
@@ -679,7 +679,7 @@ export function SystemSettings({
               >
                 <span
                   data-traffic-dot="fullscreen"
-                  className="pointer-events-none absolute top-1/2 left-[-36px] size-[13px] -translate-y-1/2 rounded-full border border-black/10 bg-[#28c840] max-[700px]:top-[20.5px] max-[700px]:left-[-46px] max-[700px]:size-[11px]"
+                  className="pointer-events-none absolute top-1/2 left-1/2 size-[13px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-black/10 bg-[#28c840] max-[700px]:top-[20.5px] max-[700px]:size-[11px]"
                 />
               </button>
             </div>
@@ -777,7 +777,7 @@ export function SystemSettings({
 
         <div className="settings-detail flex min-h-0 min-w-0 flex-col bg-transparent p-[8px_20px_0] max-[700px]:p-[12px_10px_0]">
           <div
-            className="settings-history settings-drag-handle -ml-3 mb-[9px] flex h-[35px] shrink-0 touch-none select-none items-center self-start overflow-hidden rounded-[22px] border border-[var(--tienos-color-border)] [&_button]:grid [&_button]:h-full [&_button]:w-[36px] [&_button]:place-items-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[12px] [&_button]:text-[var(--tienos-color-text-tertiary)] [&>span]:h-6 [&>span]:w-px [&>span]:bg-[var(--tienos-color-separator)] max-[700px]:h-[36px] max-[700px]:[&_button]:w-[38px]"
+            className="settings-history settings-drag-handle -ml-3 mb-[9px] flex h-[35px] shrink-0 touch-none select-none items-center self-start overflow-hidden rounded-[22px] border border-[var(--tienos-color-border)] [&_button]:grid [&_button]:h-full [&_button]:w-[36px] [&_button]:place-items-center [&_button]:border-0 [&_button]:bg-transparent [&_button]:text-[12px] [&_button]:text-[var(--tienos-color-text-tertiary)] [&>span]:h-6 [&>span]:w-px [&>span]:bg-[var(--tienos-color-separator)] max-[700px]:ml-[4px] max-[700px]:h-[36px] max-[700px]:[&_button]:w-[38px]"
             aria-label="Navigation history"
           >
             <button aria-label="Back" disabled>

@@ -3026,18 +3026,33 @@ test("each traffic light accepts genuine touch activation", async ({ browser }, 
     const panelBox = panel.getBoundingClientRect();
     return Array.from(panel.querySelectorAll<HTMLElement>("[data-traffic-dot]"), (dot) => {
       const box = dot.getBoundingClientRect();
-      return { center: box.left + box.width / 2 - panelBox.left, size: box.width };
+      return {
+        center: Math.round((box.left + box.width / 2 - panelBox.left) * 1_000) / 1_000,
+        owner: document
+          .elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+          ?.closest("button")
+          ?.getAttribute("aria-label"),
+        size: box.width,
+      };
     });
   });
   expect(compactDotGeometry).toEqual([
-    { center: 14.5, size: 11 },
-    { center: 32.5, size: 11 },
-    { center: 50.5, size: 11 },
+    { center: 25, owner: "Close System Settings", size: 11 },
+    { center: 69, owner: "Minimize System Settings", size: 11 },
+    { center: 113, owner: "Toggle fullscreen System Settings", size: 11 },
   ]);
+  const compactHeaderClearance = await page.evaluate(() => {
+    const fullscreen = document.querySelector<HTMLElement>(
+      'button[aria-label="Toggle fullscreen System Settings"]',
+    )!;
+    const history = document.querySelector<HTMLElement>(".settings-history")!;
+    return history.getBoundingClientRect().left - fullscreen.getBoundingClientRect().right;
+  });
+  expect(compactHeaderClearance).toBeGreaterThanOrEqual(0);
 
   await page
     .getByRole("button", { name: "Toggle fullscreen System Settings" })
-    .tap({ position: { x: 42, y: 22 } });
+    .tap({ position: { x: 22, y: 20.5 } });
   await expect(page.getByRole("button", { name: "Toggle fullscreen System Settings" })).toHaveAttribute(
     "aria-pressed",
     "true",
@@ -3045,12 +3060,14 @@ test("each traffic light accepts genuine touch activation", async ({ browser }, 
   await page.screenshot({ path: testInfo.outputPath("settings-touch-fullscreen.png") });
   await page
     .getByRole("button", { name: "Minimize System Settings" })
-    .tap({ position: { x: 2, y: 22 } });
+    .tap({ position: { x: 22, y: 20.5 } });
   await expect(page.getByRole("region", { name: "System Settings" })).toBeHidden();
   await dockApp.tap();
   await expect(page.getByRole("region", { name: "System Settings" })).toBeVisible();
   await page.waitForTimeout(450);
-  await page.getByRole("button", { name: "Close System Settings" }).tap({ position: { x: 2, y: 22 } });
+  await page
+    .getByRole("button", { name: "Close System Settings" })
+    .tap({ position: { x: 22, y: 20.5 } });
   await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(0);
 
   await dockApp.tap();
@@ -3323,13 +3340,20 @@ test("Settings portal activity and traffic-light hit regions keep unambiguous ow
     const panelBox = panel.getBoundingClientRect();
     return Array.from(panel.querySelectorAll<HTMLElement>("[data-traffic-dot]"), (dot) => {
       const box = dot.getBoundingClientRect();
-      return { center: box.left + box.width / 2 - panelBox.left, size: box.width };
+      return {
+        center: Math.round((box.left + box.width / 2 - panelBox.left) * 1_000) / 1_000,
+        owner: document
+          .elementFromPoint(box.left + box.width / 2, box.top + box.height / 2)
+          ?.closest("button")
+          ?.getAttribute("aria-label"),
+        size: box.width,
+      };
     });
   });
   expect(desktopDotGeometry).toEqual([
-    { center: 18.5, size: 13 },
-    { center: 41.5, size: 13 },
-    { center: 64.5, size: 13 },
+    { center: 28, owner: "Close System Settings", size: 13 },
+    { center: 72, owner: "Minimize System Settings", size: 13 },
+    { center: 116, owner: "Toggle fullscreen System Settings", size: 13 },
   ]);
   const [red, yellow, green] = await Promise.all([
     close.boundingBox(),
@@ -3345,7 +3369,7 @@ test("Settings portal activity and traffic-light hit regions keep unambiguous ow
   }
   expect(red!.x + red!.width).toBeLessThanOrEqual(yellow!.x);
   expect(yellow!.x + yellow!.width).toBeLessThanOrEqual(green!.x);
-  await minimize.click({ position: { x: 2, y: yellow!.height / 2 } });
+  await minimize.click({ position: { x: yellow!.width / 2, y: yellow!.height / 2 } });
   await expect(dockStatus).toHaveText("System Settings is running and minimized");
   await expect(page.locator('button[aria-label="Toggle fullscreen System Settings"]')).toHaveAttribute(
     "aria-pressed",
@@ -3354,11 +3378,11 @@ test("Settings portal activity and traffic-light hit regions keep unambiguous ow
   await dockApp.click();
   await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
 
-  await fullscreen.click({ position: { x: green!.width - 2, y: green!.height / 2 } });
+  await fullscreen.click({ position: { x: green!.width / 2, y: green!.height / 2 } });
   await expect(fullscreen).toHaveAttribute("aria-pressed", "true");
   await fullscreen.click();
 
-  await close.click({ position: { x: 2, y: red!.height / 2 } });
+  await close.click({ position: { x: red!.width / 2, y: red!.height / 2 } });
   await expect(window).toHaveCount(0);
 });
 
