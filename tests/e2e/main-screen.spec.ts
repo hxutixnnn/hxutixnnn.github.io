@@ -463,13 +463,13 @@ async function expectLocalSeparatorTreatment(
 ) {
   expect(separators, `${label} separator count`).toHaveLength(expectedCount);
   if (separators.length === 0) return;
-  const popupBounds = await popup.boundingBox();
-  expect(popupBounds).not.toBeNull();
   const separatorHandles = await Promise.all(separators.map((separator) => separator.elementHandle()));
   for (const handle of separatorHandles) expect(handle).not.toBeNull();
+  const renderedScreenshot = await popup.screenshot({ animations: "disabled" });
+  const popupBounds = await popup.boundingBox();
+  expect(popupBounds).not.toBeNull();
   const separatorBounds = await Promise.all(separatorHandles.map((handle) => handle.boundingBox()));
   for (const bounds of separatorBounds) expect(bounds).not.toBeNull();
-  const renderedScreenshot = await popup.screenshot({ animations: "disabled" });
   await Promise.all(
     separatorHandles.map((handle) =>
       handle.evaluate((node) => (node as HTMLElement).style.setProperty("visibility", "hidden", "important")),
