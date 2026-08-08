@@ -103,6 +103,12 @@
   }
 }
 
+:root[data-theme-transaction] *,
+:root[data-theme-transaction] *::before,
+:root[data-theme-transaction] *::after {
+  transition: none !important;
+}
+
 /* Wallpaper motion uses transforms at both endpoints and is shared by a Tailwind animation utility. */
 @keyframes tienos-drift {
   from {

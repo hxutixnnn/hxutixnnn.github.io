@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { transitionResolvedTheme } from "../theme-transition";
+import { cancelResolvedThemeTransition, transitionResolvedTheme } from "../theme-transition";
 
 export type AppearanceMode = "auto" | "light" | "dark";
 export type ResolvedTheme = "light" | "dark";
@@ -103,6 +103,7 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
   setMode: (mode) => {
     const resolvedTheme = resolveTheme(mode);
     const request = ++themeRequest;
+    cancelResolvedThemeTransition();
     const commit = async () => {
       if (request !== themeRequest) return false;
       if (mode === "auto" && resolvedTheme !== resolveTheme("auto")) {
@@ -115,8 +116,9 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
         applyTheme(mode, resolvedTheme);
         set({ mode, pendingMode: null, resolvedTheme, wallpaperReady: true });
       };
-      if (changesResolvedTheme) await transitionResolvedTheme(apply);
-      else apply();
+      if (changesResolvedTheme) {
+        await transitionResolvedTheme(apply, () => request === themeRequest);
+      } else apply();
       return request === themeRequest;
     };
     const rollback = () => {
@@ -144,14 +146,16 @@ export const useAppearanceStore = create<AppearanceState>((set, get) => ({
     if (get().mode !== "auto") return;
     const resolvedTheme = systemTheme();
     const request = ++themeRequest;
+    cancelResolvedThemeTransition();
     const commit = (wallpaperReady: boolean) => {
       if (request !== themeRequest || get().mode !== "auto") return;
       const apply = () => {
         applyTheme("auto", resolvedTheme, wallpaperReady);
         set({ resolvedTheme, wallpaperReady });
       };
-      if (resolvedTheme !== get().resolvedTheme) void transitionResolvedTheme(apply);
-      else apply();
+      if (resolvedTheme !== get().resolvedTheme) {
+        void transitionResolvedTheme(apply, () => request === themeRequest && get().mode === "auto");
+      } else apply();
     };
     if (typeof Image === "undefined" || !("decode" in Image.prototype)) {
       commit(true);

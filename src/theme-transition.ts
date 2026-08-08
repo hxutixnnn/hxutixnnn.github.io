@@ -5,12 +5,13 @@ let generation = 0;
 let cleanupActive: (() => void) | undefined;
 
 type ViewTransition = {
+  ready: Promise<void>;
   finished: Promise<void>;
   skipTransition: () => void;
 };
 
 type TransitionDocument = Document & {
-  startViewTransition?: (update: () => void) => ViewTransition;
+  startViewTransition?: (update: () => void | Promise<void>) => ViewTransition;
 };
 
 function animationIsSafe() {
@@ -37,6 +38,41 @@ function freezeRenderedStyles(source: Element, copy: Element) {
   });
 }
 
+function copyRenderedState(source: Element, copy: Element) {
+  const sources = [source, ...source.querySelectorAll("*")];
+  const copies = [copy, ...copy.querySelectorAll("*")];
+  sources.forEach((node, index) => {
+    const target = copies[index];
+    if (!target) return;
+    target.scrollLeft = node.scrollLeft;
+    target.scrollTop = node.scrollTop;
+    if (node instanceof HTMLInputElement && target instanceof HTMLInputElement) {
+      target.checked = node.checked;
+      target.indeterminate = node.indeterminate;
+      target.value = node.value;
+    } else if (node instanceof HTMLTextAreaElement && target instanceof HTMLTextAreaElement) {
+      target.value = node.value;
+    } else if (node instanceof HTMLSelectElement && target instanceof HTMLSelectElement) {
+      target.selectedIndex = node.selectedIndex;
+    }
+  });
+}
+
+function suppressDescendantTransitions() {
+  document.documentElement.dataset.themeTransaction = "";
+  return () => delete document.documentElement.dataset.themeTransaction;
+}
+
+function commitWithoutDescendantTransitions(commit: () => void) {
+  const restore = suppressDescendantTransitions();
+  try {
+    commit();
+    void document.documentElement.offsetWidth;
+  } finally {
+    restore();
+  }
+}
+
 function makeFallbackLayer() {
   const layer = document.createElement("div");
   layer.dataset.themeTransitionLayer = "old";
@@ -49,6 +85,7 @@ function makeFallbackLayer() {
   freezeRenderedStyles(document.body, scene);
   layer.append(scene);
   document.body.append(layer);
+  copyRenderedState(document.body, scene);
   return layer;
 }
 
@@ -57,26 +94,58 @@ function clearActive() {
   cleanupActive = undefined;
 }
 
+export function cancelResolvedThemeTransition() {
+  generation += 1;
+  clearActive();
+}
+
 /** Atomically changes all theme-owned document state behind one document-wide composition. */
-export async function transitionResolvedTheme(commit: () => void) {
+export async function transitionResolvedTheme(commit: () => void, isCurrent = () => true) {
   const request = ++generation;
   clearActive();
 
-  if (!animationIsSafe() || !document.querySelector('main[aria-label="tienOS desktop"]')) {
+  const canCommit = () => request === generation && isCurrent();
+  const commitIfCurrent = () => {
+    if (!canCommit()) return false;
     commit();
+    return true;
+  };
+
+  if (!animationIsSafe() || !document.querySelector('main[aria-label="tienOS desktop"]')) {
+    if (canCommit()) commitWithoutDescendantTransitions(commit);
     return;
   }
 
   const transitionDocument = document as TransitionDocument;
   if (typeof transitionDocument.startViewTransition === "function") {
     let transition: ViewTransition;
+    let restoreTransitions: (() => void) | undefined;
     try {
-      transition = transitionDocument.startViewTransition(commit);
+      transition = transitionDocument.startViewTransition(() => {
+        if (!canCommit()) return;
+        restoreTransitions = suppressDescendantTransitions();
+        try {
+          commit();
+          void document.documentElement.offsetWidth;
+        } catch (error) {
+          restoreTransitions();
+          restoreTransitions = undefined;
+          throw error;
+        }
+      });
     } catch {
-      commit();
+      if (canCommit()) commitWithoutDescendantTransitions(commit);
       return;
     }
-    const cleanup = () => transition.skipTransition();
+    const restore = () => {
+      restoreTransitions?.();
+      restoreTransitions = undefined;
+    };
+    void transition.ready.then(restore, restore);
+    const cleanup = () => {
+      restore();
+      transition.skipTransition();
+    };
     cleanupActive = cleanup;
     const visibilityCleanup = () => {
       if (document.visibilityState === "hidden") cleanup();
@@ -104,8 +173,11 @@ export async function transitionResolvedTheme(commit: () => void) {
   cleanupActive = cleanup;
   try {
     layer = makeFallbackLayer();
-    commit();
-    committed = true;
+    if (!canCommit()) return;
+    commitWithoutDescendantTransitions(() => {
+      committed = commitIfCurrent();
+    });
+    if (!committed) return;
     animation = layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration, easing, fill: "forwards" });
     const visibilityCleanup = () => {
       if (document.visibilityState === "hidden") cleanup();
@@ -117,7 +189,7 @@ export async function transitionResolvedTheme(commit: () => void) {
       document.removeEventListener("visibilitychange", visibilityCleanup);
     }
   } catch {
-    if (!committed) commit();
+    if (!committed && canCommit()) commitWithoutDescendantTransitions(commit);
   } finally {
     cleanup();
     if (request === generation) cleanupActive = undefined;
