@@ -7,6 +7,14 @@ assets:
     copyright: Copyright Kunal Patil; used under the Unsplash License.
     modified: Downloaded at 3840x2160 for the default tienOS wallpaper; no visual edits.
     sha256: 86f9adf694d568da6c16be855fbfe3ceeaea5f297d4f284756401ac58b09e35c
+  - path: public/wallpapers/tienos-light.jpg
+    author: Paweł Czerwiński
+    source: https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik
+    exact_source: https://images.unsplash.com/photo-1558470598-a5dda9640f68?fit=crop&fm=jpg&w=2400&h=1500&q=36
+    license: Unsplash License (https://unsplash.com/license)
+    copyright: Copyright Paweł Czerwiński; used under the Unsplash License.
+    modified: Cropped by the Unsplash image service to 2400x1500, JPEG quality 36; delivery metadata stripped by the service.
+    sha256: 7af8ef6cc5d0c69eab834a2f3831461e1718ec0be23a9cbb6ad6232f0ef60b28
   - path: public/favicon.svg
     author: Fonticons, Inc.; tienOS contributors
     source: Font Awesome Pro 7.3.1 sparkle icon with original project framing
@@ -21,3 +29,17 @@ assets:
     copyright: Copyright 2026 Fonticons, Inc.
     modified: Combined the 34 required Classic Solid SVG icons into one local symbol sprite; paths are unchanged.
     sha256: 2239f1a8108cb8dcfb81c8165fc70dbf74f8199abea0873d5d04780b59d9d99b
+  - path: tests/e2e/main-screen.spec.ts-snapshots/light-wallpaper-desktop-chromium-linux.png
+    author: tienOS contributors; Paweł Czerwiński; Fonticons, Inc.
+    source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
+    license: MIT for original interface; Unsplash License for wallpaper; Font Awesome Pro Commercial License for icons
+    copyright: Interface Copyright tienOS contributors; wallpaper Copyright Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
+    modified: Deterministic Playwright visual baseline captured at 1440x900 for Light wallpaper review.
+    sha256: deefab2828582ccadc4da02cbc8ae62a2fd2d1b37f0c0b7d267daa28620fa5e6
+  - path: tests/e2e/main-screen.spec.ts-snapshots/light-wallpaper-mobile-chromium-linux.png
+    author: tienOS contributors; Paweł Czerwiński; Fonticons, Inc.
+    source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
+    license: MIT for original interface; Unsplash License for wallpaper; Font Awesome Pro Commercial License for icons
+    copyright: Interface Copyright tienOS contributors; wallpaper Copyright Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
+    modified: Deterministic Playwright visual baseline captured at 320x568 for Light wallpaper review.
+    sha256: 7bcbce33bf9b51fdcdc5e400c99c91c6cee31865579fe4fc48d7de07a2cfe306

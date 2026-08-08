@@ -43,7 +43,7 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
       className="relative min-h-screen overflow-hidden bg-[#07121d] text-white [[data-theme=light]_&]:bg-[#dbeafe] [[data-theme=light]_&]:text-[#0f172a]"
     >
       <div
-        className="tienos-wallpaper pointer-events-none absolute inset-0 [transform:scale(1.02)] bg-[url(/wallpapers/tienos-default.jpg)] bg-cover bg-center saturate-[1.08] motion-safe:animate-[tienos-drift_24s_ease-in-out_infinite_alternate]"
+        className="tienos-wallpaper pointer-events-none absolute inset-0 [transform:scale(1.02)] bg-[image:var(--tienos-wallpaper)] bg-cover bg-center saturate-[1.08] motion-safe:animate-[tienos-drift_24s_ease-in-out_infinite_alternate]"
         aria-hidden="true"
       />
       <div

@@ -240,6 +240,7 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState("General");
   const appearanceMode = useAppearanceStore((state) => state.mode);
+  const pendingAppearanceMode = useAppearanceStore((state) => state.pendingMode);
   const setAppearanceMode = useAppearanceStore((state) => state.setMode);
   const [glassStyle, setGlassStyle] = useState("Clear");
   const [accentColor, setAccentColor] = useState("Multicolor");
@@ -561,8 +562,8 @@ export function SystemSettings({ focusRequest = 0, onClose }: SystemSettingsProp
                   <RadioGroup
                     className="flex justify-end gap-3 max-[520px]:flex-col max-[520px]:items-start"
                     aria-label="Appearance mode"
-                    value={appearanceMode}
-                    onValueChange={setAppearanceMode}
+                    value={pendingAppearanceMode ?? appearanceMode}
+                    onValueChange={(mode) => void setAppearanceMode(mode)}
                   >
                     {(["auto", "light", "dark"] satisfies AppearanceMode[]).map((mode) => (
                       <Radio.Root
