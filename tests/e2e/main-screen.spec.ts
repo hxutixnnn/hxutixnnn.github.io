@@ -2547,7 +2547,7 @@ test.describe("appearance modes", () => {
   test("retargets a pending Auto transition when the system theme changes", async ({ page }) => {
     await page.addInitScript(() => {
       localStorage.setItem("tienos-appearance", JSON.stringify("light"));
-      const nativeDecode = Image.prototype.decode;
+      const nativeDecode = (image: HTMLImageElement) => HTMLImageElement.prototype.decode.call(image);
       let finishDarkDecode!: () => void;
       const darkWallpaperDecode: { finished: Promise<void>; release?: () => void; started: boolean } = {
         finished: new Promise((resolve) => {
@@ -2555,8 +2555,8 @@ test.describe("appearance modes", () => {
         }),
         started: false,
       };
-      Image.prototype.decode = function () {
-        const decoded = nativeDecode.call(this);
+      HTMLImageElement.prototype.decode = function () {
+        const decoded = nativeDecode(this);
         if (!this.src.endsWith("/wallpapers/tienos-default.jpg")) return decoded;
         darkWallpaperDecode.started = true;
         return new Promise((resolve, reject) => {

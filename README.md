@@ -29,7 +29,7 @@ pnpm build
 pnpm test:e2e
 ```
 
-The default wallpaper is documented in [`src/assets/provenance.yml`](src/assets/provenance.yml).
+The default Light and Dark wallpapers are documented in [`src/assets/provenance.yml`](src/assets/provenance.yml).
 UI foundations, semantic tokens, component rules, and accessibility behavior are documented in the [`tienOS design system`](docs/design-system.md).
 
 ## Loading contract
