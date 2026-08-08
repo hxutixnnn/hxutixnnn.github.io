@@ -21,7 +21,8 @@ describe("tienOS main screen", () => {
     const dock = getByRole("navigation", { name: "Dock" });
     const app = getByRole("button", { name: "System Settings" });
     expect(dock.querySelectorAll("button")).toHaveLength(1);
-    expect(app).toHaveAttribute("aria-pressed", "true");
+    expect(app).not.toHaveAttribute("aria-pressed");
+    expect(getByRole("status")).toHaveTextContent("System Settings is running");
 
     await user.click(app);
     expect(getAllByRole("region", { name: "System Settings" })).toHaveLength(1);
@@ -29,11 +30,11 @@ describe("tienOS main screen", () => {
 
     await user.click(getByRole("button", { name: "Close System Settings" }));
     expect(queryByRole("region", { name: "System Settings" })).not.toBeInTheDocument();
-    expect(app).toHaveAttribute("aria-pressed", "false");
+    expect(getByRole("status")).toHaveTextContent("System Settings is not running");
 
     app.focus();
     await user.keyboard("{Enter}");
     expect(getAllByRole("region", { name: "System Settings" })).toHaveLength(1);
-    expect(app).toHaveAttribute("aria-pressed", "true");
+    expect(getByRole("status")).toHaveTextContent("System Settings is running");
   });
 });

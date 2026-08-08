@@ -64,7 +64,7 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
         settingsOpen={settingsOpen}
         onActivateSettings={() => {
           if (!settingsOpen) setSettingsOpen(true);
-          else setSettingsFocusRequest((request) => request + 1);
+          setSettingsFocusRequest((request) => request + 1);
         }}
       />
     </main>

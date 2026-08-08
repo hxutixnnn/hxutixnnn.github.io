@@ -1286,6 +1286,7 @@ for (const startupViewport of startupViewports) {
     await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
     await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
     await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(0);
+    await expect(page.getByRole("complementary", { name: "Dock preview (non-interactive)" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "tienOS menu bar" })).toHaveCSS(
       "color",
       "rgba(255, 255, 255, 0.9)",
@@ -1326,6 +1327,12 @@ for (const startupViewport of startupViewports) {
     await expect(page.locator("#root")).not.toHaveAttribute("inert", "");
     await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+    const staticDock = page.getByRole("complementary", { name: "Dock preview (non-interactive)" });
+    await expect(staticDock).toBeVisible();
+    await expect(staticDock.getByRole("button")).toHaveCount(0);
+    await expect(staticDock).toContainText(
+      "System Settings is shown running. Launcher controls require JavaScript.",
+    );
     const menubar = page.getByRole("navigation", { name: "tienOS menu bar" });
     await expect(menubar).toHaveCSS("color", "rgba(255, 255, 255, 0.9)");
     await expect(menubar.locator(".tienos-menu-trigger").first()).toHaveCSS(
@@ -1347,6 +1354,7 @@ for (const startupViewport of startupViewports) {
     await warmNavigation;
     await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
     await expectStyledDismissalFrames(page, { settings: false });
+    await expect(staticDock).toBeVisible();
   });
 }
 
@@ -1567,6 +1575,12 @@ test("reveals the static desktop without JavaScript", async ({ browser }) => {
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(bootScreen).toBeHidden();
     await expect(page.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
+    const staticDock = page.getByRole("complementary", { name: "Dock preview (non-interactive)" });
+    await expect(staticDock).toBeVisible();
+    await expect(staticDock.getByRole("button")).toHaveCount(0);
+    await expect(staticDock).toContainText(
+      "System Settings is shown running. Launcher controls require JavaScript.",
+    );
     await expect(page.getByRole("img", { name: "Wi-Fi connected" })).toBeVisible();
     await expect(page.getByRole("img", { name: "Battery full" })).toBeVisible();
     const noScriptFont = await page
@@ -2145,25 +2159,124 @@ test("uses measured menu geometry for initial and constrained settings frames", 
   expect(constrainedBounds!.y + constrainedBounds!.height).toBeLessThanOrEqual(dockTop);
 });
 
-test("Dock reports and activates the single System Settings window", async ({ page }) => {
+test("Dock renders, reports, focuses, and layers the single Settings window", async ({ page }, testInfo) => {
+  await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
   const dock = page.getByRole("navigation", { name: "Dock" });
   const app = dock.getByRole("button", { name: "System Settings" });
+  const settingsWindow = page.getByRole("region", { name: "System Settings" });
   await expect(dock.getByRole("button")).toHaveCount(1);
-  await expect(app).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("complementary", { name: "Dock preview (non-interactive)" })).toHaveCount(0);
+  await expect(app).not.toHaveAttribute("aria-pressed");
+  await expect(dock.getByRole("status")).toHaveText("System Settings is running");
+  await expectFontAwesomeIconToPaint(app.locator('[data-fa-icon="gear"]'), "gear");
+  await app.focus();
+  await expect(app).toBeFocused();
+  await expect(app).toHaveCSS("outline-style", "solid");
+  await expect(app).toHaveCSS("outline-width", "2px");
   await app.click();
-  await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
-  await expect(page.getByRole("region", { name: "System Settings" })).toBeFocused();
+  await expect(settingsWindow).toHaveCount(1);
+  await expect(settingsWindow).toBeFocused();
   await page.getByRole("button", { name: "Close System Settings" }).click();
-  await expect(app).toHaveAttribute("aria-pressed", "false");
+  await expect(dock.getByRole("status")).toHaveText("System Settings is not running");
   await app.focus();
   await app.press("Enter");
-  await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
-  await expect(app).toHaveAttribute("aria-pressed", "true");
+  await expect(settingsWindow).toHaveCount(1);
+  await expect(settingsWindow).toBeFocused();
+  await expect(dock.getByRole("status")).toHaveText("System Settings is running");
+
+  const settingsZIndex = Number(
+    await page.locator(".settings-rnd").evaluate((node) => getComputedStyle(node).zIndex),
+  );
+  const dockZIndex = Number(await dock.evaluate((node) => getComputedStyle(node).zIndex));
+  await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
+  const portalZIndex = Number(
+    await page
+      .locator(".tienos-menu-popup:visible")
+      .evaluate((node) => getComputedStyle(node.parentElement!).zIndex),
+  );
+  expect(settingsZIndex).toBeLessThan(dockZIndex);
+  expect(dockZIndex).toBeLessThan(portalZIndex);
+  await page.keyboard.press("Escape");
+
+  const wallpaper = page.locator(".tienos-wallpaper");
+  await wallpaper.evaluate((node) => ((node as HTMLElement).style.background = "rgb(0 0 0)"));
+  const darkWallpaperPixels = (await readHorizontalPixels(dock, 30)).flat();
+  await wallpaper.evaluate((node) => ((node as HTMLElement).style.background = "rgb(255 255 255)"));
+  const lightWallpaperPixels = (await readHorizontalPixels(dock, 30)).flat();
+  expect(
+    lightWallpaperPixels.reduce(
+      (difference, channel, index) => difference + Math.abs(channel - darkWallpaperPixels[index]),
+      0,
+    ),
+  ).toBeGreaterThan(10);
+  await page.screenshot({ animations: "disabled", path: testInfo.outputPath("dock-desktop-dark.png") });
+
+  const darkBackground = await dock.evaluate((node) => getComputedStyle(node).backgroundColor);
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
+  await expect
+    .poll(() => dock.evaluate((node) => getComputedStyle(node).backgroundColor))
+    .not.toBe(darkBackground);
+  await page.screenshot({ animations: "disabled", path: testInfo.outputPath("dock-desktop-light.png") });
+
+  const session = await page.context().newCDPSession(page);
+  await session.send("Emulation.setEmulatedMedia", {
+    features: [
+      { name: "prefers-reduced-motion", value: "reduce" },
+      { name: "prefers-reduced-transparency", value: "reduce" },
+      { name: "prefers-contrast", value: "more" },
+    ],
+  });
+  await expect(dock).toHaveCSS("backdrop-filter", "none");
+  await expect(dock).toHaveCSS("border-top-width", "2px");
+  await expect(app).toHaveCSS("transition-property", "none");
+  await session.send("Emulation.setEmulatedMedia", {
+    features: [{ name: "forced-colors", value: "active" }],
+  });
+  await app.focus();
+  await expect(app).toHaveCSS("outline-style", "solid");
+  await expect(dock).toHaveCSS("backdrop-filter", "none");
   const dockBounds = await dock.boundingBox();
   expect(dockBounds!.x).toBeGreaterThanOrEqual(0);
   expect(dockBounds!.y + dockBounds!.height).toBeLessThanOrEqual(900);
+});
+
+test("Dock supports touch and compact viewport boundaries", async ({ browser }, testInfo) => {
+  const context = await browser.newContext({ hasTouch: true, viewport: { width: 390, height: 844 } });
+  const page = await context.newPage();
+  await page.goto("/");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  const dock = page.getByRole("navigation", { name: "Dock" });
+  const app = dock.getByRole("button", { name: "System Settings" });
+  await expect(app).toHaveCSS("width", "56px");
+  await expect(app).toHaveCSS("height", "56px");
+  await page.getByRole("button", { name: "Close System Settings" }).tap();
+  await app.tap();
+  const settingsWindow = page.getByRole("region", { name: "System Settings" });
+  await expect(settingsWindow).toBeFocused();
+  await expect(settingsWindow).toHaveCount(1);
+
+  const expectCompactBounds = async () => {
+    const [menuBounds, windowBounds, dockBounds] = await Promise.all([
+      page.locator("[data-menu-bar-surface]").boundingBox(),
+      settingsWindow.boundingBox(),
+      dock.boundingBox(),
+    ]);
+    expect(menuBounds!.y).toBeGreaterThanOrEqual(0);
+    expect(dockBounds!.x).toBeGreaterThanOrEqual(0);
+    expect(dockBounds!.x + dockBounds!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+    expect(dockBounds!.y + dockBounds!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+    expect(windowBounds!.y).toBeGreaterThanOrEqual(menuBounds!.y + menuBounds!.height);
+    expect(windowBounds!.y + windowBounds!.height).toBeLessThanOrEqual(dockBounds!.y);
+  };
+  await expectCompactBounds();
+  await page.screenshot({ animations: "disabled", path: testInfo.outputPath("dock-iphone-portrait.png") });
+  await page.setViewportSize({ width: 844, height: 390 });
+  await expectCompactBounds();
+  await page.screenshot({ animations: "disabled", path: testInfo.outputPath("dock-iphone-landscape.png") });
+  await context.close();
 });
 
 test("keeps the default menu corners on a small viewport", async ({ page }) => {
