@@ -356,36 +356,42 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
 
     const wallpaper = page.locator(".tienos-wallpaper");
     const sampleAgainstWallpapers = async (popup: Locator, family: string) => {
+      const bounds = await popup.boundingBox();
+      expect(bounds).not.toBeNull();
+      const pattern =
+        "repeating-linear-gradient(90deg, rgb(8 16 28) 0 176px, rgb(68 116 148) 176px 220px, rgb(232 242 250) 220px 396px, rgb(140 88 128) 396px 440px)";
+      const centerX = bounds!.x + bounds!.width / 2;
+      const regions = [
+        { name: "dark-structured", position: centerX - 88 },
+        { name: "bright-structured", position: centerX - 308 },
+      ];
       const samples: number[][] = [];
-      for (const color of [
-        ["dark", "rgb(8 16 28)"],
-        ["midtone", "rgb(68 116 148)"],
-        ["bright", "rgb(232 242 250)"],
-      ].map(([, color]) => color)) {
-        await wallpaper.evaluate((node, value) => {
-          (node as HTMLElement).style.setProperty("background", value, "important");
-        }, color);
+      for (const region of regions) {
+        await wallpaper.evaluate(
+          (node, values) => {
+            const styles = (node as HTMLElement).style;
+            styles.setProperty("background-image", values.pattern, "important");
+            styles.setProperty("background-position", `${values.position}px 0`, "important");
+            styles.setProperty("background-size", "440px 100%", "important");
+            styles.setProperty("animation", "none", "important");
+            styles.setProperty("transform", "none", "important");
+          },
+          { pattern, position: region.position },
+        );
         samples.push(await readCenterPixel(popup));
+        await page.screenshot({
+          animations: "disabled",
+          path: testInfo.outputPath(`popup-${theme}-${family}-${region.name}.png`),
+        });
       }
-      const darkToBright = samples[2].reduce(
+      const structuredRegionResponse = samples[1].reduce(
         (sum, channel, index) => sum + Math.abs(channel - samples[0][index]),
         0,
       );
-      expect(darkToBright, `${theme} ${family} should transmit wallpaper color`).toBeGreaterThan(45);
-      const reviewRegion = family === "system" ? "dark" : family === "submenu" ? "midtone" : "bright";
-      const reviewColor =
-        reviewRegion === "dark"
-          ? "rgb(8 16 28)"
-          : reviewRegion === "midtone"
-            ? "rgb(68 116 148)"
-            : "rgb(232 242 250)";
-      await wallpaper.evaluate((node, value) => {
-        (node as HTMLElement).style.setProperty("background", value, "important");
-      }, reviewColor);
-      await page.screenshot({
-        animations: "disabled",
-        path: testInfo.outputPath(`popup-${theme}-${family}-${reviewRegion}.png`),
-      });
+      expect(
+        structuredRegionResponse,
+        `${theme} ${family} should transmit dark and bright wallpaper structure`,
+      ).toBeGreaterThan(45);
     };
 
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
