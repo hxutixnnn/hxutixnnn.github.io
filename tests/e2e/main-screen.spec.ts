@@ -39,6 +39,80 @@ function createDelayGate() {
   return { blocked, release };
 }
 
+const trafficHitPoints = [
+  { x: -1, owner: null },
+  { x: 1, owner: "Close System Settings" },
+  { x: 22, owner: "Close System Settings" },
+  { x: 29, owner: "Close System Settings" },
+  { x: 30, owner: "Minimize System Settings" },
+  { x: 42, owner: "Minimize System Settings" },
+  { x: 49, owner: "Minimize System Settings" },
+  { x: 50, owner: "Toggle fullscreen System Settings" },
+  { x: 62, owner: "Toggle fullscreen System Settings" },
+  { x: 83, owner: "Toggle fullscreen System Settings" },
+  { x: 85, owner: null },
+] as const;
+const trafficActionPoints = [
+  ...trafficHitPoints
+    .filter(({ owner, x }) => owner !== null && x !== 49)
+    .map((point) => ({ ...point, y: 22 })),
+  { x: 48, y: 22, owner: "Minimize System Settings" },
+  { x: 22, y: 1, owner: "Close System Settings" },
+  { x: 42, y: 43, owner: "Minimize System Settings" },
+  { x: 62, y: 1, owner: "Toggle fullscreen System Settings" },
+  { x: 110, y: 22, owner: null },
+  { x: 42, y: 100, owner: null },
+] as const;
+
+async function expectTrafficOwnershipMap(page: Page) {
+  const map = await page.evaluate((points) => {
+    const close = document.querySelector<HTMLButtonElement>('button[aria-label="Close System Settings"]')!;
+    const box = close.getBoundingClientRect();
+    const ownerAt = (x: number, y: number) =>
+      document
+        .elementFromPoint(box.left + x, box.top + y)
+        ?.closest("button")
+        ?.getAttribute("aria-label") ?? null;
+    return {
+      rows: [1, 22, 43].map((y) => points.map(({ x }) => ownerAt(x, y))),
+      verticalOutside: [ownerAt(22, -2), ownerAt(62, 45)],
+    };
+  }, trafficHitPoints);
+  expect(map.rows).toEqual(Array(3).fill(trafficHitPoints.map(({ owner }) => owner)));
+  expect(map.verticalOutside).toEqual([null, null]);
+}
+
+async function exerciseTrafficHitPoints(page: Page, activate: (x: number, y: number) => Promise<void>) {
+  const dock = page.getByRole("navigation", { name: "Dock" });
+  const dockApp = dock.getByRole("button", { name: "System Settings" });
+  for (const point of trafficActionPoints) {
+    await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
+    const close = page.getByRole("button", { name: "Close System Settings" });
+    const origin = await close.boundingBox();
+    expect(origin).not.toBeNull();
+    await activate(origin!.x + point.x, origin!.y + point.y);
+    if (point.owner === "Close System Settings") {
+      await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(0);
+      await dockApp.click();
+      await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
+    } else if (point.owner === "Minimize System Settings") {
+      await expect(dock.getByRole("status"), JSON.stringify(point)).toHaveText(
+        "System Settings is running and minimized",
+      );
+      await dockApp.click();
+      await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
+    } else if (point.owner === "Toggle fullscreen System Settings") {
+      const fullscreen = page.getByRole("button", { name: "Toggle fullscreen System Settings" });
+      await expect(fullscreen).toHaveAttribute("aria-pressed", "true");
+      await fullscreen.click();
+      await expect(fullscreen).toHaveAttribute("aria-pressed", "false");
+    } else {
+      await expect(page.getByRole("region", { name: "System Settings" })).toBeVisible();
+      await expect(dock.getByRole("status")).toHaveText("System Settings is running");
+    }
+  }
+}
+
 async function armThemeAnimationPause(page: Page) {
   await page.evaluate(() => {
     if (document.querySelector("[data-test-theme-transition-pause]")) return;
@@ -3696,35 +3770,14 @@ test("traffic lights preserve one window through genie minimize, Dock restore, a
 test("each traffic light accepts genuine touch activation", async ({ browser }, testInfo) => {
   const context = await browser.newContext({ hasTouch: true, viewport: { width: 320, height: 568 } });
   const page = await context.newPage();
+  const cdp = await context.newCDPSession(page);
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await expect(page.locator("#root")).not.toHaveAttribute("inert");
   const dockApp = page
     .getByRole("navigation", { name: "Dock" })
     .getByRole("button", { name: "System Settings" });
-  const hitMap = await page.evaluate(() => {
-    const close = document.querySelector<HTMLButtonElement>('button[aria-label="Close System Settings"]')!;
-    const box = close.getBoundingClientRect();
-    const ownerAt = (x: number, y: number) =>
-      document
-        .elementFromPoint(box.left + x, box.top + y)
-        ?.closest("button")
-        ?.getAttribute("aria-label") ?? null;
-    return {
-      rows: [1, 22, 43].map((y) => [1, 29, 30, 49, 50, 83].map((x) => ownerAt(x, y))),
-      outside: [ownerAt(-1, 22), ownerAt(84, 22)],
-    };
-  });
-  const ownershipRow = [
-    "Close System Settings",
-    "Close System Settings",
-    "Minimize System Settings",
-    "Minimize System Settings",
-    "Toggle fullscreen System Settings",
-    "Toggle fullscreen System Settings",
-  ];
-  expect(hitMap.rows).toEqual([ownershipRow, ownershipRow, ownershipRow]);
-  expect(hitMap.outside).toEqual([null, null]);
+  await expectTrafficOwnershipMap(page);
   const compactDotGeometry = await page.locator("[data-sidebar-panel]").evaluate((panel) => {
     const panelBox = panel.getBoundingClientRect();
     return Array.from(panel.querySelectorAll<HTMLElement>("[data-traffic-dot]"), (dot) => {
@@ -3752,25 +3805,33 @@ test("each traffic light accepts genuine touch activation", async ({ browser }, 
     return history.getBoundingClientRect().left - fullscreen.getBoundingClientRect().right;
   });
   expect(compactHeaderClearance).toBeGreaterThanOrEqual(0);
-
-  await page
-    .getByRole("button", { name: "Toggle fullscreen System Settings" })
-    .tap({ position: { x: 22, y: 20.5 } });
-  await expect(page.getByRole("button", { name: "Toggle fullscreen System Settings" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  const splitter = await page.getByRole("separator", { name: "Resize Settings sidebar" }).boundingBox();
+  const controls = await page.locator('[aria-label="Window controls"]').boundingBox();
+  expect(splitter).not.toBeNull();
+  expect(controls).not.toBeNull();
+  expect(controls!.x + 84).toBeLessThanOrEqual(splitter!.x);
+  expect(
+    await page.evaluate(() =>
+      document
+        .elementFromPoint(
+          document.querySelector<HTMLElement>('[aria-label="Window controls"]')!.getBoundingClientRect()
+            .left + 83.5,
+          document.querySelector<HTMLElement>('[aria-label="Window controls"]')!.getBoundingClientRect().top +
+            22,
+        )
+        ?.closest("button")
+        ?.getAttribute("aria-label"),
+    ),
+  ).toBe("Toggle fullscreen System Settings");
+  await exerciseTrafficHitPoints(page, async (x, y) => {
+    await cdp.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: [{ x, y, radiusX: 1, radiusY: 1, force: 1, id: 1 }],
+    });
+    await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  });
   await page.screenshot({ path: testInfo.outputPath("settings-touch-fullscreen.png") });
-  await page.getByRole("button", { name: "Minimize System Settings" }).tap({ position: { x: 22, y: 20.5 } });
-  await expect(page.getByRole("region", { name: "System Settings" })).toBeHidden();
-  await dockApp.tap();
-  await expect(page.getByRole("region", { name: "System Settings" })).toBeVisible();
-  await page.waitForTimeout(450);
-  await page.getByRole("button", { name: "Close System Settings" }).tap({ position: { x: 22, y: 20.5 } });
-  await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(0);
 
-  await dockApp.tap();
-  await expect(page.getByRole("region", { name: "System Settings" })).toBeVisible();
   await dockApp.tap();
   await expect(page.getByRole("region", { name: "System Settings" })).toBeHidden();
   await dockApp.press("Enter");
@@ -4068,30 +4129,43 @@ test("Settings portal activity and traffic-light hit regions keep unambiguous ow
   }
   expect(yellow!.x - red!.x).toBeCloseTo(20, 0);
   expect(green!.x - yellow!.x).toBeCloseTo(20, 0);
+  await expectTrafficOwnershipMap(page);
+  const splitter = await page.getByRole("separator", { name: "Resize Settings sidebar" }).boundingBox();
+  expect(splitter).not.toBeNull();
+  expect(green!.x + green!.width).toBeLessThanOrEqual(splitter!.x);
   await page.screenshot({
     path: testInfo.outputPath("settings-traffic-lights-tight.png"),
     clip: { x: red!.x - 4, y: red!.y - 4, width: green!.x + green!.width - red!.x + 8, height: 52 },
   });
+  await page.emulateMedia({ contrast: "more", reducedMotion: "no-preference" });
+  await close.focus();
+  await page.keyboard.press("Tab");
+  await expect(minimize).toBeFocused();
+  await expect(minimize.locator("[data-traffic-dot]")).toHaveCSS("outline-style", "solid");
+  await expect(minimize.locator("[data-traffic-dot]")).toHaveCSS("outline-offset", "3px");
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "no-preference" });
+  const forcedColorIdentity = await page.locator("[data-traffic-dot]").evaluateAll((dots) =>
+    dots.map((dot) => {
+      const style = getComputedStyle(dot);
+      return {
+        background: style.backgroundColor,
+        border: style.borderStyle,
+        adjustment: style.forcedColorAdjust,
+      };
+    }),
+  );
+  expect(new Set(forcedColorIdentity.map(({ background }) => background)).size).toBe(3);
+  expect(forcedColorIdentity.map(({ border, adjustment }) => ({ border, adjustment }))).toEqual(
+    Array(3).fill({ border: "solid", adjustment: "none" }),
+  );
   await fullscreen.focus();
   await page.keyboard.press("Tab");
   await page.keyboard.press("Shift+Tab");
   await expect(fullscreen).toBeFocused();
   await expect(fullscreen.locator("[data-traffic-dot]")).toHaveCSS("outline-style", "solid");
-  await minimize.click({ position: { x: yellow!.width / 2, y: yellow!.height / 2 } });
-  await expect(dockStatus).toHaveText("System Settings is running and minimized");
-  await expect(page.locator('button[aria-label="Toggle fullscreen System Settings"]')).toHaveAttribute(
-    "aria-pressed",
-    "false",
-  );
-  await dockApp.click();
-  await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
-
-  await fullscreen.click({ position: { x: green!.width / 2, y: green!.height / 2 } });
-  await expect(fullscreen).toHaveAttribute("aria-pressed", "true");
-  await fullscreen.click();
-
-  await close.click({ position: { x: red!.width / 2, y: red!.height / 2 } });
-  await expect(window).toHaveCount(0);
+  await page.emulateMedia({ forcedColors: "none", contrast: "no-preference", reducedMotion: "reduce" });
+  await exerciseTrafficHitPoints(page, (x, y) => page.mouse.click(Math.ceil(x), Math.ceil(y)));
+  await expect(window).toBeVisible();
 });
 
 test("fullscreen exit reconciles saved geometry across the compact breakpoint", async ({
