@@ -23,7 +23,7 @@ Author component presentation as complete Tailwind utility strings in JSX or TSX
 
 ### Surfaces and color
 
-Use semantic text, border, separator, accent, window, sidebar, content, control, Dock, and scrim tokens.
+Use semantic text, border, separator, accent, window, sidebar, content, control, and Dock tokens.
 Light and dark values are selected by the root `data-theme` attribute. The typed Zustand store in [`src/stores/appearance.ts`](../src/stores/appearance.ts) is the single runtime owner of appearance state; components must not own or duplicate it.
 Do not use color as the only indication of selection or status.
 The system provides stronger contrast, opaque reduced-transparency surfaces, and forced-color mappings.

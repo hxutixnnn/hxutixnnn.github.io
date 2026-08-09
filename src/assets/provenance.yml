@@ -139,8 +139,8 @@ assets:
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering.
-    sha256: 63736b075b5cc2167adcc6444cacff6af18caf1a18d0571d38774c76d55b93e3
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop.
+    sha256: 574ad3303c9d24bc6d44089170bb66930aa3dee4efaff6697170f30a4e1bdab8
   - path: tests/e2e/main-screen.spec.ts-snapshots/fallback-wallpaper-failure-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com

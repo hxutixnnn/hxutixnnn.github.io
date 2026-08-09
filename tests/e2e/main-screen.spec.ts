@@ -4331,3 +4331,76 @@ test("fresh Settings lifecycles discard stale and in-flight requests", async ({ 
   await page.waitForTimeout(150);
   await expect(dockStatus).toHaveText("System Settings is running");
 });
+
+test("window lifecycle never installs a desktop-wide visual or pointer backdrop", async ({
+  page,
+}, testInfo) => {
+  await page.goto("/");
+  const window = page.locator("[data-genie-window]");
+  const dockApp = page.getByRole("navigation", { name: "Dock" }).getByRole("button", {
+    name: "System Settings",
+  });
+  const desktopCrop = { x: 8, y: 72, width: 96, height: 96 };
+  const desktopFrame = () => page.screenshot({ animations: "disabled", clip: desktopCrop });
+  const expectNoViewportBoundary = async () => {
+    expect(
+      await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLElement>("body *")]
+          .filter((element) => {
+            const style = getComputedStyle(element);
+            const bounds = element.getBoundingClientRect();
+            return (
+              style.position === "fixed" &&
+              style.pointerEvents !== "none" &&
+              bounds.left <= 0 &&
+              bounds.top <= 0 &&
+              bounds.right >= innerWidth &&
+              bounds.bottom >= innerHeight
+            );
+          })
+          .map((element) => element.outerHTML.slice(0, 120)),
+      ),
+    ).toEqual([]);
+  };
+
+  await page.getByRole("button", { name: "Close System Settings" }).click();
+  const before = await desktopFrame();
+  await testInfo.attach("desktop-before-open", { body: before, contentType: "image/png" });
+
+  await dockApp.click();
+  await expect(window).toHaveAttribute("data-window-visibility", "visible");
+  await expectNoViewportBoundary();
+  const open = await desktopFrame();
+  await testInfo.attach("desktop-window-open", { body: open, contentType: "image/png" });
+  expect(open.equals(before)).toBe(true);
+  await expect(page.locator(".settings-window")).toHaveCSS("backdrop-filter", "blur(32px) saturate(1.4)");
+
+  await page.mouse.click(40, 110);
+  await expect(window).not.toBeFocused();
+  expect((await desktopFrame()).equals(before)).toBe(true);
+  await expectNoViewportBoundary();
+
+  await dockApp.click();
+  await expect(window).toHaveAttribute("data-window-visibility", "visible");
+  await dockApp.click();
+  await expect(page.getByRole("navigation", { name: "Dock" }).getByRole("status")).toHaveText(
+    "System Settings is running and minimized",
+  );
+  expect((await desktopFrame()).equals(before)).toBe(true);
+  await expectNoViewportBoundary();
+
+  await dockApp.click();
+  await expect(window).toHaveAttribute("data-window-visibility", "visible");
+  expect((await desktopFrame()).equals(before)).toBe(true);
+  const fullscreen = page.getByRole("button", { name: "Toggle fullscreen System Settings" });
+  await fullscreen.click();
+  await expect(fullscreen).toHaveAttribute("aria-pressed", "true");
+  await expectNoViewportBoundary();
+  await fullscreen.click();
+  await expect(fullscreen).toHaveAttribute("aria-pressed", "false");
+  expect((await desktopFrame()).equals(before)).toBe(true);
+
+  await page.getByRole("button", { name: "Close System Settings" }).click();
+  expect((await desktopFrame()).equals(before)).toBe(true);
+  await expectNoViewportBoundary();
+});

@@ -104,43 +104,35 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
         }}
       />
       {settingsOpen && (
-        <>
-          {!settingsMinimized && (
-            <div
-              className="fixed inset-0 z-20 bg-[var(--tienos-color-scrim)] backdrop-blur-[2px] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none"
-              aria-hidden="true"
-            />
-          )}
-          <SystemSettings
-            key={settingsLifecycleGeneration}
-            lifecycleGeneration={settingsLifecycleGeneration}
-            focusRequest={settingsFocusRequest}
-            minimized={settingsMinimized}
-            lifecycleRequest={settingsLifecycleRequest}
-            onMinimizedChange={(minimized) => {
-              if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
-              setSettingsMinimized(minimized);
-            }}
-            onVisibilityChange={(visibility) => {
-              if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
-              handleSettingsVisibilityChange(visibility);
-            }}
-            onActiveChange={(active) => {
-              if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
-              setSettingsActive(active);
-            }}
-            onClose={() => {
-              if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
-              lifecycleGenerationRef.current += 1;
-              settingsOpenRef.current = false;
-              setSettingsLifecycleRequest(null);
-              setSettingsOpen(false);
-              setSettingsMinimized(false);
-              setSettingsActive(false);
-              settingsVisibilityRef.current = "visible";
-            }}
-          />
-        </>
+        <SystemSettings
+          key={settingsLifecycleGeneration}
+          lifecycleGeneration={settingsLifecycleGeneration}
+          focusRequest={settingsFocusRequest}
+          minimized={settingsMinimized}
+          lifecycleRequest={settingsLifecycleRequest}
+          onMinimizedChange={(minimized) => {
+            if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
+            setSettingsMinimized(minimized);
+          }}
+          onVisibilityChange={(visibility) => {
+            if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
+            handleSettingsVisibilityChange(visibility);
+          }}
+          onActiveChange={(active) => {
+            if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
+            setSettingsActive(active);
+          }}
+          onClose={() => {
+            if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
+            lifecycleGenerationRef.current += 1;
+            settingsOpenRef.current = false;
+            setSettingsLifecycleRequest(null);
+            setSettingsOpen(false);
+            setSettingsMinimized(false);
+            setSettingsActive(false);
+            settingsVisibilityRef.current = "visible";
+          }}
+        />
       )}
       <Dock
         settingsOpen={settingsOpen}
