@@ -41,7 +41,6 @@
   --tienos-color-detail: rgb(13 18 25 / 0.42);
   --tienos-color-content: rgb(255 255 255 / 0.075);
   --tienos-color-control: rgb(255 255 255 / 0.11);
-  --tienos-color-scrim: rgb(0 0 0 / 0.34);
   --tienos-color-dock: rgb(18 27 39 / 0.58);
   --tienos-color-dock-indicator: rgb(255 255 255 / 0.94);
   --tienos-color-scrollbar-track: transparent;
@@ -82,7 +81,6 @@
   --tienos-color-detail: rgb(255 255 255 / 0.38);
   --tienos-color-content: rgb(255 255 255 / 0.56);
   --tienos-color-control: rgb(15 23 42 / 0.08);
-  --tienos-color-scrim: rgb(15 23 42 / 0.2);
   --tienos-color-dock: rgb(238 244 251 / 0.6);
   --tienos-color-dock-indicator: rgb(15 23 42 / 0.86);
   --tienos-color-scrollbar-track: transparent;
@@ -127,7 +125,6 @@
     --tienos-color-detail: #202023;
     --tienos-color-content: #28282a;
     --tienos-color-control: #363638;
-    --tienos-color-scrim: rgb(0 0 0 / 0.58);
   }
 
   :root[data-theme="light"] {
@@ -140,7 +137,6 @@
     --tienos-color-detail: #f7f9fc;
     --tienos-color-content: #fff;
     --tienos-color-control: #dfe4eb;
-    --tienos-color-scrim: rgb(15 23 42 / 0.38);
   }
 }
 
