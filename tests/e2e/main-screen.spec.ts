@@ -43,20 +43,20 @@ const trafficHitPoints = [
   { x: -1, owner: null },
   { x: 1, owner: "Close System Settings" },
   { x: 22, owner: "Close System Settings" },
-  { x: 29, owner: "Close System Settings" },
-  { x: 30, owner: "Minimize System Settings" },
+  { x: 31, owner: "Close System Settings" },
+  { x: 32, owner: "Minimize System Settings" },
   { x: 42, owner: "Minimize System Settings" },
-  { x: 49, owner: "Minimize System Settings" },
-  { x: 50, owner: "Toggle fullscreen System Settings" },
+  { x: 51, owner: "Minimize System Settings" },
+  { x: 52, owner: "Toggle fullscreen System Settings" },
   { x: 62, owner: "Toggle fullscreen System Settings" },
   { x: 83, owner: "Toggle fullscreen System Settings" },
   { x: 85, owner: null },
 ] as const;
 const trafficActionPoints = [
   ...trafficHitPoints
-    .filter(({ owner, x }) => owner !== null && x !== 49)
+    .filter(({ owner, x }) => owner !== null && x !== 51)
     .map((point) => ({ ...point, y: 22 })),
-  { x: 48, y: 22, owner: "Minimize System Settings" },
+  { x: 50, y: 22, owner: "Minimize System Settings" },
   { x: 22, y: 1, owner: "Close System Settings" },
   { x: 42, y: 43, owner: "Minimize System Settings" },
   { x: 62, y: 1, owner: "Toggle fullscreen System Settings" },
@@ -4034,7 +4034,7 @@ test("transition state is inert, tracks Dock movement, and repeated activation s
   });
 });
 
-test("keyboard minimize and close preserve descendant focus and single-window state", async ({ page }) => {
+test("keyboard traffic lights preserve focus, geometry, and single-window state", async ({ page }) => {
   await page.goto("/");
   await expect(page.locator("#root")).not.toHaveAttribute("inert");
   const dockApp = page
@@ -4043,6 +4043,8 @@ test("keyboard minimize and close preserve descendant focus and single-window st
   const dockStatus = page.getByRole("navigation", { name: "Dock" }).getByRole("status");
   const window = page.getByRole("region", { name: "System Settings" });
   const search = page.getByPlaceholder("Search");
+  const normal = await window.boundingBox();
+  expect(normal).not.toBeNull();
 
   await search.focus();
   await dockApp.click();
@@ -4058,6 +4060,18 @@ test("keyboard minimize and close preserve descendant focus and single-window st
   await dockApp.click();
   await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
   await expect(minimize).toBeFocused({ timeout: 1_000 });
+
+  const fullscreen = page.getByRole("button", { name: "Toggle fullscreen System Settings" });
+  await fullscreen.focus();
+  await fullscreen.press("Enter");
+  await expect(fullscreen).toHaveAttribute("aria-pressed", "true");
+  await expect(fullscreen).toBeFocused();
+  expect(await window.boundingBox()).not.toEqual(normal);
+  await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
+  await fullscreen.press("Space");
+  await expect(fullscreen).toHaveAttribute("aria-pressed", "false");
+  await expect.poll(() => window.boundingBox()).toEqual(normal);
+  await expect(fullscreen).toBeFocused();
 
   const close = page.getByRole("button", { name: "Close System Settings" });
   await close.focus();
@@ -4163,6 +4177,16 @@ test("Settings portal activity and traffic-light hit regions keep unambiguous ow
   await page.keyboard.press("Shift+Tab");
   await expect(fullscreen).toBeFocused();
   await expect(fullscreen.locator("[data-traffic-dot]")).toHaveCSS("outline-style", "solid");
+  expect(
+    await page
+      .locator("[data-traffic-control]")
+      .evaluateAll((controls) => controls.map((control) => getComputedStyle(control).outlineStyle)),
+  ).toEqual(["none", "none", "none"]);
+  expect(
+    await page
+      .locator("[data-traffic-dot]")
+      .evaluateAll((dots) => dots.map((dot) => getComputedStyle(dot).outlineStyle)),
+  ).toEqual(["none", "none", "solid"]);
   await page.emulateMedia({ forcedColors: "none", contrast: "no-preference", reducedMotion: "reduce" });
   await exerciseTrafficHitPoints(page, (x, y) => page.mouse.click(Math.ceil(x), Math.ceil(y)));
   await expect(window).toBeVisible();
