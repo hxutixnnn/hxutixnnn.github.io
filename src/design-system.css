@@ -55,6 +55,8 @@
 
   --tienos-motion-fast: 120ms;
   --tienos-motion-standard: 200ms;
+  --tienos-motion-theme: 280ms;
+  --tienos-ease-theme: cubic-bezier(0.22, 1, 0.36, 1);
   --tienos-shadow-window: 0 42px 120px rgb(0 0 0 / 0.58);
   --tienos-focus-ring: 0 0 0 2px var(--tienos-color-focus), 0 0 0 4px rgb(10 132 255 / 0.3);
 }

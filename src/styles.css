@@ -70,6 +70,47 @@
   }
 }
 
+/* The browser snapshots the complete document, including top-layer portals, as one theme composition. */
+::view-transition-group(root) {
+  pointer-events: none;
+  animation-duration: var(--tienos-motion-theme);
+  animation-timing-function: var(--tienos-ease-theme);
+}
+::view-transition-old(root) {
+  pointer-events: none;
+  animation: tienos-theme-fade-out var(--tienos-motion-theme) var(--tienos-ease-theme) both;
+}
+::view-transition-new(root) {
+  pointer-events: none;
+  animation: tienos-theme-fade-in var(--tienos-motion-theme) var(--tienos-ease-theme) both;
+}
+@keyframes tienos-theme-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes tienos-theme-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce),
+  (prefers-reduced-transparency: reduce),
+  (prefers-contrast: more),
+  (forced-colors: active) {
+  ::view-transition-group(root),
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation-duration: 0s;
+  }
+}
+
+:root[data-theme-transaction] *,
+:root[data-theme-transaction] *::before,
+:root[data-theme-transaction] *::after {
+  transition: none !important;
+}
+
 /* Wallpaper motion uses transforms at both endpoints and is shared by a Tailwind animation utility. */
 @keyframes tienos-drift {
   from {

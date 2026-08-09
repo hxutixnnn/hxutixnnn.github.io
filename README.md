@@ -2,7 +2,7 @@
 
 tienOS is a personal web desktop for projects, experiments, and ideas.
 
-Choose Auto, Light, or Dark from Appearance in System Settings. The preference persists across reloads; Auto follows the system color scheme as it changes.
+Choose Auto, Light, or Dark from Appearance in System Settings. The preference persists across reloads; Auto follows the system color scheme as it changes, and post-startup changes between resolved Light and Dark crossfade after the destination wallpaper has decoded or its fallback is ready.
 
 ## Stack
 
