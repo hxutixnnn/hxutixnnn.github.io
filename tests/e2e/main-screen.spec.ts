@@ -3702,26 +3702,29 @@ test("each traffic light accepts genuine touch activation", async ({ browser }, 
   const dockApp = page
     .getByRole("navigation", { name: "Dock" })
     .getByRole("button", { name: "System Settings" });
-  const controlNames = [
+  const hitMap = await page.evaluate(() => {
+    const close = document.querySelector<HTMLButtonElement>('button[aria-label="Close System Settings"]')!;
+    const box = close.getBoundingClientRect();
+    const ownerAt = (x: number, y: number) =>
+      document
+        .elementFromPoint(box.left + x, box.top + y)
+        ?.closest("button")
+        ?.getAttribute("aria-label") ?? null;
+    return {
+      rows: [1, 22, 43].map((y) => [1, 29, 30, 49, 50, 83].map((x) => ownerAt(x, y))),
+      outside: [ownerAt(-1, 22), ownerAt(84, 22)],
+    };
+  });
+  const ownershipRow = [
+    "Close System Settings",
     "Close System Settings",
     "Minimize System Settings",
+    "Minimize System Settings",
+    "Toggle fullscreen System Settings",
     "Toggle fullscreen System Settings",
   ];
-  const hitOwners = await page.evaluate((names) => {
-    return names.map((name) => {
-      const button = document.querySelector<HTMLButtonElement>(`button[aria-label="${name}"]`)!;
-      const box = button.getBoundingClientRect();
-      return [2, 22, 42].flatMap((offsetX) =>
-        [2, 22, 42].map((offsetY) =>
-          document
-            .elementFromPoint(box.left + offsetX, box.top + offsetY)
-            ?.closest("button")
-            ?.getAttribute("aria-label"),
-        ),
-      );
-    });
-  }, controlNames);
-  expect(hitOwners).toEqual(controlNames.map((name) => Array<string>(9).fill(name)));
+  expect(hitMap.rows).toEqual([ownershipRow, ownershipRow, ownershipRow]);
+  expect(hitMap.outside).toEqual([null, null]);
   const compactDotGeometry = await page.locator("[data-sidebar-panel]").evaluate((panel) => {
     const panelBox = panel.getBoundingClientRect();
     return Array.from(panel.querySelectorAll<HTMLElement>("[data-traffic-dot]"), (dot) => {
@@ -3738,8 +3741,8 @@ test("each traffic light accepts genuine touch activation", async ({ browser }, 
   });
   expect(compactDotGeometry).toEqual([
     { center: 25, owner: "Close System Settings", size: 11 },
-    { center: 69, owner: "Minimize System Settings", size: 11 },
-    { center: 113, owner: "Toggle fullscreen System Settings", size: 11 },
+    { center: 45, owner: "Minimize System Settings", size: 11 },
+    { center: 65, owner: "Toggle fullscreen System Settings", size: 11 },
   ]);
   const compactHeaderClearance = await page.evaluate(() => {
     const fullscreen = document.querySelector<HTMLElement>(
@@ -4008,7 +4011,7 @@ test("keyboard minimize and close preserve descendant focus and single-window st
 
 test("Settings portal activity and traffic-light hit regions keep unambiguous ownership", async ({
   page,
-}) => {
+}, testInfo) => {
   test.setTimeout(45_000);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
@@ -4048,8 +4051,8 @@ test("Settings portal activity and traffic-light hit regions keep unambiguous ow
   });
   expect(desktopDotGeometry).toEqual([
     { center: 28, owner: "Close System Settings", size: 13 },
-    { center: 72, owner: "Minimize System Settings", size: 13 },
-    { center: 116, owner: "Toggle fullscreen System Settings", size: 13 },
+    { center: 48, owner: "Minimize System Settings", size: 13 },
+    { center: 68, owner: "Toggle fullscreen System Settings", size: 13 },
   ]);
   const [red, yellow, green] = await Promise.all([
     close.boundingBox(),
@@ -4063,8 +4066,17 @@ test("Settings portal activity and traffic-light hit regions keep unambiguous ow
     expect(box.width).toBeCloseTo(44, 0);
     expect(box.height).toBeCloseTo(44, 0);
   }
-  expect(red!.x + red!.width).toBeLessThanOrEqual(yellow!.x);
-  expect(yellow!.x + yellow!.width).toBeLessThanOrEqual(green!.x);
+  expect(yellow!.x - red!.x).toBeCloseTo(20, 0);
+  expect(green!.x - yellow!.x).toBeCloseTo(20, 0);
+  await page.screenshot({
+    path: testInfo.outputPath("settings-traffic-lights-tight.png"),
+    clip: { x: red!.x - 4, y: red!.y - 4, width: green!.x + green!.width - red!.x + 8, height: 52 },
+  });
+  await fullscreen.focus();
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Shift+Tab");
+  await expect(fullscreen).toBeFocused();
+  await expect(fullscreen.locator("[data-traffic-dot]")).toHaveCSS("outline-style", "solid");
   await minimize.click({ position: { x: yellow!.width / 2, y: yellow!.height / 2 } });
   await expect(dockStatus).toHaveText("System Settings is running and minimized");
   await expect(page.locator('button[aria-label="Toggle fullscreen System Settings"]')).toHaveAttribute(

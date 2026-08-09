@@ -165,6 +165,54 @@
 [data-genie-window][data-fullscreen] {
   border-radius: 0;
 }
+
+/* Traffic-light geometry deliberately separates appearance from ownership.
+   The 13px dots use familiar 20px center spacing (7px apparent gaps), while
+   every semantic button keeps a 44px by 44px bounding box. Their boxes overlap,
+   so these complementary hit-test polygons partition the 84px cluster at the
+   midpoints between dots: no coordinate belongs to two actions. The outer
+   controls retain generous edge regions and the middle control owns the full
+   space around its dot; all three retain the required 44px vertical target. */
+[data-traffic-control] {
+  border: 0;
+  background: transparent;
+  -webkit-app-region: no-drag;
+  app-region: no-drag;
+}
+[data-traffic-control="close"] {
+  clip-path: polygon(0 0, 30px 0, 30px 100%, 0 100%);
+}
+[data-traffic-control="minimize"] {
+  clip-path: polygon(10px 0, 30px 0, 30px 100%, 10px 100%);
+}
+[data-traffic-control="fullscreen"] {
+  clip-path: polygon(10px 0, 100% 0, 100% 100%, 10px 100%);
+}
+[data-traffic-control]:focus-visible {
+  outline: none;
+}
+[data-traffic-control]:focus-visible [data-traffic-dot] {
+  outline: 2px solid var(--tienos-color-focus);
+  outline-offset: 3px;
+}
+@media (forced-colors: active) {
+  [data-traffic-control] [data-traffic-dot] {
+    border: 1px solid ButtonText;
+    forced-color-adjust: none;
+  }
+  [data-traffic-control="close"] [data-traffic-dot] {
+    background: LinkText !important;
+  }
+  [data-traffic-control="minimize"] [data-traffic-dot] {
+    background: Mark !important;
+  }
+  [data-traffic-control="fullscreen"] [data-traffic-dot] {
+    background: Highlight !important;
+  }
+  [data-traffic-control]:focus-visible [data-traffic-dot] {
+    outline-color: Highlight;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   [data-genie-window] {
     transition: opacity 80ms linear;

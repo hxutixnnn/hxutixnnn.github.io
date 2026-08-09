@@ -661,7 +661,8 @@ export function SystemSettings({
             >
               <button
                 type="button"
-                className="settings-light absolute top-[-15.5px] left-0 size-[44px] touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:top-[-15px]"
+                className="settings-light settings-light-close absolute top-[-15.5px] left-0 size-[44px] touch-manipulation max-[700px]:top-[-15px]"
+                data-traffic-control="close"
                 aria-label="Close System Settings"
                 title="Close"
                 onClick={onClose}
@@ -673,7 +674,8 @@ export function SystemSettings({
               </button>
               <button
                 type="button"
-                className="settings-light absolute top-[-15.5px] left-[44px] size-[44px] touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:top-[-15px]"
+                className="settings-light settings-light-minimize absolute top-[-15.5px] left-[20px] size-[44px] touch-manipulation max-[700px]:top-[-15px]"
+                data-traffic-control="minimize"
                 aria-label="Minimize System Settings"
                 title="Minimize"
                 onClick={beginMinimize}
@@ -685,7 +687,8 @@ export function SystemSettings({
               </button>
               <button
                 type="button"
-                className="settings-light absolute top-[-15.5px] left-[88px] size-[44px] touch-manipulation focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[var(--tienos-color-focus)] max-[700px]:top-[-15px]"
+                className="settings-light settings-light-fullscreen absolute top-[-15.5px] left-[40px] size-[44px] touch-manipulation max-[700px]:top-[-15px]"
+                data-traffic-control="fullscreen"
                 aria-label="Toggle fullscreen System Settings"
                 aria-pressed={fullscreen}
                 title={fullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
