@@ -1,12 +1,11 @@
 # Window geometry ownership
 
-The shell owns workspace measurement, `SystemSettings` owns the current frame value, and `WindowFrame` owns physical frame/input mechanics.
+The shell owns workspace measurement, and `WindowFrame` owns physical frame/input mechanics. The Settings-side frame and sidebar ownership is documented in [`docs/system-settings.md`](system-settings.md).
 
 - `src/windows/geometry.ts` is the pure geometry domain. It owns `Rect`, `Frame`, `Viewport`, `Workspace`, the desktop/compact policies, menu/Dock/safe-area bounds, fullscreen sizing, normal-frame restoration, resize clamping, and sidebar splitter bounds. It imports no React, DOM, app, store, component, Base UI, or `react-rnd` code.
 - `src/windows/useWorkspaceGeometry.ts` is the single measurement owner. `App` supplies explicit refs for the Menu Bar surface, Dock surface, and Settings Dock button. The hook owns the first measurement, `ResizeObserver`, `MutationObserver`, viewport/orientation listeners, safe-area reads, coalescing, cleanup, and immutable workspace/target snapshots.
-- `MenuBar` and `Dock` attach those refs; they do not make geometry decisions. `App` passes the immutable `Workspace` and typed Dock target provider through `SystemSettings` props.
+- `MenuBar` and `Dock` attach those refs; they do not make geometry decisions. `App` passes the immutable `Workspace` and typed Dock target provider through `SystemSettingsApp` props.
 - `WindowFrame` consumes immutable workspace/frame values and is the only `react-rnd` owner.
-- `SystemSettings` owns the current frame and sidebar ratio and passes immutable geometry values plus a typed Dock target provider through the frame port.
 
 ## Invariants
 
@@ -24,4 +23,4 @@ The Phase 3 build remains 149.6 KiB JavaScript gzip by the output checker, uncha
 
 ## Non-goals
 
-This boundary is not a layout engine, snap/tiling system, multi-monitor abstraction, context graph, service locator, app registry, or multi-window manager. Settings-pane moves, appearance refactoring, CSS/data-state renames, and visual redesign remain separate work.
+This boundary is not a layout engine, snap/tiling system, multi-monitor abstraction, context graph, service locator, app registry, or multi-window manager. Appearance refactoring, CSS/data-state renames, and visual redesign remain separate work.
