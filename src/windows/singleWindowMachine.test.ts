@@ -7,7 +7,6 @@ import {
   type WindowEffect,
   type WindowEvent,
   type WindowReduction,
-  type WindowVisibility,
 } from "./singleWindowMachine";
 
 function apply(state: SingleWindowState, ...events: WindowEvent[]) {
@@ -78,15 +77,114 @@ type ExpectedOutcome =
   | "settle-visible";
 
 const transitionTable: Record<string, readonly ExpectedOutcome[]> = {
-  closed: ["launch", "launch", "launch", "unchanged", "unchanged", "unchanged", "unchanged", "unchanged", "unchanged", "unchanged"],
-  "visible-active": ["focus", "focus", "dock-minimize", "inactive", "unchanged", "close", "minimize", "toggle-fullscreen", "unchanged", "unchanged"],
-  "visible-inactive": ["focus", "focus", "focus", "unchanged", "active", "close", "minimize", "toggle-fullscreen", "unchanged", "unchanged"],
-  "minimizing-active": ["restore", "restore", "restore", "inactive", "unchanged", "close", "unchanged", "toggle-fullscreen", "settle-minimized", "unchanged"],
-  "minimizing-inactive": ["restore", "restore", "restore", "unchanged", "unchanged", "close", "unchanged", "toggle-fullscreen", "settle-minimized", "unchanged"],
-  "minimized-active": ["restore", "restore", "restore", "inactive", "unchanged", "close", "unchanged", "toggle-fullscreen", "unchanged", "unchanged"],
-  "minimized-inactive": ["restore", "restore", "restore", "unchanged", "unchanged", "close", "unchanged", "toggle-fullscreen", "unchanged", "unchanged"],
-  "restoring-active": ["unchanged", "unchanged", "unchanged", "inactive", "unchanged", "close", "minimize", "toggle-fullscreen", "unchanged", "settle-visible"],
-  "restoring-inactive": ["unchanged", "unchanged", "unchanged", "unchanged", "unchanged", "close", "minimize", "toggle-fullscreen", "unchanged", "settle-visible"],
+  closed: [
+    "launch",
+    "launch",
+    "launch",
+    "unchanged",
+    "unchanged",
+    "unchanged",
+    "unchanged",
+    "unchanged",
+    "unchanged",
+    "unchanged",
+  ],
+  "visible-active": [
+    "focus",
+    "focus",
+    "dock-minimize",
+    "inactive",
+    "unchanged",
+    "close",
+    "minimize",
+    "toggle-fullscreen",
+    "unchanged",
+    "unchanged",
+  ],
+  "visible-inactive": [
+    "focus",
+    "focus",
+    "focus",
+    "unchanged",
+    "active",
+    "close",
+    "minimize",
+    "toggle-fullscreen",
+    "unchanged",
+    "unchanged",
+  ],
+  "minimizing-active": [
+    "restore",
+    "restore",
+    "restore",
+    "inactive",
+    "unchanged",
+    "close",
+    "unchanged",
+    "toggle-fullscreen",
+    "settle-minimized",
+    "unchanged",
+  ],
+  "minimizing-inactive": [
+    "restore",
+    "restore",
+    "restore",
+    "unchanged",
+    "unchanged",
+    "close",
+    "unchanged",
+    "toggle-fullscreen",
+    "settle-minimized",
+    "unchanged",
+  ],
+  "minimized-active": [
+    "restore",
+    "restore",
+    "restore",
+    "inactive",
+    "unchanged",
+    "close",
+    "unchanged",
+    "toggle-fullscreen",
+    "unchanged",
+    "unchanged",
+  ],
+  "minimized-inactive": [
+    "restore",
+    "restore",
+    "restore",
+    "unchanged",
+    "unchanged",
+    "close",
+    "unchanged",
+    "toggle-fullscreen",
+    "unchanged",
+    "unchanged",
+  ],
+  "restoring-active": [
+    "unchanged",
+    "unchanged",
+    "unchanged",
+    "inactive",
+    "unchanged",
+    "close",
+    "minimize",
+    "toggle-fullscreen",
+    "unchanged",
+    "settle-visible",
+  ],
+  "restoring-inactive": [
+    "unchanged",
+    "unchanged",
+    "unchanged",
+    "unchanged",
+    "unchanged",
+    "close",
+    "minimize",
+    "toggle-fullscreen",
+    "unchanged",
+    "settle-visible",
+  ],
 };
 
 function expectedReduction(state: SingleWindowState, outcome: ExpectedOutcome): WindowReduction {
@@ -134,12 +232,14 @@ function expectedReduction(state: SingleWindowState, outcome: ExpectedOutcome): 
     case "dock-minimize":
       return {
         state: { ...state, generation: nextGeneration, visibility: "minimizing", active: false },
-        effects: [{
-          type: "START_TRANSITION",
-          generation: nextGeneration,
-          direction: "minimize",
-          ...(outcome === "dock-minimize" ? { defer: true } : {}),
-        }],
+        effects: [
+          {
+            type: "START_TRANSITION",
+            generation: nextGeneration,
+            direction: "minimize",
+            ...(outcome === "dock-minimize" ? { defer: true } : {}),
+          },
+        ],
       };
     case "restore":
       return {
@@ -243,10 +343,9 @@ describe("single-window lifecycle transition table", () => {
   });
 
   it("close and relaunch discard stale completions and reset fullscreen", () => {
-    const minimizing = reduceWindow(
-      apply(initialSingleWindowState, { type: "TOGGLE_FULLSCREEN" }),
-      { type: "ACTIVATE_FROM_DOCK" },
-    );
+    const minimizing = reduceWindow(apply(initialSingleWindowState, { type: "TOGGLE_FULLSCREEN" }), {
+      type: "ACTIVATE_FROM_DOCK",
+    });
     const closed = reduceWindow(minimizing.state, { type: "CLOSE" });
     const reopened = reduceWindow(closed.state, { type: "ACTIVATE_FROM_MENU" });
     const stale = reduceWindow(reopened.state, {
@@ -355,40 +454,40 @@ describe("single-window lifecycle properties", () => {
 
         expect(stale.state).toBe(restoring.state);
         expect(settled.state).toMatchObject({ visibility: "visible", active: true });
-        expect(settled.effects).toEqual([{
-          type: "FOCUS",
-          generation: restoring.state.generation,
-          epoch: restoring.state.focusEpoch,
-        }]);
+        expect(settled.effects).toEqual([
+          {
+            type: "FOCUS",
+            generation: restoring.state.generation,
+            epoch: restoring.state.focusEpoch,
+          },
+        ]);
       }),
     );
   });
 
   it("relaunches exactly one clean instance regardless of stale requests", () => {
     fc.assert(
-      fc.property(
-        fc.array(eventArbitrary, { maxLength: 40 }),
-        activationArbitrary,
-        (events, activation) => {
-          const beforeClose = apply(initialSingleWindowState, ...events);
-          const closed = reduceWindow(beforeClose, { type: "CLOSE" }).state;
-          const reopened = reduceWindow(closed, activation);
+      fc.property(fc.array(eventArbitrary, { maxLength: 40 }), activationArbitrary, (events, activation) => {
+        const beforeClose = apply(initialSingleWindowState, ...events);
+        const closed = reduceWindow(beforeClose, { type: "CLOSE" }).state;
+        const reopened = reduceWindow(closed, activation);
 
-          expect(reopened.state).toEqual({
-            generation: closed.generation + 1,
-            presence: "open",
-            visibility: "visible",
-            active: true,
-            fullscreen: false,
-            focusEpoch: closed.focusEpoch + 1,
-          });
-          expect(reopened.effects).toEqual([{
+        expect(reopened.state).toEqual({
+          generation: closed.generation + 1,
+          presence: "open",
+          visibility: "visible",
+          active: true,
+          fullscreen: false,
+          focusEpoch: closed.focusEpoch + 1,
+        });
+        expect(reopened.effects).toEqual([
+          {
             type: "FOCUS",
             generation: reopened.state.generation,
             epoch: reopened.state.focusEpoch,
-          }]);
-        },
-      ),
+          },
+        ]);
+      }),
     );
   });
 
