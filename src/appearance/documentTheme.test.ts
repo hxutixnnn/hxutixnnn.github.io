@@ -42,7 +42,7 @@ describe("document theme compositor", () => {
     const cancel = vi.fn();
     vi.mocked(createResolvedThemeTransition).mockReturnValue({
       cancel,
-      transition: vi.fn(async (commit, isCurrent = () => true) => {
+      transition: vi.fn(async (commit: () => void, isCurrent: () => boolean = () => true) => {
         await release.promise;
         if (isCurrent()) commit();
       }),
@@ -62,8 +62,7 @@ describe("document theme compositor", () => {
             fallback: document.documentElement.dataset.wallpaperFallback,
             wallpaper: document.documentElement.style.getPropertyValue("--tienos-wallpaper"),
             themeColor:
-              document.querySelector('meta[name="theme-color"]')?.getAttribute("content") ??
-              undefined,
+              document.querySelector('meta[name="theme-color"]')?.getAttribute("content") ?? undefined,
           };
         },
       },
@@ -89,13 +88,11 @@ describe("document theme compositor", () => {
     const cancel = vi.fn(() => {
       generation += 1;
     });
-    const transition = vi.fn(
-      async (commit: () => void, isCurrent: () => boolean = () => true) => {
-        const ownGeneration = generation;
-        await releases.shift()!.promise;
-        if (ownGeneration === generation && isCurrent()) commit();
-      },
-    );
+    const transition = vi.fn(async (commit: () => void, isCurrent: () => boolean = () => true) => {
+      const ownGeneration = generation;
+      await releases.shift()!.promise;
+      if (ownGeneration === generation && isCurrent()) commit();
+    });
     vi.mocked(createResolvedThemeTransition).mockReturnValue({ cancel, transition });
     const compositor = createDocumentThemeCompositor(target());
     const onCommit = vi.fn();

@@ -58,8 +58,7 @@ for (const saved of [null, ...contract.modes, "sepia", "malformed"]) {
       },
     };
     vm.runInNewContext(script, context);
-    if (storageReads !== 1)
-      throw new Error(`Bootstrap storage reads drifted: ${storageReads}`);
+    if (storageReads !== 1) throw new Error(`Bootstrap storage reads drifted: ${storageReads}`);
     const expectedMode = runtime.readPersistedAppearance(storage);
     const expectedTheme = runtime.resolveAppearance(expectedMode, dark ? "dark" : "light");
     const actual = context.document.documentElement;

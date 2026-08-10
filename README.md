@@ -11,7 +11,7 @@ Choose Auto, Light, or Dark from Appearance in System Settings. The preference p
 - Base UI for accessible headless interactions
 - `react-hotkeys-hook` for keyboard shortcuts
 - `react-rnd` for bounded desktop window movement and resizing
-- Zustand for persisted appearance state
+- Zustand as the observable appearance adapter
 - TypeScript and Vitest
 
 ## Development

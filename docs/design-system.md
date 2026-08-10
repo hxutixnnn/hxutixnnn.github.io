@@ -24,7 +24,7 @@ Author component presentation as complete Tailwind utility strings in JSX or TSX
 ### Surfaces and color
 
 Use semantic text, border, separator, accent, window, sidebar, content, control, and Dock tokens.
-Light and dark values are selected by the root `data-theme` attribute. The typed Zustand store in [`src/stores/appearance.ts`](../src/stores/appearance.ts) is the single runtime owner of appearance state; components must not own or duplicate it.
+Light and dark values are selected by the root `data-theme` attribute. Components observe appearance through the typed Zustand adapter in [`src/stores/appearance.ts`](../src/stores/appearance.ts); runtime ownership and mutation boundaries are defined in the [`appearance architecture`](appearance-architecture.md), and components must not duplicate them.
 Do not use color as the only indication of selection or status.
 The system provides stronger contrast, opaque reduced-transparency surfaces, and forced-color mappings.
 
