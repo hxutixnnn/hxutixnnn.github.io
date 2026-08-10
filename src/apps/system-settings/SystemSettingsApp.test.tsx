@@ -114,6 +114,72 @@ describe("SystemSettings", () => {
     expect(wallpaperTint).not.toBeChecked();
   });
 
+  it("preserves every Appearance demo control across pane navigation", async () => {
+    const user = userEvent.setup();
+    render(<SystemSettingsApp onEvent={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Appearance" }));
+    await user.click(
+      within(screen.getByRole("radiogroup", { name: "Liquid Glass style" })).getByRole("radio", {
+        name: "Tinted",
+      }),
+    );
+    await user.click(
+      within(screen.getByRole("radiogroup", { name: "Accent color" })).getByRole("radio", {
+        name: "Blue",
+      }),
+    );
+    const highlight = screen.getByRole("combobox", { name: "Text highlight color" });
+    await user.click(highlight);
+    await user.click(screen.getByRole("option", { name: "Purple" }));
+    await user.click(
+      within(screen.getByRole("radiogroup", { name: "Icon and widget style" })).getByRole("radio", {
+        name: "Dark",
+      }),
+    );
+    const folder = screen.getByRole("combobox", { name: "Folder color" });
+    await user.click(folder);
+    await user.click(screen.getByRole("option", { name: "Blue" }));
+    const iconSize = screen.getByRole("combobox", { name: "Sidebar icon size" });
+    await user.click(iconSize);
+    await user.click(screen.getByRole("option", { name: "Large" }));
+    await user.click(screen.getByRole("switch", { name: "Tint window background with wallpaper color" }));
+
+    const details = screen.getByLabelText("Settings details");
+    details.scrollTop = 180;
+    const generalButton = screen.getByRole("button", { name: "General" });
+    await user.click(generalButton);
+    expect(generalButton).toHaveFocus();
+    expect(details.scrollTop).toBe(0);
+
+    details.scrollTop = 120;
+    const appearanceButton = screen.getByRole("button", { name: "Appearance" });
+    await user.click(appearanceButton);
+    expect(appearanceButton).toHaveFocus();
+    expect(details.scrollTop).toBe(0);
+    expect(
+      within(screen.getByRole("radiogroup", { name: "Liquid Glass style" })).getByRole("radio", {
+        name: "Tinted",
+      }),
+    ).toBeChecked();
+    expect(
+      within(screen.getByRole("radiogroup", { name: "Accent color" })).getByRole("radio", {
+        name: "Blue",
+      }),
+    ).toBeChecked();
+    expect(screen.getByRole("combobox", { name: "Text highlight color" })).toHaveTextContent("Purple");
+    expect(
+      within(screen.getByRole("radiogroup", { name: "Icon and widget style" })).getByRole("radio", {
+        name: "Dark",
+      }),
+    ).toBeChecked();
+    expect(screen.getByRole("combobox", { name: "Folder color" })).toHaveTextContent("Blue");
+    expect(screen.getByRole("combobox", { name: "Sidebar icon size" })).toHaveTextContent("Large");
+    expect(
+      screen.getByRole("switch", { name: "Tint window background with wallpaper color" }),
+    ).not.toBeChecked();
+  });
+
   it("resets the details viewport when the selected category changes", async () => {
     const user = userEvent.setup();
     render(<SystemSettingsApp onEvent={vi.fn()} />);

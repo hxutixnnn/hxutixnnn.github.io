@@ -42,6 +42,7 @@ type SystemSettingsProps = {
 const ignoreWindowEvent = () => undefined;
 
 import { defaultSettingsPaneId, findSettingsPane, settingsPanes, type SettingsPaneId } from "./settingsPanes";
+import { initialAppearanceDemoSettings, type AppearanceDemoSettings } from "./panes/AppearancePane";
 
 function readClientViewport() {
   if (typeof window === "undefined") return { width: 0, height: 0 };
@@ -108,6 +109,9 @@ export function SystemSettingsApp({
   const [fallbackWorkspace] = useState(createFallbackWorkspace);
   const workspace = workspaceProp ?? fallbackWorkspace;
   const [query, setQuery] = useState("");
+  const [appearanceDemoSettings, setAppearanceDemoSettings] = useState<AppearanceDemoSettings>(
+    initialAppearanceDemoSettings,
+  );
   const emit = useCallback((event: WindowEvent) => onEvent(event), [onEvent]);
   const [selected, setSelected] = useState<SettingsPaneId>(defaultSettingsPaneId);
   const viewport = workspace.viewport;
@@ -334,7 +338,11 @@ export function SystemSettingsApp({
                 </header>
               )}
 
-              <SelectedPane pane={selectedCategory} />
+              <SelectedPane
+                pane={selectedCategory}
+                demoSettings={appearanceDemoSettings}
+                onDemoSettingsChange={setAppearanceDemoSettings}
+              />
             </SettingsScrollArea>
           </div>
         </>

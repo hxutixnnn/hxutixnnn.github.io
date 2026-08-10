@@ -1,21 +1,43 @@
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup } from "@base-ui/react/radio-group";
 import { Switch } from "@base-ui/react/switch";
-import { useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
 import { SettingsSelect } from "../../../components/SettingsControls";
 import { useAppearanceStore, type AppearanceMode } from "../../../stores/appearance";
 
-export function AppearancePane() {
+export type AppearanceDemoSettings = {
+  glassStyle: string;
+  accentColor: string;
+  textHighlightColor: string;
+  widgetStyle: string;
+  folderColor: string;
+  sidebarIconSize: string;
+  wallpaperTint: boolean;
+};
+
+export const initialAppearanceDemoSettings: AppearanceDemoSettings = {
+  glassStyle: "Clear",
+  accentColor: "Multicolor",
+  textHighlightColor: "Automatic",
+  widgetStyle: "Default",
+  folderColor: "Automatic",
+  sidebarIconSize: "Medium",
+  wallpaperTint: true,
+};
+
+type AppearancePaneProps = {
+  demoSettings: AppearanceDemoSettings;
+  onDemoSettingsChange: Dispatch<SetStateAction<AppearanceDemoSettings>>;
+};
+
+export function AppearancePane({ demoSettings, onDemoSettingsChange }: AppearancePaneProps) {
   const appearanceMode = useAppearanceStore((state) => state.mode);
   const pendingAppearanceMode = useAppearanceStore((state) => state.pendingMode);
   const setAppearanceMode = useAppearanceStore((state) => state.setMode);
-  const [glassStyle, setGlassStyle] = useState("Clear");
-  const [accentColor, setAccentColor] = useState("Multicolor");
-  const [textHighlightColor, setTextHighlightColor] = useState("Automatic");
-  const [widgetStyle, setWidgetStyle] = useState("Default");
-  const [folderColor, setFolderColor] = useState("Automatic");
-  const [sidebarIconSize, setSidebarIconSize] = useState("Medium");
-  const [wallpaperTint, setWallpaperTint] = useState(true);
+  const updateDemoSetting = <Key extends keyof AppearanceDemoSettings>(
+    key: Key,
+    value: AppearanceDemoSettings[Key],
+  ) => onDemoSettingsChange((current) => ({ ...current, [key]: value }));
 
   return (
     <div className="grid gap-3 [&_h2]:m-0 [&_h2]:text-[22px] [&_h3]:m-0 [&_h3]:p-[10px_12px_0] [&_h3]:text-[17px]">
@@ -50,8 +72,8 @@ export function AppearancePane() {
           <RadioGroup
             className="flex justify-end gap-3 max-[520px]:flex-col max-[520px]:items-start"
             aria-label="Liquid Glass style"
-            value={glassStyle}
-            onValueChange={setGlassStyle}
+            value={demoSettings.glassStyle}
+            onValueChange={(value) => updateDemoSetting("glassStyle", value)}
           >
             {["Clear", "Tinted"].map((style) => (
               <Radio.Root
@@ -78,8 +100,8 @@ export function AppearancePane() {
           <RadioGroup
             className="flex flex-wrap gap-2.5 max-[520px]:py-2"
             aria-label="Accent color"
-            value={accentColor}
-            onValueChange={setAccentColor}
+            value={demoSettings.accentColor}
+            onValueChange={(value) => updateDemoSetting("accentColor", value)}
           >
             {["Multicolor", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green", "Gray"].map(
               (color) => (
@@ -97,8 +119,8 @@ export function AppearancePane() {
           <span>Text highlight color</span>
           <SettingsSelect
             label="Text highlight color"
-            value={textHighlightColor}
-            onValueChange={setTextHighlightColor}
+            value={demoSettings.textHighlightColor}
+            onValueChange={(value) => updateDemoSetting("textHighlightColor", value)}
             options={["Automatic", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green"]}
           />
         </div>
@@ -109,7 +131,11 @@ export function AppearancePane() {
       >
         <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t [&>[role=radiogroup]]:flex [&>[role=radiogroup]]:gap-3 max-[520px]:[&>[role=radiogroup]]:flex-wrap">
           <span>Icon &amp; widget style</span>
-          <RadioGroup aria-label="Icon and widget style" value={widgetStyle} onValueChange={setWidgetStyle}>
+          <RadioGroup
+            aria-label="Icon and widget style"
+            value={demoSettings.widgetStyle}
+            onValueChange={(value) => updateDemoSetting("widgetStyle", value)}
+          >
             {["Default", "Dark", "Clear", "Tinted"].map((style) => (
               <Radio.Root
                 key={style}
@@ -129,8 +155,8 @@ export function AppearancePane() {
           <span>Folder color</span>
           <SettingsSelect
             label="Folder color"
-            value={folderColor}
-            onValueChange={setFolderColor}
+            value={demoSettings.folderColor}
+            onValueChange={(value) => updateDemoSetting("folderColor", value)}
             options={["Automatic", "Blue", "Purple", "Pink", "Red", "Orange", "Yellow", "Green"]}
           />
         </div>
@@ -144,8 +170,8 @@ export function AppearancePane() {
           <span>Sidebar icon size</span>
           <SettingsSelect
             label="Sidebar icon size"
-            value={sidebarIconSize}
-            onValueChange={setSidebarIconSize}
+            value={demoSettings.sidebarIconSize}
+            onValueChange={(value) => updateDemoSetting("sidebarIconSize", value)}
             options={["Small", "Medium", "Large"]}
           />
         </div>
@@ -153,8 +179,8 @@ export function AppearancePane() {
           <label htmlFor="wallpaper-tint">Tint window background with wallpaper color</label>
           <Switch.Root
             id="wallpaper-tint"
-            checked={wallpaperTint}
-            onCheckedChange={setWallpaperTint}
+            checked={demoSettings.wallpaperTint}
+            onCheckedChange={(value) => updateDemoSetting("wallpaperTint", value)}
             className="relative h-6 w-10 rounded-full bg-[var(--tienos-color-control)] shadow-inner transition-colors data-[checked]:bg-[var(--tienos-color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)]"
           >
             <Switch.Thumb className="block size-5 translate-x-0.5 rounded-full bg-white shadow transition-transform data-[checked]:translate-x-[18px] motion-reduce:transition-none" />

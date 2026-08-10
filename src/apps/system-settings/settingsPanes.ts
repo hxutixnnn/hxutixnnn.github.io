@@ -1,6 +1,7 @@
-import type { ComponentType } from "react";
+import type { ComponentType, Dispatch, SetStateAction } from "react";
 import type { FontAwesomeIconName } from "../../components/FontAwesomeIcon";
 import { AppearancePane } from "./panes/AppearancePane";
+import type { AppearanceDemoSettings } from "./panes/AppearancePane";
 import { GeneralPane } from "./panes/GeneralPane";
 import { PlaceholderPane } from "./panes/PlaceholderPane";
 
@@ -13,7 +14,11 @@ export type SettingsPaneMetadata = Readonly<{
   hideHero?: boolean;
 }>;
 
-type SettingsPaneProps = { pane: SettingsPaneMetadata };
+type SettingsPaneProps = {
+  pane: SettingsPaneMetadata;
+  demoSettings: AppearanceDemoSettings;
+  onDemoSettingsChange: Dispatch<SetStateAction<AppearanceDemoSettings>>;
+};
 type SettingsPaneDescriptor = SettingsPaneMetadata &
   Readonly<{ Component: ComponentType<SettingsPaneProps> }>;
 
