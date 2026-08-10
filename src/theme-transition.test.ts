@@ -80,6 +80,29 @@ describe("resolved theme transitions", () => {
     expect(transactionStates).toEqual([true]);
   });
 
+  it.each([
+    ["hidden", "(prefers-reduced-motion: reduce)"],
+    ["visible", "(prefers-reduced-motion: reduce)"],
+    ["visible", "(prefers-reduced-transparency: reduce)"],
+    ["visible", "(prefers-contrast: more)"],
+    ["visible", "(forced-colors: active)"],
+  ])(
+    "commits directly when visibility or accessibility requires a bypass",
+    async (visibility, matchedQuery) => {
+      Object.defineProperty(document, "visibilityState", { configurable: true, value: visibility });
+      Object.defineProperty(window, "matchMedia", {
+        configurable: true,
+        value: vi.fn((query: string) => ({ matches: query === matchedQuery }) as MediaQueryList),
+      });
+      const commit = vi.fn();
+
+      await transitionResolvedTheme(commit);
+
+      expect(commit).toHaveBeenCalledOnce();
+      expect(document.querySelector("[data-theme-transition-layer]")).not.toBeInTheDocument();
+    },
+  );
+
   it("preserves property-backed state in the inert fallback snapshot", async () => {
     document.body.innerHTML = `
       <main aria-label="tienOS desktop">
