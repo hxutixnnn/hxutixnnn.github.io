@@ -1,13 +1,15 @@
 import { FontAwesomeIcon } from "./FontAwesomeIcon";
+import type { SingleWindowState } from "../windows/singleWindowMachine";
 
 type DockProps = {
-  settingsOpen: boolean;
-  settingsMinimized?: boolean;
+  windowState: Pick<SingleWindowState, "presence" | "visibility">;
   onActivateSettings: () => void;
 };
 
 /** The single-app tienOS Dock. App activation opens or raises its one window. */
-export function Dock({ settingsOpen, settingsMinimized = false, onActivateSettings }: DockProps) {
+export function Dock({ windowState, onActivateSettings }: DockProps) {
+  const settingsOpen = windowState.presence === "open";
+  const settingsMinimized = windowState.visibility === "minimized";
   const statusId = "system-settings-dock-status";
 
   return (

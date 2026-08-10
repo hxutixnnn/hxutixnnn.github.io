@@ -21,19 +21,21 @@ import { Rnd, type RndResizeCallback } from "react-rnd";
 import { FontAwesomeIcon, type FontAwesomeIconName } from "./FontAwesomeIcon";
 import { SettingsSelect } from "./SettingsControls";
 import { useAppearanceStore, type AppearanceMode } from "../stores/appearance";
+import {
+  initialSingleWindowState,
+  type SingleWindowState,
+  type WindowEffect,
+  type WindowEvent,
+} from "../windows/singleWindowMachine";
 
 type SystemSettingsProps = {
-  focusRequest?: number;
-  lifecycleGeneration?: number;
-  minimized?: boolean;
-  lifecycleRequest?: { generation: number; id: number; action: "minimize" | "restore" } | null;
-  onMinimizedChange?: (minimized: boolean) => void;
-  onVisibilityChange?: (visibility: WindowVisibility) => void;
-  onActiveChange?: (active: boolean) => void;
-  onClose: () => void;
+  windowState?: SingleWindowState;
+  effects?: readonly WindowEffect[];
+  onEffectsConsumed?: () => void;
+  onEvent?: (event: WindowEvent) => void;
 };
 
-export type WindowVisibility = "visible" | "minimizing" | "minimized" | "restoring";
+const ignoreWindowEvent = () => undefined;
 
 type SettingCategory = {
   icon: FontAwesomeIconName;
@@ -245,16 +247,15 @@ function applyFrameDuringResize(element: HTMLElement, frame: SettingsFrame) {
 }
 
 export function SystemSettings({
-  focusRequest = 0,
-  lifecycleGeneration = 0,
-  minimized = false,
-  lifecycleRequest = null,
-  onMinimizedChange = () => undefined,
-  onVisibilityChange = () => undefined,
-  onActiveChange = () => undefined,
-  onClose,
+  windowState = initialSingleWindowState,
+  effects = [],
+  onEffectsConsumed,
+  onEvent = ignoreWindowEvent,
 }: SystemSettingsProps) {
   const [query, setQuery] = useState("");
+  const emit = useCallback((event: WindowEvent) => onEvent(event), [onEvent]);
+  const visibility = windowState.visibility;
+  const fullscreen = windowState.fullscreen;
   const [selected, setSelected] = useState("General");
   const appearanceMode = useAppearanceStore((state) => state.mode);
   const pendingAppearanceMode = useAppearanceStore((state) => state.pendingMode);
@@ -272,28 +273,28 @@ export function SystemSettings({
   const [bottomBoundary, setBottomBoundary] = useState(viewport.height);
   const [sidebarPercent, setSidebarPercent] = useState(() => (compact ? 40 : 30.8));
   const [frame, setFrame] = useState(() => (compact ? compactFrame(viewport, 30) : desktopFrame(viewport)));
-  const [fullscreen, setFullscreen] = useState(false);
-  const fullscreenRef = useRef(false);
   const normalFrameRef = useRef<SettingsFrame | null>(null);
   const normalScrollTopRef = useRef<number | null>(null);
-  const [visibility, setVisibility] = useState<WindowVisibility>(minimized ? "minimized" : "visible");
-  const visibilityRef = useRef(visibility);
   const transitionRunRef = useRef(0);
+  const physicalTransitionRef = useRef<{
+    generation: number;
+    started: boolean;
+    painted: boolean;
+    frame: number;
+  } | null>(null);
+  const deferredTransitionFrameRef = useRef<number | null>(null);
   const rndRef = useRef<Rnd>(null);
-  const handledFocusRequestRef = useRef(0);
-  const handledLifecycleRequestRef = useRef(0);
   const windowRef = useRef<HTMLElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
   const compactRef = useRef(compact);
   const detailsViewportRef = useRef<HTMLDivElement>(null);
+  const updateFocusRef = useRef(-1);
 
-  const updateVisibility = useCallback(
-    (nextVisibility: WindowVisibility) => {
-      visibilityRef.current = nextVisibility;
-      onVisibilityChange(nextVisibility);
-      setVisibility(nextVisibility);
+  const onTransitionSettled = useCallback(
+    (generation: number, destination: "minimized" | "visible") => {
+      emit({ type: "TRANSITION_SETTLED", generation, destination });
     },
-    [onVisibilityChange],
+    [emit],
   );
 
   const setGenieTarget = useCallback(() => {
@@ -315,45 +316,57 @@ export function SystemSettings({
     element.style.setProperty("--genie-scale-y", `${Math.max(0.06, target.height / source.height)}`);
   }, []);
 
-  const settleWindowTransition = useCallback((complete: () => void) => {
-    const run = ++transitionRunRef.current;
-    const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
-    const settle = async () => {
-      await nextFrame();
-      let settledFrames = 0;
-      while (run === transitionRunRef.current) {
-        const element = windowRef.current;
-        if (!element) return;
-        const activeAnimations = element
-          .getAnimations()
-          .filter((animation) => animation.playState === "running");
-        if (activeAnimations.length > 0) {
-          settledFrames = 0;
-          await Promise.allSettled(activeAnimations.map((animation) => animation.finished));
-          continue;
+  const settleWithoutAnimation = useCallback(
+    (generation: number, destination: "minimized" | "visible") => {
+      const run = ++transitionRunRef.current;
+      const frame = requestAnimationFrame(() => {
+        if (run !== transitionRunRef.current) return;
+        if (physicalTransitionRef.current?.generation === generation) {
+          physicalTransitionRef.current.painted = true;
         }
-        settledFrames += 1;
-        if (settledFrames === 2) {
-          complete();
-          return;
-        }
-        await nextFrame();
-      }
-    };
-    void settle();
-  }, []);
-
-  const finishRestore = useCallback(() => {
-    settleWindowTransition(() => {
-      if (visibilityRef.current !== "restoring") return;
-      updateVisibility("visible");
-      requestAnimationFrame(() => {
-        (restoreFocusRef.current?.isConnected ? restoreFocusRef.current : windowRef.current)?.focus({
-          preventScroll: true,
-        });
+        onTransitionSettled(generation, destination);
       });
-    });
-  }, [settleWindowTransition, updateVisibility]);
+      return () => {
+        cancelAnimationFrame(frame);
+        transitionRunRef.current += 1;
+      };
+    },
+    [onTransitionSettled],
+  );
+
+  const settleWindowTransition = useCallback(
+    (generation: number, destination: "minimized" | "visible", settledFrameTarget = 2) => {
+      const run = ++transitionRunRef.current;
+      const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const settle = async () => {
+        await nextFrame();
+        let settledFrames = 0;
+        while (run === transitionRunRef.current) {
+          const element = windowRef.current;
+          if (!element) return;
+          const activeAnimations = element
+            .getAnimations()
+            .filter((animation) => animation.playState === "running");
+          if (activeAnimations.length > 0) {
+            settledFrames = 0;
+            await Promise.allSettled(activeAnimations.map((animation) => animation.finished));
+            continue;
+          }
+          settledFrames += 1;
+          if (settledFrames === settledFrameTarget) {
+            if (physicalTransitionRef.current?.generation === generation) {
+              physicalTransitionRef.current.painted = true;
+            }
+            onTransitionSettled(generation, destination);
+            return;
+          }
+          await nextFrame();
+        }
+      };
+      void settle();
+    },
+    [onTransitionSettled],
+  );
 
   useLayoutEffect(() => {
     const menuBar = document.querySelector<HTMLElement>("[data-menu-bar-surface]");
@@ -374,9 +387,9 @@ export function SystemSettings({
       setMenuBottom(nextMenuBottom);
       setBottomBoundary(nextBottomBoundary);
       if (modeChanged) setSidebarPercent(nextCompact ? 40 : 30.8);
-      if (visibilityRef.current !== "visible") setGenieTarget();
+      if (visibility !== "visible") setGenieTarget();
       setFrame((currentFrame) => {
-        if (fullscreenRef.current) {
+        if (fullscreen) {
           const maximizedPosition = { x: 0, y: Math.ceil(nextMenuBottom) };
           return {
             ...maximizedPosition,
@@ -405,50 +418,90 @@ export function SystemSettings({
       mutationObserver?.disconnect();
       window.removeEventListener("resize", updateGeometry);
     };
-  }, [setGenieTarget]);
+  }, [fullscreen, setGenieTarget, visibility]);
   useEffect(() => {
     if (detailsViewportRef.current) detailsViewportRef.current.scrollTop = 0;
   }, [selected]);
-  useEffect(() => {
-    if (focusRequest <= handledFocusRequestRef.current) return;
-    handledFocusRequestRef.current = focusRequest;
-    if (visibility === "minimizing") {
+  useLayoutEffect(() => {
+    if (effects.length === 0) return;
+    const hasCurrentRestore = effects.some(
+      (effect) =>
+        effect.type === "START_TRANSITION" &&
+        effect.generation === windowState.generation &&
+        effect.direction === "restore",
+    );
+    for (const effect of effects) {
+      const isCurrent = effect.generation === windowState.generation;
+      const isPriorTransition =
+        effect.type === "START_TRANSITION" &&
+        effect.generation === windowState.generation - 1 &&
+        hasCurrentRestore;
+      if (!isCurrent && !isPriorTransition) continue;
+      if (effect.type === "CANCEL_TRANSITION") {
+        if (deferredTransitionFrameRef.current !== null) {
+          cancelAnimationFrame(deferredTransitionFrameRef.current);
+          deferredTransitionFrameRef.current = null;
+        }
+        transitionRunRef.current += 1;
+        continue;
+      }
+      if (effect.type === "FOCUS") {
+        if (windowState.visibility !== "visible" || effect.epoch <= updateFocusRef.current) continue;
+        updateFocusRef.current = effect.epoch;
+        (restoreFocusRef.current?.isConnected ? restoreFocusRef.current : windowRef.current)?.focus({
+          preventScroll: true,
+        });
+        continue;
+      }
+
       setGenieTarget();
-      // Interruption must reverse the in-flight transition before the next paint.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      updateVisibility("restoring");
-      finishRestore();
-      return;
-    }
-    if (visibility === "visible") windowRef.current?.focus({ preventScroll: true });
-  }, [finishRestore, focusRequest, setGenieTarget, updateVisibility, visibility]);
+      const destination = effect.direction === "minimize" ? "minimized" : "visible";
+      const startPhysicalTransition = () => {
+        const previousTransition = physicalTransitionRef.current;
+        if (previousTransition?.frame) cancelAnimationFrame(previousTransition.frame);
+        const physicalTransition = {
+          generation: effect.generation,
+          started: true,
+          painted: false,
+          frame: 0,
+        };
+        physicalTransition.frame = requestAnimationFrame(() => {
+          if (physicalTransitionRef.current === physicalTransition) physicalTransition.painted = true;
+        });
+        physicalTransitionRef.current = physicalTransition;
+        const previousGenerationWasStarted =
+          effect.direction === "restore" &&
+          previousTransition?.generation === effect.generation - 1 &&
+          previousTransition.started;
+        if (effect.direction === "restore" && !previousGenerationWasStarted) {
+          settleWithoutAnimation(effect.generation, destination);
+        } else {
+          settleWindowTransition(effect.generation, destination, effect.direction === "restore" ? 3 : 2);
+        }
+      };
 
-  const beginMinimize = useCallback(() => {
-    if (visibility === "minimized" || visibility === "minimizing") return;
-    setGenieTarget();
-    updateVisibility("minimizing");
-    settleWindowTransition(() => {
-      if (visibilityRef.current !== "minimizing") return;
-      updateVisibility("minimized");
-      onMinimizedChange(true);
-    });
-  }, [onMinimizedChange, setGenieTarget, settleWindowTransition, updateVisibility, visibility]);
-
-  useEffect(() => {
-    if (
-      !lifecycleRequest ||
-      lifecycleRequest.generation !== lifecycleGeneration ||
-      lifecycleRequest.id <= handledLifecycleRequestRef.current
-    )
-      return;
-    handledLifecycleRequestRef.current = lifecycleRequest.id;
-    if (lifecycleRequest.action !== "minimize") {
-      if (visibilityRef.current === "visible") onVisibilityChange("visible");
-      return;
+      if (effect.direction === "minimize" && effect.defer) {
+        if (deferredTransitionFrameRef.current !== null) {
+          cancelAnimationFrame(deferredTransitionFrameRef.current);
+        }
+        deferredTransitionFrameRef.current = requestAnimationFrame(() => {
+          deferredTransitionFrameRef.current = null;
+          startPhysicalTransition();
+        });
+      } else {
+        startPhysicalTransition();
+      }
     }
-    const frame = requestAnimationFrame(beginMinimize);
-    return () => cancelAnimationFrame(frame);
-  }, [beginMinimize, lifecycleGeneration, lifecycleRequest, onVisibilityChange]);
+    onEffectsConsumed?.();
+  }, [
+    effects,
+    onEffectsConsumed,
+    settleWithoutAnimation,
+    settleWindowTransition,
+    setGenieTarget,
+    windowState.generation,
+    windowState.visibility,
+  ]);
 
   useEffect(() => {
     if (visibility !== "minimizing" && visibility !== "restoring") return;
@@ -461,18 +514,12 @@ export function SystemSettings({
     return () => cancelAnimationFrame(frame);
   }, [setGenieTarget, visibility]);
 
-  useLayoutEffect(() => {
-    if (minimized || visibility !== "minimized") return;
-    setGenieTarget();
-    // External restoration must expose the retained window in this layout pass.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    updateVisibility("restoring");
-    finishRestore();
-  }, [finishRestore, minimized, setGenieTarget, updateVisibility, visibility]);
-
   useEffect(
     () => () => {
       transitionRunRef.current += 1;
+      if (deferredTransitionFrameRef.current !== null) {
+        cancelAnimationFrame(deferredTransitionFrameRef.current);
+      }
     },
     [],
   );
@@ -480,10 +527,47 @@ export function SystemSettings({
   useLayoutEffect(() => {
     const element = rndRef.current?.resizableElement.current;
     if (!element) return;
-    const activate = () => onActiveChange(true);
+    const activate = () => emit({ type: "WINDOW_INTERACTION" });
     element.addEventListener("pointerdown", activate, true);
     return () => element.removeEventListener("pointerdown", activate, true);
-  }, [onActiveChange]);
+  }, [emit]);
+
+  useLayoutEffect(() => {
+    if (fullscreen) {
+      if (normalFrameRef.current === null) {
+        normalFrameRef.current = frame;
+        normalScrollTopRef.current = detailsViewportRef.current?.scrollTop ?? null;
+      }
+      const maximizedPosition = { x: 0, y: Math.ceil(menuBottom) };
+      const maximizedFrame = {
+        ...maximizedPosition,
+        width: viewport.width,
+        height: Math.max(0, bottomBoundary - Math.ceil(menuBottom)),
+      };
+      rndRef.current?.updateSize({ width: maximizedFrame.width, height: maximizedFrame.height });
+      rndRef.current?.updatePosition(maximizedPosition);
+      // The reducer owns fullscreen truth; this adapter mirrors the physical frame.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFrame((currentFrame) =>
+        currentFrame.x === maximizedFrame.x &&
+        currentFrame.y === maximizedFrame.y &&
+        currentFrame.width === maximizedFrame.width &&
+        currentFrame.height === maximizedFrame.height
+          ? currentFrame
+          : maximizedFrame,
+      );
+      return;
+    }
+    if (normalFrameRef.current === null) return;
+    const savedFrame = normalFrameRef.current;
+    const restoredFrame = compact
+      ? compactFrame(viewport, menuBottom, bottomBoundary)
+      : clampFrame(savedFrame, viewport, menuBottom, bottomBoundary);
+    rndRef.current?.updateSize({ width: restoredFrame.width, height: restoredFrame.height });
+    rndRef.current?.updatePosition({ x: restoredFrame.x, y: restoredFrame.y });
+    setFrame(restoredFrame);
+    normalFrameRef.current = null;
+  }, [bottomBoundary, compact, frame, fullscreen, menuBottom, viewport]);
 
   useLayoutEffect(() => {
     if (!fullscreen) return;
@@ -499,38 +583,7 @@ export function SystemSettings({
     normalScrollTopRef.current = null;
   }, [frame, fullscreen]);
 
-  const toggleFullscreen = () => {
-    if (fullscreen) {
-      fullscreenRef.current = false;
-      setFullscreen(false);
-      const savedFrame =
-        normalFrameRef.current ??
-        (compact ? compactFrame(viewport, menuBottom, bottomBoundary) : desktopFrame(viewport));
-      const restoredFrame = compact
-        ? compactFrame(viewport, menuBottom, bottomBoundary)
-        : clampFrame(savedFrame, viewport, menuBottom, bottomBoundary);
-      rndRef.current?.updateSize({ width: restoredFrame.width, height: restoredFrame.height });
-      rndRef.current?.updatePosition({ x: restoredFrame.x, y: restoredFrame.y });
-      setFrame(restoredFrame);
-      normalFrameRef.current = null;
-      return;
-    }
-    normalFrameRef.current = frame;
-    normalScrollTopRef.current = detailsViewportRef.current?.scrollTop ?? null;
-    fullscreenRef.current = true;
-    setFullscreen(true);
-    const maximizedPosition = { x: 0, y: Math.ceil(menuBottom) };
-    rndRef.current?.updateSize({
-      width: viewport.width,
-      height: Math.max(0, bottomBoundary - Math.ceil(menuBottom)),
-    });
-    rndRef.current?.updatePosition(maximizedPosition);
-    setFrame({
-      ...maximizedPosition,
-      width: viewport.width,
-      height: Math.max(0, bottomBoundary - Math.ceil(menuBottom)),
-    });
-  };
+  const toggleFullscreen = () => emit({ type: "TOGGLE_FULLSCREEN" });
   const filteredCategoryGroups = useMemo(
     () =>
       [categories.slice(0, 7), categories.slice(7)].map((group) =>
@@ -643,7 +696,7 @@ export function SystemSettings({
           if (event.target instanceof HTMLElement && event.target !== windowRef.current) {
             restoreFocusRef.current = event.target;
           }
-          onActiveChange(true);
+          emit({ type: "WINDOW_INTERACTION" });
         }}
         tabIndex={-1}
       >
@@ -665,7 +718,7 @@ export function SystemSettings({
                 data-traffic-control="close"
                 aria-label="Close System Settings"
                 title="Close"
-                onClick={onClose}
+                onClick={() => emit({ type: "CLOSE" })}
               >
                 <span
                   data-traffic-dot="close"
@@ -678,7 +731,7 @@ export function SystemSettings({
                 data-traffic-control="minimize"
                 aria-label="Minimize System Settings"
                 title="Minimize"
-                onClick={beginMinimize}
+                onClick={() => emit({ type: "MINIMIZE" })}
               >
                 <span
                   data-traffic-dot="minimize"

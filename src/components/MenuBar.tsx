@@ -4,8 +4,21 @@ import { useHotkeys } from "react-hotkeys-hook";
 import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "./FontAwesomeIcon";
 
+export type MenuCommand =
+  | "about-this-os"
+  | "system-settings"
+  | "app-store"
+  | "force-quit"
+  | "sleep"
+  | "restart"
+  | "shut-down"
+  | "lock-screen"
+  | "about-navigator"
+  | "navigator-preferences"
+  | "hide-navigator";
+
 type MenuBarProps = {
-  onAction?: (label: string) => void;
+  onAction?: (command: MenuCommand) => void;
 };
 
 const triggerClassName =
@@ -54,9 +67,9 @@ export function MenuBar({ onAction }: MenuBarProps) {
     { enableOnFormTags: true },
   );
 
-  const announce = (label: string) => {
+  const announce = (command: MenuCommand) => {
     setSystemMenuOpen(false);
-    onAction?.(label);
+    onAction?.(command);
   };
 
   return (
@@ -78,15 +91,15 @@ export function MenuBar({ onAction }: MenuBarProps) {
             <FontAwesomeIcon name="sparkle" className="text-[15px]" />
           </Menu.Trigger>
           <MenuPopup>
-            <Menu.Item className={itemClassName} onClick={() => announce("About This OS")}>
+            <Menu.Item className={itemClassName} onClick={() => announce("about-this-os")}>
               <span>About This OS</span>
             </Menu.Item>
             <Menu.Separator className={separatorClassName} />
-            <Menu.Item className={itemClassName} onClick={() => announce("System Settings…")}>
+            <Menu.Item className={itemClassName} onClick={() => announce("system-settings")}>
               <span>System Settings…</span>
               <Shortcut>⌘,</Shortcut>
             </Menu.Item>
-            <Menu.Item className={itemClassName} onClick={() => announce("App Store")}>
+            <Menu.Item className={itemClassName} onClick={() => announce("app-store")}>
               <span>App Store</span>
             </Menu.Item>
             <Menu.Separator className={separatorClassName} />
@@ -109,22 +122,22 @@ export function MenuBar({ onAction }: MenuBarProps) {
               </Menu.Portal>
             </Menu.SubmenuRoot>
             <Menu.Separator className={separatorClassName} />
-            <Menu.Item className={itemClassName} onClick={() => announce("Force Quit")}>
+            <Menu.Item className={itemClassName} onClick={() => announce("force-quit")}>
               <span>Force Quit</span>
               <Shortcut>⌥⌘⎋</Shortcut>
             </Menu.Item>
             <Menu.Separator className={separatorClassName} />
-            <Menu.Item className={itemClassName} onClick={() => announce("Sleep")}>
+            <Menu.Item className={itemClassName} onClick={() => announce("sleep")}>
               <span>Sleep</span>
             </Menu.Item>
-            <Menu.Item className={itemClassName} onClick={() => announce("Restart…")}>
+            <Menu.Item className={itemClassName} onClick={() => announce("restart")}>
               <span>Restart…</span>
             </Menu.Item>
-            <Menu.Item className={itemClassName} onClick={() => announce("Shut Down…")}>
+            <Menu.Item className={itemClassName} onClick={() => announce("shut-down")}>
               <span>Shut Down…</span>
             </Menu.Item>
             <Menu.Separator className={separatorClassName} />
-            <Menu.Item className={itemClassName} onClick={() => announce("Lock Screen")}>
+            <Menu.Item className={itemClassName} onClick={() => announce("lock-screen")}>
               <span>Lock Screen</span>
               <Shortcut>⌃⌘Q</Shortcut>
             </Menu.Item>
@@ -134,15 +147,15 @@ export function MenuBar({ onAction }: MenuBarProps) {
         <Menu.Root>
           <Menu.Trigger className={triggerClassName}>Navigator</Menu.Trigger>
           <MenuPopup>
-            <Menu.Item className={itemClassName} onClick={() => announce("About Navigator")}>
+            <Menu.Item className={itemClassName} onClick={() => announce("about-navigator")}>
               <span>About Navigator</span>
             </Menu.Item>
             <Menu.Separator className={separatorClassName} />
-            <Menu.Item className={itemClassName} onClick={() => announce("Preferences…")}>
+            <Menu.Item className={itemClassName} onClick={() => announce("navigator-preferences")}>
               <span>Preferences…</span>
               <Shortcut>⌘,</Shortcut>
             </Menu.Item>
-            <Menu.Item className={itemClassName} onClick={() => announce("Hide Navigator")}>
+            <Menu.Item className={itemClassName} onClick={() => announce("hide-navigator")}>
               <span>Hide Navigator</span>
               <Shortcut>⌘H</Shortcut>
             </Menu.Item>

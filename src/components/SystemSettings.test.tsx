@@ -9,7 +9,7 @@ afterEach(cleanup);
 
 describe("SystemSettings", () => {
   it("uses Base UI scroll areas inside a distinct floating sidebar", () => {
-    render(<SystemSettings onClose={vi.fn()} />);
+    render(<SystemSettings onEvent={vi.fn()} />);
 
     const sidebar = document.querySelector("[data-floating-panel]");
     expect(sidebar).toBeInTheDocument();
@@ -54,7 +54,7 @@ describe("SystemSettings", () => {
 
   it("provides interactive Appearance controls", async () => {
     const user = userEvent.setup();
-    render(<SystemSettings onClose={vi.fn()} />);
+    render(<SystemSettings onEvent={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "Appearance" }));
     expect(screen.getByRole("heading", { name: "Appearance" })).toBeVisible();
@@ -92,7 +92,7 @@ describe("SystemSettings", () => {
 
   it("resets the details viewport when the selected category changes", async () => {
     const user = userEvent.setup();
-    render(<SystemSettings onClose={vi.fn()} />);
+    render(<SystemSettings onEvent={vi.fn()} />);
 
     const details = screen.getByLabelText("Settings details");
     details.scrollTop = 180;
@@ -102,7 +102,7 @@ describe("SystemSettings", () => {
   });
 
   it("renders local Font Awesome icons in representative settings slots", () => {
-    render(<SystemSettings onClose={vi.fn()} />);
+    render(<SystemSettings onEvent={vi.fn()} />);
 
     expect(screen.getByRole("region", { name: "System Settings" })).toBeVisible();
     expect(
