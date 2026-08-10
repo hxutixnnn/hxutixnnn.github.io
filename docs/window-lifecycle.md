@@ -1,6 +1,11 @@
 # Single-window lifecycle ownership
 
-The current desktop contract is one retained System Settings instance. Its lifecycle is owned by the pure single-window machine and the `useSingleWindowController` hook. `App` composes projections for the menu, Dock, and Settings surface; it does not decide visibility transitions or keep lifecycle counters. `SystemSettings` renders the projected state and adapts typed transition effects to the existing genie mechanics. Transition completion returns a generation-tagged event to the controller.
+The current desktop contract is one retained System Settings instance.
+Its lifecycle is owned by the pure single-window machine and the `useSingleWindowController` hook.
+`App` composes projections for the menu, Dock, and Settings surface without deciding visibility transitions or keeping lifecycle counters.
+`WindowFrame` projects state and executes typed effects through the narrow genie driver.
+The driver reports generation-tagged settlement and never chooses lifecycle destination truth.
+`SystemSettings` owns app content, pane selection, search, sidebar percentage, scroll areas, and appearance controls only.
 
 ## Event and effect contract
 
@@ -15,7 +20,12 @@ The current desktop contract is one retained System Settings instance. Its lifec
 | `TOGGLE_FULLSCREEN`                      | Toggle app-contained fullscreen without changing normal-frame ownership.  |
 | `TRANSITION_SETTLED`                     | Commit only the matching generation's minimized or visible destination.   |
 
-The machine emits typed `FOCUS`, `START_TRANSITION`, and `CANCEL_TRANSITION` effects. The controller delivers them at the React boundary. Physical animation, focus restoration, inertness, data attributes, and `react-rnd` frame mechanics remain in the component adapter. Pure frame policy and shell workspace measurement are owned by [`docs/window-geometry.md`](window-geometry.md).
+The machine emits typed `FOCUS`, `START_TRANSITION`, and `CANCEL_TRANSITION` effects.
+The controller delivers them at the React boundary.
+`WindowFrame` solely owns physical animation, focus restoration, inertness, lifecycle data attributes, fullscreen coordination, chrome, and `react-rnd` mechanics.
+`src/windows/transitions/genie.ts` owns run identity, interruption, live retargeting, settlement rejection, reduced motion, and cleanup.
+Pure frame policy and shell workspace measurement are owned by [`docs/window-geometry.md`](window-geometry.md).
+A future app can reuse `WindowFrame` by supplying grouped lifecycle and geometry ports plus content without app IDs, registries, or service lookup.
 
 ## Invariants
 

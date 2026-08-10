@@ -5,7 +5,8 @@ The shell owns the measured workspace and the Settings window owns only its curr
 - `src/windows/geometry.ts` is the pure geometry domain. It owns `Rect`, `Frame`, `Viewport`, `Workspace`, the desktop/compact policies, menu/Dock/safe-area bounds, fullscreen sizing, normal-frame restoration, resize clamping, and sidebar splitter bounds. It imports no React, DOM, app, store, component, Base UI, or `react-rnd` code.
 - `src/windows/useWorkspaceGeometry.ts` is the single measurement owner. `App` supplies explicit refs for the Menu Bar surface, Dock surface, and Settings Dock button. The hook owns the first measurement, `ResizeObserver`, `MutationObserver`, viewport/orientation listeners, safe-area reads, coalescing, cleanup, and immutable workspace/target snapshots.
 - `MenuBar` and `Dock` attach those refs; they do not make geometry decisions. `App` passes the immutable `Workspace` and typed Dock target provider through `SystemSettings` props.
-- `SystemSettings` consumes the workspace and applies `react-rnd` frame mechanics. It does not discover Menu Bar, Dock, or Dock icon elements with document selectors and does not register workspace observers.
+- `WindowFrame` consumes immutable workspace/frame values and is the only `react-rnd` owner.
+- `SystemSettings` consumes geometry only for its sidebar ratio and passes a typed Dock target provider through the frame port.
 
 ## Invariants
 
@@ -15,7 +16,11 @@ The owner tolerates missing refs during static startup or transitions. The initi
 
 ## Phase 2 measurement record
 
-Compared with the Phase 1 branch baseline (`7280844`), `SystemSettings.tsx` is 1,106 lines to 985 lines. Its three Menu/Dock/icon `document.querySelector` calls are now zero; its `ResizeObserver` and `MutationObserver` registrations are now zero; its two workspace-related window listener calls are now zero (the remaining listener pair is the window interaction pointer listener). The five decomposed browser files still execute 65 cases, with all 17 existing PNG baselines retained byte-for-byte and no screenshot updates. The Vitest run grew from the audit's 19 tests to 140 tests; the current coverage run took 5.69 seconds for test execution (20.83 seconds total) and reported 70.7% statements / 63.65% branches. Build output gzip moved from 147.7 KiB to 149.6 KiB (+1.9 KiB), below the 2 KiB phase budget.
+The Phase 2 baseline moved `SystemSettings.tsx` from 1,106 to 985 lines and removed all Menu/Dock selectors and workspace observers.
+Phase 3 moves physical frame policy again, leaving `SystemSettings.tsx` at 589 lines with zero selectors and zero `react-rnd` imports.
+`WindowFrame.tsx` is 320 lines and the genie driver is 162 lines.
+The five browser files retain 65 cases and all 17 PNG baselines without updates.
+The Phase 3 build remains 149.6 KiB JavaScript gzip by the output checker, unchanged from the Phase 2 documented result.
 
 ## Non-goals
 
