@@ -117,6 +117,33 @@ describe("appearance service", () => {
     });
   });
 
+  it("retargets Auto while a cached wallpaper commit is deferred", async () => {
+    const release = deferred();
+    const test = harness({ decodedWallpapers: new Set(["light", "dark"]) });
+    await test.service.request("light");
+    test.commit.mockImplementationOnce(async (_theme, options) => {
+      await release.promise;
+      if (!options.isCurrent()) return false;
+      options.onCommit?.();
+      return true;
+    });
+    test.setSystem("dark");
+    const staleAuto = test.service.request("auto");
+    expect(test.service.snapshot().pendingMode).toBe("auto");
+    test.setSystem("light");
+    test.service.systemThemeChanged();
+    release.resolve();
+    expect((await staleAuto).status).toBe("stale");
+    await vi.waitFor(() =>
+      expect(test.service.snapshot()).toMatchObject({
+        mode: "auto",
+        resolvedTheme: "light",
+        pendingMode: null,
+      }),
+    );
+    expect(test.loadWallpaper).not.toHaveBeenCalled();
+  });
+
   it("commits an intentional solid fallback after wallpaper rejection", async () => {
     const test = harness({
       loadWallpaper: () => Promise.reject(new Error("decode failed")),

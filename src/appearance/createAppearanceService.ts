@@ -53,7 +53,7 @@ export function createAppearanceService(
     dependencies.compositor.cancel();
     const animate = dependencies.animationEligible() && resolvedTheme !== state.resolvedTheme;
     const needsWallpaper = resolvedTheme !== state.resolvedTheme || !state.wallpaperReady;
-    if (needsWallpaper && !decoded.has(resolvedTheme)) publish({ ...state, pendingMode: mode });
+    publish({ ...state, pendingMode: mode });
 
     let wallpaperReady = true;
     if (needsWallpaper && !decoded.has(resolvedTheme)) {

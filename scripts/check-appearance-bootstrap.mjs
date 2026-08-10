@@ -4,31 +4,18 @@ import ts from "typescript";
 
 const source = fs.readFileSync("src/appearance/definitions.ts", "utf8");
 const html = fs.readFileSync("index.html", "utf8");
-const file = ts.createSourceFile("definitions.ts", source, ts.ScriptTarget.Latest, true);
-const values = new Map();
-const read = (node) => {
-  if (ts.isStringLiteral(node)) return node.text;
-  if (ts.isArrayLiteralExpression(node)) return node.elements.map(read);
-  if (ts.isObjectLiteralExpression(node))
-    return Object.fromEntries(
-      node.properties.map((property) => [property.name.text, read(property.initializer)]),
-    );
-  if (ts.isAsExpression(node) || ts.isSatisfiesExpression(node)) return read(node.expression);
-  throw new Error(`Unsupported appearance definition: ${node.getText(file)}`);
-};
-for (const statement of file.statements) {
-  if (!ts.isVariableStatement(statement)) continue;
-  for (const declaration of statement.declarationList.declarations) {
-    if (ts.isIdentifier(declaration.name) && declaration.initializer)
-      values.set(declaration.name.text, read(declaration.initializer));
-  }
-}
+const compiled = ts.transpileModule(source, {
+  compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  fileName: "definitions.ts",
+});
+const runtime = {};
+vm.runInNewContext(compiled.outputText, { exports: runtime }, { filename: "definitions.js" });
 const contract = {
-  modes: values.get("appearanceModes"),
-  storageKey: values.get("appearanceStorageKey"),
-  mediaQuery: values.get("appearanceMediaQuery"),
-  themeColors: values.get("themeColorByTheme"),
-  wallpapers: values.get("wallpaperByTheme"),
+  modes: runtime.appearanceModes,
+  storageKey: runtime.appearanceStorageKey,
+  mediaQuery: runtime.appearanceMediaQuery,
+  themeColors: runtime.themeColorByTheme,
+  wallpapers: runtime.wallpaperByTheme,
 };
 const script = html.match(/<script>\s*([\s\S]*?)<\/script>/)?.[1];
 if (!script) throw new Error("Inline appearance bootstrap is missing");
@@ -38,8 +25,16 @@ for (const saved of [null, ...contract.modes, "sepia", "malformed"]) {
     const attributes = {};
     let themeColor;
     let preload;
+    let storageReads = 0;
+    const storage = {
+      getItem(key) {
+        storageReads += 1;
+        if (key !== contract.storageKey) throw new Error(`Bootstrap storage key drifted: ${key}`);
+        return saved === "malformed" ? "{" : JSON.stringify(saved);
+      },
+    };
     const context = {
-      localStorage: { getItem: () => (saved === "malformed" ? "{" : JSON.stringify(saved)) },
+      localStorage: storage,
       matchMedia: (query) => {
         if (query !== contract.mediaQuery) throw new Error(`Bootstrap media query drifted: ${query}`);
         return { matches: dark };
@@ -63,8 +58,10 @@ for (const saved of [null, ...contract.modes, "sepia", "malformed"]) {
       },
     };
     vm.runInNewContext(script, context);
-    const expectedMode = contract.modes.includes(saved) ? saved : "auto";
-    const expectedTheme = expectedMode === "auto" ? (dark ? "dark" : "light") : expectedMode;
+    if (storageReads !== 1)
+      throw new Error(`Bootstrap storage reads drifted: ${storageReads}`);
+    const expectedMode = runtime.readPersistedAppearance(storage);
+    const expectedTheme = runtime.resolveAppearance(expectedMode, dark ? "dark" : "light");
     const actual = context.document.documentElement;
     if (
       actual.dataset.appearance !== expectedMode ||
