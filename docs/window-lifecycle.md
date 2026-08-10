@@ -5,7 +5,7 @@ Its lifecycle is owned by the pure single-window machine and the `useSingleWindo
 `App` composes projections for the menu, Dock, and Settings surface without deciding visibility transitions or keeping lifecycle counters.
 `WindowFrame` projects state and executes typed effects through the narrow genie driver.
 The driver reports generation-tagged settlement and never chooses lifecycle destination truth.
-`SystemSettings` owns app content, pane selection, search, sidebar percentage, scroll areas, and appearance controls only.
+The `SystemSettingsApp` content boundary and pane ownership are documented in [`docs/system-settings.md`](system-settings.md).
 
 ## Event and effect contract
 
@@ -38,7 +38,7 @@ A future app can reuse `WindowFrame` by supplying grouped lifecycle and geometry
 
 ## Extension boundary and non-goals
 
-The controller is intentionally a single-window owner. A future second app may compose another explicitly approved controller, but this phase does not define `WindowId`, collections, z-order, app registries, event buses, persistence, or a generalized window framework. Settings pane moves, appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
+The controller is intentionally a single-window owner. A future second app may compose another explicitly approved controller, but this phase does not define `WindowId`, collections, z-order, app registries, event buses, persistence, or a generalized window framework. Appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
 
 ## Phase 1 measurements
 
