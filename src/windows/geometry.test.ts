@@ -129,22 +129,14 @@ const workspaceArbitrary: fc.Arbitrary<Workspace> = viewportArbitrary.chain(({ w
 
 const layoutWorkspaceArbitrary: fc.Arbitrary<Workspace> = fc
   .tuple(
-    fc.oneof(
-      fc.integer({ min: 320, max: 700 }),
-      fc.integer({ min: 701, max: 2400 }),
-    ),
+    fc.oneof(fc.integer({ min: 320, max: 700 }), fc.integer({ min: 701, max: 2400 })),
     fc.integer({ min: 600, max: 1600 }),
     fc.integer({ min: 0, max: 80 }),
     fc.integer({ min: 0, max: 120 }),
     fc.integer({ min: 0, max: 40 }),
   )
   .map(([width, height, menuBottom, dockHeight, safeAreaBottom]) =>
-    workspaceFromMeasurements(
-      { width, height },
-      menuBottom,
-      height - dockHeight,
-      safeAreaBottom,
-    ),
+    workspaceFromMeasurements({ width, height }, menuBottom, height - dockHeight, safeAreaBottom),
   );
 
 const frameArbitrary: fc.Arbitrary<Frame> = fc.record({

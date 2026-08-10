@@ -106,10 +106,7 @@ export function useWorkspaceGeometry({
   settingsDockItemRef,
 }: WorkspaceGeometryRefs): WorkspaceGeometrySnapshot {
   const [geometry, setGeometry] = useState(initialGeometry);
-  const getDockTargetRect = useCallback(
-    () => readRect(settingsDockItemRef.current),
-    [settingsDockItemRef],
-  );
+  const getDockTargetRect = useCallback(() => readRect(settingsDockItemRef.current), [settingsDockItemRef]);
 
   useLayoutEffect(() => {
     let cancelled = false;
@@ -176,6 +173,8 @@ export function useWorkspaceGeometry({
     };
   }, [dockSurfaceRef, menuBarRef, settingsDockItemRef]);
 
+  // The provider is passed through render but reads the target ref only when an effect or event invokes it.
+  // eslint-disable-next-line react-hooks/refs
   return Object.freeze({
     workspace: geometry.workspace,
     dockTargetRect: geometry.dockTargetRect,

@@ -11,7 +11,7 @@ The shell owns the measured workspace and the Settings window owns only its curr
 
 For a usable workspace, clamped frames are finite and non-negative, remain below the viewport's right and bottom edges, start at or below the measured Menu Bar bottom, and end at or above the measured Dock/safe-area boundary. Repeated clamping is idempotent. Compact defaults remain tied to the current viewport/menu/Dock measurements; desktop restoration clamps the saved normal frame to the latest workspace; compact restoration recomputes the compact default. Top/left resize policies retain the opposite edge whenever the requested size and usable bounds make that feasible.
 
-The owner tolerates missing refs during static startup or transitions. A missing surface falls back to the viewport boundary until a later coalesced measurement. Target rects are remeasured with the observed Dock/target surfaces so genie destinations remain current without selector discovery.
+The owner tolerates missing refs during static startup or transitions. The initial snapshot uses a 30px menu boundary and the viewport bottom; after the first committed measurement, a missing Menu Bar falls back to the viewport top and a missing Dock falls back to the viewport bottom until a later coalesced measurement. Target rects are remeasured with the observed Dock/target surfaces so genie destinations remain current without selector discovery.
 
 ## Phase 2 measurement record
 
