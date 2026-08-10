@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Dock } from "./components/Dock";
 import { MenuBar } from "./components/MenuBar";
-import { SystemSettings } from "./components/SystemSettings";
+import { SystemSettingsApp } from "./apps/system-settings/SystemSettingsApp";
 import { useSingleWindowController } from "./windows/useSingleWindowController";
 import type { WindowEffect } from "./windows/singleWindowMachine";
 import { useAppearanceStore } from "./stores/appearance";
@@ -87,7 +87,7 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
         }}
       />
       {windowState.presence === "open" && (
-        <SystemSettings
+        <SystemSettingsApp
           windowState={windowState}
           effects={windowEffects}
           onEffectsConsumed={clearWindowEffects}

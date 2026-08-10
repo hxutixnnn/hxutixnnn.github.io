@@ -1,7 +1,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SystemSettings } from "./SystemSettings";
+import { SystemSettingsApp } from "./SystemSettingsApp";
 
 const legacyPlaceholderGlyphs = /[⌁ᛒ◎◉⚙◌◐✦▣☀☷⌕❉◖⌨▱▤⛨▰▦♙›‹]/u;
 
@@ -9,7 +9,7 @@ afterEach(cleanup);
 
 describe("SystemSettings", () => {
   it("uses Base UI scroll areas inside a distinct floating sidebar", () => {
-    render(<SystemSettings onEvent={vi.fn()} />);
+    render(<SystemSettingsApp onEvent={vi.fn()} />);
 
     const sidebar = document.querySelector("[data-floating-panel]");
     expect(sidebar).toBeInTheDocument();
@@ -52,9 +52,33 @@ describe("SystemSettings", () => {
     }
   });
 
+  it("filters categories by label while retaining stable pane selection", async () => {
+    const user = userEvent.setup();
+    render(<SystemSettingsApp onEvent={vi.fn()} />);
+
+    const search = screen.getByRole("textbox", { name: "Search settings" });
+    await user.type(search, "display");
+    expect(screen.getByRole("button", { name: "Displays" })).toBeVisible();
+    expect(screen.queryByRole("button", { name: "General" })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "Displays" }));
+    expect(screen.getByRole("heading", { name: "Displays" })).toBeVisible();
+    expect(screen.getByText("Displays controls are ready for configuration.")).toBeVisible();
+  });
+
+  it("renders General by default with its description and complete setting rows", () => {
+    render(<SystemSettingsApp onEvent={vi.fn()} />);
+
+    expect(screen.getByRole("button", { name: "General" })).toHaveAttribute("data-selected");
+    expect(screen.getByRole("heading", { name: "General" })).toBeVisible();
+    expect(screen.getByText(/Manage your overall setup and preferences/)).toBeVisible();
+    expect(screen.getByRole("button", { name: "About" })).toBeVisible();
+    expect(screen.getByRole("button", { name: "Transfer or Reset" })).toBeVisible();
+  });
+
   it("provides interactive Appearance controls", async () => {
     const user = userEvent.setup();
-    render(<SystemSettings onEvent={vi.fn()} />);
+    render(<SystemSettingsApp onEvent={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "Appearance" }));
     expect(screen.getByRole("heading", { name: "Appearance" })).toBeVisible();
@@ -92,7 +116,7 @@ describe("SystemSettings", () => {
 
   it("resets the details viewport when the selected category changes", async () => {
     const user = userEvent.setup();
-    render(<SystemSettings onEvent={vi.fn()} />);
+    render(<SystemSettingsApp onEvent={vi.fn()} />);
 
     const details = screen.getByLabelText("Settings details");
     details.scrollTop = 180;
@@ -102,7 +126,7 @@ describe("SystemSettings", () => {
   });
 
   it("renders local Font Awesome icons in representative settings slots", () => {
-    render(<SystemSettings onEvent={vi.fn()} />);
+    render(<SystemSettingsApp onEvent={vi.fn()} />);
 
     expect(screen.getByRole("region", { name: "System Settings" })).toBeVisible();
     expect(
