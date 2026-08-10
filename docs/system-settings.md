@@ -4,7 +4,7 @@
 
 `settingsPanes.ts` is a compile-time descriptor list. Each descriptor has a stable `SettingsPaneId` that is independent of its displayed label, navigation metadata, group, and a directly imported React component. IDs are behavioral identifiers and should not be renamed when copy changes.
 
-Focused pane JSX lives under `panes/`. `AppearancePane` deliberately owns its bespoke Base UI controls and local demo values; appearance transactions remain in the appearance store. `GeneralPane` retains direct row composition, and `PlaceholderPane` renders the existing category-specific empty state.
+Focused pane JSX lives under `panes/`. `SystemSettingsApp` owns session-local Appearance demo state so it survives pane navigation, while `AppearancePane` remains the bespoke Base UI renderer. Persisted Light/Dark/Auto state and appearance transactions remain owned by the appearance store. `GeneralPane` retains direct row composition, and `PlaceholderPane` renders the existing category-specific empty state.
 
 ## Adding a pane
 
