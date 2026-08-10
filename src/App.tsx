@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useLayoutEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Dock } from "./components/Dock";
 import { MenuBar } from "./components/MenuBar";
 import { SystemSettings } from "./components/SystemSettings";
 import { useSingleWindowController } from "./windows/useSingleWindowController";
 import type { WindowEffect } from "./windows/singleWindowMachine";
 import { useAppearanceStore } from "./stores/appearance";
+import { useWorkspaceGeometry } from "./windows/useWorkspaceGeometry";
 
 type AppProps = {
   desktopAssetsReady?: Promise<void>;
@@ -18,6 +19,14 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
   }, []);
   const clearWindowEffects = useCallback(() => setWindowEffects([]), []);
   const { state: windowState, dispatch } = useSingleWindowController({ onEffect: handleWindowEffect });
+  const menuBarRef = useRef<HTMLElement>(null);
+  const dockSurfaceRef = useRef<HTMLElement>(null);
+  const settingsDockItemRef = useRef<HTMLButtonElement>(null);
+  const { workspace, getDockTargetRect } = useWorkspaceGeometry({
+    menuBarRef,
+    dockSurfaceRef,
+    settingsDockItemRef,
+  });
   const syncSystemTheme = useAppearanceStore((state) => state.syncSystemTheme);
 
   useEffect(() => {
@@ -72,6 +81,7 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
         aria-hidden="true"
       />
       <MenuBar
+        surfaceRef={menuBarRef}
         onAction={(command) => {
           if (command === "system-settings") dispatch({ type: "ACTIVATE_FROM_MENU" });
         }}
@@ -82,9 +92,16 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
           effects={windowEffects}
           onEffectsConsumed={clearWindowEffects}
           onEvent={dispatch}
+          workspace={workspace}
+          dockTargetRectProvider={getDockTargetRect}
         />
       )}
-      <Dock windowState={windowState} onActivateSettings={() => dispatch({ type: "ACTIVATE_FROM_DOCK" })} />
+      <Dock
+        surfaceRef={dockSurfaceRef}
+        settingsTargetRef={settingsDockItemRef}
+        windowState={windowState}
+        onActivateSettings={() => dispatch({ type: "ACTIVATE_FROM_DOCK" })}
+      />
     </main>
   );
 }
