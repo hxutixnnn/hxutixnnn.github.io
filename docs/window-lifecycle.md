@@ -38,7 +38,7 @@ A future app can reuse `WindowFrame` by supplying grouped lifecycle and geometry
 
 ## Extension boundary and non-goals
 
-The controller is intentionally a single-window owner. A future second app may compose another explicitly approved controller, but this phase does not define `WindowId`, collections, z-order, app registries, event buses, persistence, or a generalized window framework. `WindowFrame` extraction, Settings pane moves, appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
+The controller is intentionally a single-window owner. A future second app may compose another explicitly approved controller, but this phase does not define `WindowId`, collections, z-order, app registries, event buses, persistence, or a generalized window framework. Settings pane moves, appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
 
 ## Phase 1 measurements
 
