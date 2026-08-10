@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Dock } from "./components/Dock";
 import { MenuBar } from "./components/MenuBar";
-import { SystemSettings, type WindowVisibility } from "./components/SystemSettings";
+import { SystemSettings } from "./components/SystemSettings";
+import { useSingleWindowController } from "./windows/useSingleWindowController";
+import type { WindowEffect } from "./windows/singleWindowMachine";
 import { useAppearanceStore } from "./stores/appearance";
 
 type AppProps = {
@@ -10,35 +12,13 @@ type AppProps = {
 };
 
 export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
-  const [settingsOpen, setSettingsOpen] = useState(true);
-  const settingsOpenRef = useRef(true);
-  const [settingsMinimized, setSettingsMinimized] = useState(false);
-  const [settingsActive, setSettingsActive] = useState(true);
-  const settingsVisibilityRef = useRef<WindowVisibility>("visible");
-  const [settingsFocusRequest, setSettingsFocusRequest] = useState(0);
-  const lifecycleGenerationRef = useRef(0);
-  const [settingsLifecycleGeneration, setSettingsLifecycleGeneration] = useState(0);
-  const lifecycleRequestIdRef = useRef(0);
-  const [settingsLifecycleRequest, setSettingsLifecycleRequest] = useState<{
-    generation: number;
-    id: number;
-    action: "minimize" | "restore";
-  } | null>(null);
+  const [windowEffects, setWindowEffects] = useState<readonly WindowEffect[]>([]);
+  const handleWindowEffect = useCallback((effect: WindowEffect) => {
+    setWindowEffects((effects) => [...effects, effect]);
+  }, []);
+  const clearWindowEffects = useCallback(() => setWindowEffects([]), []);
+  const { state: windowState, dispatch } = useSingleWindowController({ onEffect: handleWindowEffect });
   const syncSystemTheme = useAppearanceStore((state) => state.syncSystemTheme);
-  const handleSettingsVisibilityChange = useCallback((visibility: WindowVisibility) => {
-    settingsVisibilityRef.current = visibility;
-  }, []);
-  const openFreshSettings = useCallback(() => {
-    const generation = ++lifecycleGenerationRef.current;
-    settingsOpenRef.current = true;
-    settingsVisibilityRef.current = "visible";
-    setSettingsLifecycleGeneration(generation);
-    setSettingsLifecycleRequest(null);
-    setSettingsOpen(true);
-    setSettingsMinimized(false);
-    setSettingsActive(true);
-    setSettingsFocusRequest((request) => request + 1);
-  }, []);
 
   useEffect(() => {
     if (typeof window.matchMedia !== "function") return;
@@ -49,19 +29,19 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
   }, [syncSystemTheme]);
 
   useEffect(() => {
-    const deactivateForDesktopPointer = (event: PointerEvent) => {
+    const classifyDesktopPointer = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
       if (target.closest("[data-genie-window],[data-settings-portal]")) {
-        setSettingsActive(true);
+        dispatch({ type: "WINDOW_INTERACTION" });
         return;
       }
       if (target.closest("[data-dock-surface]")) return;
-      setSettingsActive(false);
+      dispatch({ type: "DESKTOP_POINTER" });
     };
-    document.addEventListener("pointerdown", deactivateForDesktopPointer, true);
-    return () => document.removeEventListener("pointerdown", deactivateForDesktopPointer, true);
-  }, []);
+    document.addEventListener("pointerdown", classifyDesktopPointer, true);
+    return () => document.removeEventListener("pointerdown", classifyDesktopPointer, true);
+  }, [dispatch]);
 
   useLayoutEffect(() => {
     if (!onDesktopReady) return;
@@ -92,87 +72,19 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
         aria-hidden="true"
       />
       <MenuBar
-        onAction={(action) => {
-          if (action !== "System Settings…") return;
-          if (!settingsOpenRef.current) {
-            openFreshSettings();
-            return;
-          }
-          setSettingsMinimized(false);
-          setSettingsActive(true);
-          setSettingsFocusRequest((request) => request + 1);
+        onAction={(command) => {
+          if (command === "system-settings") dispatch({ type: "ACTIVATE_FROM_MENU" });
         }}
       />
-      {settingsOpen && (
+      {windowState.presence === "open" && (
         <SystemSettings
-          key={settingsLifecycleGeneration}
-          lifecycleGeneration={settingsLifecycleGeneration}
-          focusRequest={settingsFocusRequest}
-          minimized={settingsMinimized}
-          lifecycleRequest={settingsLifecycleRequest}
-          onMinimizedChange={(minimized) => {
-            if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
-            setSettingsMinimized(minimized);
-          }}
-          onVisibilityChange={(visibility) => {
-            if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
-            handleSettingsVisibilityChange(visibility);
-          }}
-          onActiveChange={(active) => {
-            if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
-            setSettingsActive(active);
-          }}
-          onClose={() => {
-            if (lifecycleGenerationRef.current !== settingsLifecycleGeneration) return;
-            lifecycleGenerationRef.current += 1;
-            settingsOpenRef.current = false;
-            setSettingsLifecycleRequest(null);
-            setSettingsOpen(false);
-            setSettingsMinimized(false);
-            setSettingsActive(false);
-            settingsVisibilityRef.current = "visible";
-          }}
+          windowState={windowState}
+          effects={windowEffects}
+          onEffectsConsumed={clearWindowEffects}
+          onEvent={dispatch}
         />
       )}
-      <Dock
-        settingsOpen={settingsOpen}
-        settingsMinimized={settingsMinimized}
-        onActivateSettings={() => {
-          const settingsVisibility = settingsVisibilityRef.current;
-          if (!settingsOpenRef.current) {
-            openFreshSettings();
-            return;
-          }
-          if (settingsVisibility === "minimizing") {
-            settingsVisibilityRef.current = "restoring";
-            setSettingsLifecycleRequest({
-              generation: lifecycleGenerationRef.current,
-              id: ++lifecycleRequestIdRef.current,
-              action: "restore",
-            });
-            setSettingsFocusRequest((request) => request + 1);
-            return;
-          }
-          if (settingsMinimized || settingsVisibility === "minimized") {
-            setSettingsMinimized(false);
-            setSettingsActive(true);
-            setSettingsFocusRequest((request) => request + 1);
-            return;
-          }
-          if (settingsVisibility === "restoring") return;
-          if (settingsActive) {
-            settingsVisibilityRef.current = "minimizing";
-            setSettingsLifecycleRequest({
-              generation: lifecycleGenerationRef.current,
-              id: ++lifecycleRequestIdRef.current,
-              action: "minimize",
-            });
-            return;
-          }
-          setSettingsActive(true);
-          setSettingsFocusRequest((request) => request + 1);
-        }}
-      />
+      <Dock windowState={windowState} onActivateSettings={() => dispatch({ type: "ACTIVATE_FROM_DOCK" })} />
     </main>
   );
 }
