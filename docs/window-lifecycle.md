@@ -32,6 +32,25 @@ The controller is intentionally a single-window owner. A future second app may c
 
 ## Phase 1 measurements
 
-The audit baseline recorded 10 App lifecycle state/ref/counter declarations and 7 independent System Settings lifecycle state/ref declarations. The refactor leaves those lifecycle declarations in one controller state; the Settings adapter retains only physical transition/focus bookkeeping. App has no lifecycle transition decision branch. The deterministic lifecycle suite now covers 38 Vitest tests (98.5% machine branch coverage).
+The declaration count includes each React state or ref that stores lifecycle truth, a lifecycle request, or a generation/focus delivery counter. It excludes props and projected values, geometry and DOM refs, and non-lifecycle Settings state. Typed effect transport and physical adapter bookkeeping are reported separately because neither is authoritative lifecycle truth.
 
-The baseline output checker measured 147.7 KiB JavaScript gzip; this phase measures 148.6 KiB (+0.9 KiB, below the 2 KiB budget). `pnpm validate` passes, and the exact `dist/` browser run passes all 65 cases with no screenshot baseline changes.
+| Location                                            | Audit baseline | Phase 1 | Change                                                                          |
+| --------------------------------------------------- | -------------: | ------: | ------------------------------------------------------------------------------- |
+| `App` lifecycle state/ref/counter declarations      |             10 |       0 | Replaced by the controller's reducer state.                                     |
+| `SystemSettings` independent lifecycle declarations |              7 |       0 | Replaced by reducer projections and typed effects.                              |
+| Controller authoritative lifecycle state            |              0 |       1 | One reducer state containing the six documented fields.                         |
+| `App` effect-transport declarations                 |              0 |       1 | One typed effect queue; it cannot decide lifecycle state.                       |
+| `SystemSettings` physical adapter refs/counters     |              3 |       4 | Animation run, transition, deferred-frame, and focus delivery bookkeeping only. |
+
+Lifecycle decision predicates count one `if` or conditional expression that selects or guards a lifecycle state mutation or typed effect; a compound predicate counts once. Event classification and physical DOM, animation, frame, and rendering guards are excluded. Applying that definition to the base commit and this phase gives:
+
+| Lifecycle owner                | Audit baseline | Phase 1 |
+| ------------------------------ | -------------: | ------: |
+| `App`                          |             12 |       0 |
+| `SystemSettings`               |             11 |       0 |
+| `singleWindowMachine`          |              0 |      18 |
+| **Total lifecycle predicates** |         **23** |  **18** |
+
+The audit-baseline CI `pnpm test` run covered 7 files and 28 tests in 7.28s with coverage enabled. The current suite enumerates 8 files and 127 tests; its focused reducer/property measurement covers 99 tests in 2.66s and reports 98.5% branch coverage for `singleWindowMachine`. These totals include all 90 parameterized reachable-state/event table cases.
+
+The baseline output checker measured 147.7 KiB JavaScript gzip; this phase measures 148.6 KiB (+0.9 KiB, below the 2 KiB budget). The audit-baseline and Phase 1 exact-`dist/` browser runs each pass all 65 cases in 2.8m, with no screenshot baseline changes. `pnpm validate` and `pnpm build` pass for Phase 1.
