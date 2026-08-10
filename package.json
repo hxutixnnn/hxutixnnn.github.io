@@ -27,8 +27,9 @@
     "test:lighthouse": "lhci autorun",
     "validate:assets": "node scripts/check-asset-provenance.mjs",
     "validate:css": "node scripts/check-component-css.mjs",
+    "validate:appearance-bootstrap": "node scripts/check-appearance-bootstrap.mjs",
     "check:output": "node scripts/check-static-output.mjs",
-    "validate": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm validate:assets && pnpm validate:css && pnpm test"
+    "validate": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm validate:assets && pnpm validate:css && pnpm validate:appearance-bootstrap && pnpm test"
   },
   "dependencies": {
     "@base-ui/react": "1.6.0",

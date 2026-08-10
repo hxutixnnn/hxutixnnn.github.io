@@ -1,8 +1,10 @@
 const duration = 280;
 const easing = "cubic-bezier(0.22, 1, 0.36, 1)";
 
-let generation = 0;
-let cleanupActive: (() => void) | undefined;
+type TransitionState = {
+  generation: number;
+  cleanupActive?: () => void;
+};
 
 type ViewTransition = {
   ready: Promise<void>;
@@ -92,109 +94,117 @@ function makeFallbackLayer() {
   return layer;
 }
 
-function clearActive() {
-  cleanupActive?.();
-  cleanupActive = undefined;
+function clearActive(state: TransitionState) {
+  state.cleanupActive?.();
+  state.cleanupActive = undefined;
 }
 
-export function cancelResolvedThemeTransition() {
-  generation += 1;
-  clearActive();
-}
-
-/** Atomically changes all theme-owned document state behind one document-wide composition. */
-export async function transitionResolvedTheme(commit: () => void, isCurrent = () => true, animate = true) {
-  const request = ++generation;
-  clearActive();
-
-  const canCommit = () => request === generation && isCurrent();
-  const commitIfCurrent = () => {
-    if (!canCommit()) return false;
-    commit();
-    return true;
+export function createResolvedThemeTransition() {
+  const state: TransitionState = { generation: 0 };
+  const cancel = () => {
+    state.generation += 1;
+    clearActive(state);
   };
 
-  if (!animate || !animationIsSafe() || !document.querySelector('main[aria-label="tienOS desktop"]')) {
-    if (canCommit()) commitWithoutDescendantTransitions(commit);
-    return;
-  }
+  /** Atomically changes all theme-owned document state behind one document-wide composition. */
+  const transition = async (commit: () => void, isCurrent = () => true, animate = true) => {
+    const request = ++state.generation;
+    clearActive(state);
 
-  const transitionDocument = document as TransitionDocument;
-  if (typeof transitionDocument.startViewTransition === "function") {
-    let transition: ViewTransition;
-    let restoreTransitions: (() => void) | undefined;
-    try {
-      transition = transitionDocument.startViewTransition(() => {
-        if (!canCommit()) return;
-        restoreTransitions = suppressDescendantTransitions();
-        try {
-          commit();
-          void document.documentElement.offsetWidth;
-        } catch (error) {
-          restoreTransitions();
-          restoreTransitions = undefined;
-          throw error;
-        }
-      });
-    } catch {
+    const canCommit = () => request === state.generation && isCurrent();
+    const commitIfCurrent = () => {
+      if (!canCommit()) return false;
+      commit();
+      return true;
+    };
+
+    if (!animate || !animationIsSafe() || !document.querySelector('main[aria-label="tienOS desktop"]')) {
       if (canCommit()) commitWithoutDescendantTransitions(commit);
       return;
     }
-    const restore = () => {
-      restoreTransitions?.();
-      restoreTransitions = undefined;
-    };
-    void transition.ready.then(restore, restore);
-    const cleanup = () => {
-      restore();
-      transition.skipTransition();
-    };
-    cleanupActive = cleanup;
-    const visibilityCleanup = () => {
-      if (document.visibilityState === "hidden") cleanup();
-    };
-    document.addEventListener("visibilitychange", visibilityCleanup);
-    try {
-      await transition.finished;
-    } catch {
-      // Skipped and interrupted transitions reject in some implementations.
-    } finally {
-      document.removeEventListener("visibilitychange", visibilityCleanup);
-      if (request === generation) cleanupActive = undefined;
-    }
-    return;
-  }
 
-  let layer: HTMLElement | undefined;
-  let animation: Animation | undefined;
-  let committed = false;
-  const cleanup = () => {
-    animation?.cancel();
-    layer?.remove();
-    layer = undefined;
-  };
-  cleanupActive = cleanup;
-  try {
-    layer = makeFallbackLayer();
-    if (!canCommit()) return;
-    commitWithoutDescendantTransitions(() => {
-      committed = commitIfCurrent();
-    });
-    if (!committed) return;
-    animation = layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration, easing, fill: "forwards" });
-    const visibilityCleanup = () => {
-      if (document.visibilityState === "hidden") cleanup();
-    };
-    document.addEventListener("visibilitychange", visibilityCleanup);
-    try {
-      await animation.finished;
-    } finally {
-      document.removeEventListener("visibilitychange", visibilityCleanup);
+    const transitionDocument = document as TransitionDocument;
+    if (typeof transitionDocument.startViewTransition === "function") {
+      let transition: ViewTransition;
+      let restoreTransitions: (() => void) | undefined;
+      try {
+        transition = transitionDocument.startViewTransition(() => {
+          if (!canCommit()) return;
+          restoreTransitions = suppressDescendantTransitions();
+          try {
+            commit();
+            void document.documentElement.offsetWidth;
+          } catch (error) {
+            restoreTransitions();
+            restoreTransitions = undefined;
+            throw error;
+          }
+        });
+      } catch {
+        if (canCommit()) commitWithoutDescendantTransitions(commit);
+        return;
+      }
+      const restore = () => {
+        restoreTransitions?.();
+        restoreTransitions = undefined;
+      };
+      void transition.ready.then(restore, restore);
+      const cleanup = () => {
+        restore();
+        transition.skipTransition();
+      };
+      state.cleanupActive = cleanup;
+      const visibilityCleanup = () => {
+        if (document.visibilityState === "hidden") cleanup();
+      };
+      document.addEventListener("visibilitychange", visibilityCleanup);
+      try {
+        await transition.finished;
+      } catch {
+        // Skipped and interrupted transitions reject in some implementations.
+      } finally {
+        document.removeEventListener("visibilitychange", visibilityCleanup);
+        if (request === state.generation) state.cleanupActive = undefined;
+      }
+      return;
     }
-  } catch {
-    if (!committed && canCommit()) commitWithoutDescendantTransitions(commit);
-  } finally {
-    cleanup();
-    if (request === generation) cleanupActive = undefined;
-  }
+
+    let layer: HTMLElement | undefined;
+    let animation: Animation | undefined;
+    let committed = false;
+    const cleanup = () => {
+      animation?.cancel();
+      layer?.remove();
+      layer = undefined;
+    };
+    state.cleanupActive = cleanup;
+    try {
+      layer = makeFallbackLayer();
+      if (!canCommit()) return;
+      commitWithoutDescendantTransitions(() => {
+        committed = commitIfCurrent();
+      });
+      if (!committed) return;
+      animation = layer.animate([{ opacity: 1 }, { opacity: 0 }], { duration, easing, fill: "forwards" });
+      const visibilityCleanup = () => {
+        if (document.visibilityState === "hidden") cleanup();
+      };
+      document.addEventListener("visibilitychange", visibilityCleanup);
+      try {
+        await animation.finished;
+      } finally {
+        document.removeEventListener("visibilitychange", visibilityCleanup);
+      }
+    } catch {
+      if (!committed && canCommit()) commitWithoutDescendantTransitions(commit);
+    } finally {
+      cleanup();
+      if (request === state.generation) state.cleanupActive = undefined;
+    }
+  };
+  return { cancel, transition };
 }
+
+const defaultTransition = createResolvedThemeTransition();
+export const cancelResolvedThemeTransition = defaultTransition.cancel;
+export const transitionResolvedTheme = defaultTransition.transition;

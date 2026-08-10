@@ -4,7 +4,6 @@ import { MenuBar } from "./components/MenuBar";
 import { SystemSettingsApp } from "./apps/system-settings/SystemSettingsApp";
 import { useSingleWindowController } from "./windows/useSingleWindowController";
 import type { WindowEffect } from "./windows/singleWindowMachine";
-import { useAppearanceStore } from "./stores/appearance";
 import { useWorkspaceGeometry } from "./windows/useWorkspaceGeometry";
 
 type AppProps = {
@@ -27,16 +26,6 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
     dockSurfaceRef,
     settingsDockItemRef,
   });
-  const syncSystemTheme = useAppearanceStore((state) => state.syncSystemTheme);
-
-  useEffect(() => {
-    if (typeof window.matchMedia !== "function") return;
-    const systemPreference = window.matchMedia("(prefers-color-scheme: dark)");
-    syncSystemTheme();
-    systemPreference.addEventListener("change", syncSystemTheme);
-    return () => systemPreference.removeEventListener("change", syncSystemTheme);
-  }, [syncSystemTheme]);
-
   useEffect(() => {
     const classifyDesktopPointer = (event: PointerEvent) => {
       const target = event.target;
