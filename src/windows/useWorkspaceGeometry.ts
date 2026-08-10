@@ -71,21 +71,6 @@ function sameGeometry(left: MeasuredGeometry, right: MeasuredGeometry) {
   );
 }
 
-type DockTargetProvider = {
-  read: () => Rect | null;
-  update: (rect: Rect | null) => void;
-};
-
-function createDockTargetProvider(): DockTargetProvider {
-  let current: Rect | null = null;
-  return {
-    read: () => current,
-    update: (rect) => {
-      current = rect;
-    },
-  };
-}
-
 function initialGeometry(): MeasuredGeometry {
   const viewport = readViewport();
   return {
@@ -121,8 +106,10 @@ export function useWorkspaceGeometry({
   settingsDockItemRef,
 }: WorkspaceGeometryRefs): WorkspaceGeometrySnapshot {
   const [geometry, setGeometry] = useState(initialGeometry);
-  const [dockTargetProvider] = useState(createDockTargetProvider);
-  const getDockTargetRect = useCallback(() => dockTargetProvider.read(), [dockTargetProvider]);
+  const getDockTargetRect = useCallback(
+    () => readRect(settingsDockItemRef.current),
+    [settingsDockItemRef],
+  );
 
   useLayoutEffect(() => {
     let cancelled = false;
@@ -144,15 +131,10 @@ export function useWorkspaceGeometry({
         ),
         dockTargetRect,
       };
-      // Measurement is intentionally committed from one coalesced owner.
-      dockTargetProvider.update(dockTargetRect);
       setGeometry((current) => (sameGeometry(current, next) ? current : next));
     };
 
     const scheduleMeasure = () => {
-      // Genie target correctness is live on the observer tick; the larger
-      // workspace snapshot remains coalesced into the next animation frame.
-      dockTargetProvider.update(readRect(settingsDockItemRef.current));
       if (scheduledFrame !== null) return;
       scheduledFrame = requestFrame(() => measure());
     };
@@ -173,7 +155,10 @@ export function useWorkspaceGeometry({
     if (typeof document !== "undefined") {
       mutationObserver?.observe(document.documentElement, { attributes: true });
     }
-    if (typeof window !== "undefined") window.addEventListener("resize", scheduleMeasure);
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", scheduleMeasure);
+      window.addEventListener("orientationchange", scheduleMeasure);
+    }
 
     // Ref assignments are complete by this layout effect, so the first committed
     // workspace uses actual menu/Dock geometry rather than waiting for an observer.
@@ -184,9 +169,12 @@ export function useWorkspaceGeometry({
       if (scheduledFrame !== null) cancelFrame(scheduledFrame);
       observer?.disconnect();
       mutationObserver?.disconnect();
-      if (typeof window !== "undefined") window.removeEventListener("resize", scheduleMeasure);
+      if (typeof window !== "undefined") {
+        window.removeEventListener("resize", scheduleMeasure);
+        window.removeEventListener("orientationchange", scheduleMeasure);
+      }
     };
-  }, [dockSurfaceRef, dockTargetProvider, menuBarRef, settingsDockItemRef]);
+  }, [dockSurfaceRef, menuBarRef, settingsDockItemRef]);
 
   return Object.freeze({
     workspace: geometry.workspace,

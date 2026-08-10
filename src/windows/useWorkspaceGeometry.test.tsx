@@ -109,6 +109,8 @@ describe("useWorkspaceGeometry", () => {
     expect(TestResizeObserver.instances[1].observed[3]).toBe(document.documentElement);
 
     target.getBoundingClientRect = vi.fn(() => elementRect({ x: 20, y: 30, width: 40, height: 50 }));
+    expect(result.current.getDockTargetRect()).toMatchObject({ x: 20, y: 30, width: 40, height: 50 });
+    expect(result.current.dockTargetRect).toMatchObject({ x: 370, y: 736, width: 56, height: 56 });
     act(() => {
       TestResizeObserver.instances[0].trigger();
       vi.advanceTimersByTime(16);
@@ -117,6 +119,30 @@ describe("useWorkspaceGeometry", () => {
 
     unmount();
     expect(TestResizeObserver.instances.every((observer) => observer.disconnected)).toBe(true);
+  });
+
+  it("coalesces orientation changes and removes the exact listener", () => {
+    const addEventListener = vi.spyOn(window, "addEventListener");
+    const removeEventListener = vi.spyOn(window, "removeEventListener");
+    const { refs: currentRefs, dock } = makeRefs();
+    const { result, unmount } = renderHook(() => useWorkspaceGeometry(currentRefs));
+    const orientationCall = addEventListener.mock.calls.find(([type]) => type === "orientationchange");
+
+    expect(orientationCall).toBeDefined();
+    dock.getBoundingClientRect = vi.fn(() => elementRect({ x: 300, y: 650, width: 200, height: 62 }));
+    act(() => {
+      window.dispatchEvent(new Event("orientationchange"));
+      window.dispatchEvent(new Event("orientationchange"));
+    });
+    expect(result.current.workspace.dockTop).toBe(730);
+
+    act(() => {
+      vi.advanceTimersByTime(16);
+    });
+    expect(result.current.workspace.dockTop).toBe(650);
+
+    unmount();
+    expect(removeEventListener).toHaveBeenCalledWith("orientationchange", orientationCall?.[1]);
   });
 
   it("coalesces observer bursts and cleans the scheduled measurement", () => {

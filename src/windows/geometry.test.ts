@@ -127,6 +127,56 @@ const workspaceArbitrary: fc.Arbitrary<Workspace> = viewportArbitrary.chain(({ w
     ),
 );
 
+const layoutWorkspaceArbitrary: fc.Arbitrary<Workspace> = fc
+  .tuple(
+    fc.oneof(
+      fc.integer({ min: 320, max: 700 }),
+      fc.integer({ min: 701, max: 2400 }),
+    ),
+    fc.integer({ min: 600, max: 1600 }),
+    fc.integer({ min: 0, max: 80 }),
+    fc.integer({ min: 0, max: 120 }),
+    fc.integer({ min: 0, max: 40 }),
+  )
+  .map(([width, height, menuBottom, dockHeight, safeAreaBottom]) =>
+    workspaceFromMeasurements(
+      { width, height },
+      menuBottom,
+      height - dockHeight,
+      safeAreaBottom,
+    ),
+  );
+
+const frameArbitrary: fc.Arbitrary<Frame> = fc.record({
+  x: fc.double({ min: -2400, max: 4800, noNaN: true, noDefaultInfinity: true }),
+  y: fc.double({ min: -1600, max: 3200, noNaN: true, noDefaultInfinity: true }),
+  width: fc.double({ min: -1000, max: 4800, noNaN: true, noDefaultInfinity: true }),
+  height: fc.double({ min: -1000, max: 3200, noNaN: true, noDefaultInfinity: true }),
+});
+
+const resizeDirectionArbitrary = fc.constantFrom<ResizeDirection>(
+  "top",
+  "topLeft",
+  "topRight",
+  "left",
+  "right",
+  "bottom",
+  "bottomLeft",
+  "bottomRight",
+);
+
+function expectUsableFrame(frame: Frame, current: Workspace) {
+  const top = Math.ceil(current.menuBottom);
+  const bottom = workspaceBottomBoundary(current);
+  for (const value of Object.values(frame)) {
+    expect(Number.isFinite(value)).toBe(true);
+    expect(value).toBeGreaterThanOrEqual(0);
+  }
+  expect(frame.x + frame.width).toBeLessThanOrEqual(current.viewport.width);
+  expect(frame.y).toBeGreaterThanOrEqual(top);
+  expect(frame.y + frame.height).toBeLessThanOrEqual(bottom);
+}
+
 describe("workspace geometry properties", () => {
   it("returns finite, nonnegative, workspace-contained frames for arbitrary inputs", () => {
     fc.assert(
@@ -164,6 +214,70 @@ describe("workspace geometry properties", () => {
             defaultCompactFrame(current),
           );
         }
+      }),
+    );
+  });
+
+  it("keeps arbitrary frames usable and idempotent across compact and desktop workspaces", () => {
+    fc.assert(
+      fc.property(layoutWorkspaceArbitrary, frameArbitrary, (current, frame) => {
+        const clamped = clampFrame(frame, current);
+        expectUsableFrame(clamped, current);
+        expect(clampFrame(clamped, current)).toEqual(clamped);
+      }),
+    );
+  });
+
+  it("preserves feasible resize anchors for every generated direction", () => {
+    fc.assert(
+      fc.property(
+        layoutWorkspaceArbitrary,
+        resizeDirectionArbitrary,
+        fc.integer({ min: 0, max: 100 }),
+        fc.integer({ min: 0, max: 100 }),
+        (current, direction, horizontalPercent, verticalPercent) => {
+          const top = Math.ceil(current.menuBottom);
+          const bottom = workspaceBottomBoundary(current);
+          const minimumWidth = Math.min(680, current.viewport.width);
+          const minimumHeight = Math.min(520, bottom - top);
+          const width = minimumWidth + ((current.viewport.width - minimumWidth) * horizontalPercent) / 100;
+          const height = minimumHeight + ((bottom - top - minimumHeight) * verticalPercent) / 100;
+          const position = {
+            x: ((current.viewport.width - width) * (100 - horizontalPercent)) / 100,
+            y: top + ((bottom - top - height) * (100 - verticalPercent)) / 100,
+          };
+          const resized = frameFromResize(direction, { width, height }, position, current);
+
+          expectUsableFrame(resized, current);
+          if (direction.toLowerCase().startsWith("top")) {
+            expect(resized.y + resized.height).toBeCloseTo(position.y + height);
+          }
+          if (direction.toLowerCase().endsWith("left")) {
+            expect(resized.x + resized.width).toBeCloseTo(position.x + width);
+          }
+        },
+      ),
+    );
+  });
+
+  it("keeps fullscreen and normal restoration stable across layout modes", () => {
+    fc.assert(
+      fc.property(layoutWorkspaceArbitrary, frameArbitrary, (current, saved) => {
+        const fullscreen = fullscreenFrame(current);
+        expectUsableFrame(fullscreen, current);
+        expect(fullscreen).toEqual({
+          x: 0,
+          y: Math.ceil(current.menuBottom),
+          width: current.viewport.width,
+          height: workspaceBottomBoundary(current) - Math.ceil(current.menuBottom),
+        });
+
+        const restored = restoreNormalFrame(saved, current);
+        expectUsableFrame(restored, current);
+        expect(restoreNormalFrame(restored, current)).toEqual(restored);
+        expect(restored).toEqual(
+          current.layout === "compact" ? defaultCompactFrame(current) : clampFrame(saved, current),
+        );
       }),
     );
   });
