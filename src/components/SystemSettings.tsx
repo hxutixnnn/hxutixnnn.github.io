@@ -337,7 +337,17 @@ export function SystemSettings({
   const settleWindowTransition = useCallback(
     (generation: number, destination: "minimized" | "visible", settledFrameTarget = 2) => {
       const run = ++transitionRunRef.current;
+      let completed = false;
       const nextFrame = () => new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+      const complete = () => {
+        if (completed || run !== transitionRunRef.current) return;
+        completed = true;
+        if (physicalTransitionRef.current?.generation === generation) {
+          physicalTransitionRef.current.painted = true;
+        }
+        onTransitionSettled(generation, destination);
+      };
+      const fallback = destination === "visible" ? window.setTimeout(complete, 600) : null;
       const settle = async () => {
         await nextFrame();
         let settledFrames = 0;
@@ -354,14 +364,13 @@ export function SystemSettings({
           }
           settledFrames += 1;
           if (settledFrames === settledFrameTarget) {
-            if (physicalTransitionRef.current?.generation === generation) {
-              physicalTransitionRef.current.painted = true;
-            }
-            onTransitionSettled(generation, destination);
+            if (fallback !== null) window.clearTimeout(fallback);
+            complete();
             return;
           }
           await nextFrame();
         }
+        if (fallback !== null) window.clearTimeout(fallback);
       };
       void settle();
     },
