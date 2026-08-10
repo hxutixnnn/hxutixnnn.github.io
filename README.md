@@ -39,3 +39,9 @@ Before styles load, the inline bootstrap in [`index.html`](index.html) validates
 The splash icon is inline in the static HTML, so it paints with the first splash frame without waiting for application JavaScript or the external Font Awesome sprite. The splash covers an inert desktop until its production styles are applied, the wallpaper is decoded, and an initial desktop Font Awesome icon has rendered geometry. An eight-second failure escape remains active throughout startup and asset readiness so errors or stalled requests reveal an intentionally styled static desktop fallback; no-script and reduced-motion paths must remain usable.
 
 Future paint-critical assets must participate in this readiness gate, while non-critical assets must load progressively without delaying the first desktop frame. Browser coverage for this contract runs against the built `dist/` output through `vite preview`.
+
+## Browser contract tests
+
+Playwright coverage is split by regression boundary in `tests/e2e/`: `startup`, `menus`, `settings-layout`, `appearance`, and `window-lifecycle`. Put a regression in the narrowest owning contract; lifecycle/geometry/input behavior belongs in `window-lifecycle`, while Settings content and control layout belong in `settings-layout`. Small semantic interactions live in `tests/e2e/drivers/` (`desktop`, `settingsWindow`, and `appearance`); keep direct assertions in specs rather than growing a page-object framework. The typed current-behavior lifecycle table is in `tests/lifecycle-characterization.test.ts`.
+
+Without `PLAYWRIGHT_BASE_URL`, Playwright derives a worktree-specific preview port, starts only its own strict-port process, and verifies the static HTML contains the canonical tienOS desktop marker before testing. It never reuses an existing server and cleans up only the process it started. Set `TIENOS_E2E_PORT` to override that port. `PLAYWRIGHT_BASE_URL` continues to disable local startup for an explicitly managed server.
