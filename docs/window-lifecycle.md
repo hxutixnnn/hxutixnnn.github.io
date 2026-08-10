@@ -15,7 +15,7 @@ The current desktop contract is one retained System Settings instance. Its lifec
 | `TOGGLE_FULLSCREEN`                      | Toggle app-contained fullscreen without changing normal-frame ownership.  |
 | `TRANSITION_SETTLED`                     | Commit only the matching generation's minimized or visible destination.   |
 
-The machine emits typed `FOCUS`, `START_TRANSITION`, and `CANCEL_TRANSITION` effects. The controller delivers them at the React boundary. Physical animation, focus restoration, inertness, data attributes, geometry, and fullscreen frame mechanics remain in their existing component adapter until the later frame/geometry phases.
+The machine emits typed `FOCUS`, `START_TRANSITION`, and `CANCEL_TRANSITION` effects. The controller delivers them at the React boundary. Physical animation, focus restoration, inertness, data attributes, and `react-rnd` frame mechanics remain in the component adapter. Pure frame policy and shell workspace measurement are owned by [`docs/window-geometry.md`](window-geometry.md).
 
 ## Invariants
 
@@ -28,7 +28,7 @@ The machine emits typed `FOCUS`, `START_TRANSITION`, and `CANCEL_TRANSITION` eff
 
 ## Extension boundary and non-goals
 
-The controller is intentionally a single-window owner. A future second app may compose another explicitly approved controller, but this phase does not define `WindowId`, collections, z-order, app registries, event buses, persistence, or a generalized window framework. Geometry extraction, `WindowFrame`, Settings pane moves, appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
+The controller is intentionally a single-window owner. A future second app may compose another explicitly approved controller, but this phase does not define `WindowId`, collections, z-order, app registries, event buses, persistence, or a generalized window framework. `WindowFrame` extraction, Settings pane moves, appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
 
 ## Phase 1 measurements
 

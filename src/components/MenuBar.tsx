@@ -1,7 +1,7 @@
 import { Menu } from "@base-ui/react/menu";
 import { Menubar } from "@base-ui/react/menubar";
 import { useHotkeys } from "react-hotkeys-hook";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type RefObject } from "react";
 import { FontAwesomeIcon } from "./FontAwesomeIcon";
 
 export type MenuCommand =
@@ -19,6 +19,7 @@ export type MenuCommand =
 
 type MenuBarProps = {
   onAction?: (command: MenuCommand) => void;
+  surfaceRef?: RefObject<HTMLElement | null>;
 };
 
 const triggerClassName =
@@ -48,7 +49,7 @@ function MenuPopup({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function MenuBar({ onAction }: MenuBarProps) {
+export function MenuBar({ onAction, surfaceRef }: MenuBarProps) {
   const [systemMenuOpen, setSystemMenuOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const systemMenuTriggerId = "tienos-system-menu-trigger";
@@ -74,6 +75,7 @@ export function MenuBar({ onAction }: MenuBarProps) {
 
   return (
     <header
+      ref={surfaceRef}
       data-menu-bar-surface=""
       className="fixed inset-x-0 top-0 z-40 flex items-center px-2 pt-[env(safe-area-inset-top)] sm:px-3"
     >
