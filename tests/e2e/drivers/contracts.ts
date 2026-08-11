@@ -248,9 +248,6 @@ export async function captureNativeThemeTransition(
   changeTheme: () => Promise<unknown>,
   pixelBaseline = false,
 ) {
-  await page.locator(":root").evaluate(() => {
-    document.querySelector<HTMLElement>(".tienos-wallpaper")?.style.setProperty("animation", "none");
-  });
   await armThemeAnimationPause(page);
   await changeTheme();
   await expect(page.locator(":root")).toHaveAttribute("data-theme", expectedTheme);
