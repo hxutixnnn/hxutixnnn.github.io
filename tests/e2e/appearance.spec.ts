@@ -207,7 +207,6 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
             styles.setProperty("background-image", values.pattern, "important");
             styles.setProperty("background-position", `${values.position}px 0`, "important");
             styles.setProperty("background-size", "440px 100%", "important");
-            styles.setProperty("animation", "none", "important");
             styles.setProperty("transform", "none", "important");
           },
           { pattern, position: region.position },
@@ -1373,10 +1372,9 @@ test.describe("appearance modes", () => {
       })(),
     }));
     expect(preservedFallbackState.scrollTop).toBeGreaterThan(0);
-    const oldWallpaperTransform = await page.locator(".tienos-wallpaper").evaluate((node) => {
-      (node as HTMLElement).style.animation = "none";
-      return getComputedStyle(node).transform;
-    });
+    const oldWallpaperTransform = await page
+      .locator(".tienos-wallpaper")
+      .evaluate((node) => getComputedStyle(node).transform);
     await page.emulateMedia({ colorScheme: "light" });
     await expect(page.locator(":root")).toHaveAttribute("data-appearance", "auto");
     await expect(page.locator(":root")).toHaveAttribute("data-theme", "light");
@@ -1628,9 +1626,6 @@ test.describe("appearance modes", () => {
     await page.emulateMedia({ colorScheme: "light" });
     await page.goto("/");
     await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
-    await page.locator(".tienos-wallpaper").evaluate((node) => {
-      (node as HTMLElement).style.animation = "none";
-    });
     const darkWallpaperGate = createDelayGate();
     let darkWallpaperIntercepted = false;
     await page.route("**/wallpapers/tienos-default.jpg", async (route) => {

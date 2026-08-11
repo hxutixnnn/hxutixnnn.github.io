@@ -50,7 +50,7 @@ Nested radii must preserve concentric spacing.
 
 Use 120ms for immediate control feedback and 200ms for ordinary state transitions.
 Spatial motion must communicate state or direct manipulation.
-Continuous wallpaper motion runs only when reduced motion is not requested. Light mode uses the bright Paweł Czerwiński ink-cloud wallpaper while Dark mode retains the original blurred wallpaper; Auto follows the live system theme. The resolved image is the only startup wallpaper preloaded and decoded before splash dismissal. Runtime changes settle the destination decode before applying the theme and use its color fallback if decoding fails.
+The wallpaper remains static regardless of motion preference. Light mode uses the bright Paweł Czerwiński ink-cloud wallpaper while Dark mode retains the original blurred wallpaper; Auto follows the live system theme. The resolved image is the only startup wallpaper preloaded and decoded before splash dismissal. Runtime changes settle the destination decode before applying the theme and use its color fallback if decoding fails.
 After startup, a changed resolved theme uses the 280ms theme-motion token to crossfade the complete old document composition into the transactionally applied new one. Use the native View Transition API when available and an inert, aria-hidden old-frame layer otherwise; unchanged resolved themes and startup paint directly. Disable the crossfade for reduced motion, reduced transparency, increased contrast, forced colors, and hidden documents.
 
 ## Component contracts
