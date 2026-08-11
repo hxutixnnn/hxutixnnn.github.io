@@ -466,8 +466,13 @@ for (const colorScheme of ["dark", "light"] as const) {
       const wallpaperState = await wallpaper.evaluate((element) => {
         const styles = getComputedStyle(element);
         const matrix = new DOMMatrixReadOnly(styles.transform);
-        return { scale: styles.scale, transformScale: matrix.a };
+        return {
+          animationName: styles.animationName,
+          scale: styles.scale,
+          transformScale: matrix.a,
+        };
       });
+      expect(wallpaperState.animationName).toBe("none");
       expect(wallpaperState.scale).toBe("none");
       expect(wallpaperState.transformScale).toBeCloseTo(1.02);
       await expect(vignette).toHaveCSS("background-image", /linear-gradient.*radial-gradient/);

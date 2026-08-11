@@ -111,16 +111,6 @@
   transition: none !important;
 }
 
-/* Wallpaper motion uses transforms at both endpoints and is shared by a Tailwind animation utility. */
-@keyframes tienos-drift {
-  from {
-    transform: scale(1.02) translate3d(-0.5%, -0.25%, 0);
-  }
-  to {
-    transform: scale(1.06) translate3d(0.5%, 0.25%, 0);
-  }
-}
-
 /* Forced-colors focus is a document-wide accessibility override. */
 @media (forced-colors: active) {
   *:focus-visible {
