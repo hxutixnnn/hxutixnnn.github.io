@@ -2,7 +2,7 @@
 
 The current desktop contract is one retained System Settings instance.
 Its lifecycle is owned by the pure single-window machine and the `useSingleWindowController` hook.
-`App` composes projections for the menu, Dock, and Settings surface without deciding visibility transitions or keeping lifecycle counters.
+`App` composes projections for the menu, Dock, and Settings surface without deciding visibility transitions, keeping lifecycle counters, or owning effect transport.
 `WindowFrame` projects state and executes typed effects through the narrow genie driver.
 The driver reports generation-tagged settlement and never chooses lifecycle destination truth.
 The `SystemSettingsApp` content boundary and pane ownership are documented in [`docs/system-settings.md`](system-settings.md).
@@ -21,7 +21,8 @@ The `SystemSettingsApp` content boundary and pane ownership are documented in [`
 | `TRANSITION_SETTLED`                     | Commit only the matching generation's minimized or visible destination.   |
 
 The machine emits typed `FOCUS`, `START_TRANSITION`, and `CANCEL_TRANSITION` effects.
-The controller delivers them at the React boundary.
+The controller is the sole owner of their ordered queue at the React boundary.
+`WindowFrame` acknowledges the exact batch it processes by count, so effects appended during that render remain queued for the next pass.
 `WindowFrame` solely owns physical animation, focus restoration, inertness, lifecycle data attributes, fullscreen coordination, chrome, and `react-rnd` mechanics.
 `src/windows/transitions/genie.ts` owns run identity, interruption, live retargeting, settlement rejection, reduced motion, and cleanup.
 Pure frame policy and shell workspace measurement are owned by [`docs/window-geometry.md`](window-geometry.md).
