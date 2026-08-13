@@ -1,8 +1,8 @@
 # App-keyed single-window lifecycle ownership
 
-The shell lifecycle boundary is keyed by `AppId` so every entry in the static registry at `src/desktop/apps.ts` receives an independent single-window controller.
+The registry contains retained System Settings, Notes, and Calculator instances. The shell lifecycle boundary is keyed by `AppId`, so every registered app receives an independent single-window controller.
 Each app lifecycle is owned by the pure single-window machine and `useDesktopAppController`; this does not introduce same-app window IDs or z-order.
-`App` composes projections for the menu, Dock, Spotlight, and registered window surfaces without deciding visibility transitions, keeping lifecycle counters, or owning effect transport.
+`App` composes projections for the active-app menu, Dock, Spotlight, and registered window surfaces without deciding visibility transitions, keeping lifecycle counters, or owning effect transport. Menu ownership follows the active frontmost app and falls back to the default app when no registered window is active.
 `WindowFrame` projects state and executes typed effects through the narrow genie driver.
 The driver reports generation-tagged settlement and never chooses lifecycle destination truth.
 The `SystemSettingsApp` content boundary and pane ownership are documented in [`docs/system-settings.md`](system-settings.md).
