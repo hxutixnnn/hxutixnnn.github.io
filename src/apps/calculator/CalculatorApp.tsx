@@ -102,6 +102,7 @@ export function CalculatorApp({
   }, [frontmost, windowState.visibility]);
 
   const shown = formatCalculatorDisplay(state.display);
+  const clearEntry = !state.error && !state.waitingForOperand && state.display !== "0";
   return (
     <WindowFrame
       appId={appId}
@@ -140,19 +141,24 @@ export function CalculatorApp({
             aria-label="Calculator keypad"
             className="grid min-h-0 flex-[3] grid-cols-4 grid-rows-5 gap-2"
           >
-            {keys.map((key) => (
-              <button
-                key={key.label}
-                type="button"
-                aria-label={key.label === "+/−" ? "Toggle positive or negative" : key.label}
-                aria-keyshortcuts={key.keyboard}
-                data-calculator-key={key.label}
-                onClick={() => dispatch(key.action)}
-                className={`min-h-11 touch-manipulation rounded-full border border-white/15 text-[clamp(1.25rem,5cqh,1.75rem)] font-medium shadow-[inset_0_1px_0_rgb(255_255_255/.2),0_2px_6px_rgb(0_0_0/.18)] transition-[filter,transform] hover:brightness-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)] motion-reduce:transition-none [@media(forced-colors:active)]:border-[ButtonText] ${key.label === "0" ? "col-span-2 text-left pl-[25%]" : ""} ${key.kind === "operator" ? "bg-[var(--tienos-color-accent)] text-[var(--tienos-color-text-on-accent)]" : key.kind === "utility" ? "bg-[color-mix(in_srgb,var(--tienos-color-control),white_18%)] text-[var(--tienos-color-text-primary)]" : "bg-[var(--tienos-color-control)] text-[var(--tienos-color-text-primary)]"}`}
-              >
-                {key.label}
-              </button>
-            ))}
+            {keys.map((key) => {
+              const isClearKey = key.label === "AC";
+              const label = isClearKey && clearEntry ? "C" : key.label;
+              const action = isClearKey && clearEntry ? ({ type: "clear" } as const) : key.action;
+              return (
+                <button
+                  key={key.label}
+                  type="button"
+                  aria-label={key.label === "+/−" ? "Toggle positive or negative" : label}
+                  aria-keyshortcuts={key.keyboard}
+                  data-calculator-key={key.label}
+                  onClick={() => dispatch(action)}
+                  className={`min-h-11 touch-manipulation rounded-full border border-white/15 text-[clamp(1.25rem,5cqh,1.75rem)] font-medium shadow-[inset_0_1px_0_rgb(255_255_255/.2),0_2px_6px_rgb(0_0_0/.18)] transition-[filter,transform] hover:brightness-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)] motion-reduce:transition-none [@media(forced-colors:active)]:border-[ButtonText] ${key.label === "0" ? "col-span-2 text-left pl-[25%]" : ""} ${key.kind === "operator" ? "bg-[var(--tienos-color-accent)] text-[var(--tienos-color-text-on-accent)]" : key.kind === "utility" ? "bg-[color-mix(in_srgb,var(--tienos-color-control),white_18%)] text-[var(--tienos-color-text-primary)]" : "bg-[var(--tienos-color-control)] text-[var(--tienos-color-text-primary)]"}`}
+                >
+                  {label}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}

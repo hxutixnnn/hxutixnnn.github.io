@@ -213,6 +213,7 @@ export function WindowFrame({
       { width: element.offsetWidth, height: element.offsetHeight },
       position,
       workspace,
+      minimumSize,
     );
     applyFrameDuringResize(element, next);
     onFrameChange(next);

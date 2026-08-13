@@ -162,6 +162,7 @@ export function frameFromResize(
   size: ResizeSize,
   position: Position,
   workspace: Workspace,
+  minimum: Readonly<{ width: number; height: number }> = DESKTOP_MINIMUM,
 ): Frame {
   const top = direction.toLowerCase().startsWith("top")
     ? Math.max(finiteOr(position.y, 0), Math.ceil(nonNegative(workspace.menuBottom)))
@@ -177,6 +178,7 @@ export function frameFromResize(
       height: topResize ? Math.max(0, bottom - top) : nonNegative(size.height),
     },
     workspace,
+    minimum,
   );
 }
 

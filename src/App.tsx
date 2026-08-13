@@ -23,6 +23,8 @@ export function App({
     apps,
     defaultApp.id,
   );
+  const activeApp =
+    apps.find((app) => app.id === frontmostAppId && controllers[app.id]?.window.active) ?? defaultApp;
   const menuBarRef = useRef<HTMLElement>(null);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const spotlightOpenRef = useRef(false);
@@ -113,11 +115,7 @@ export function App({
       <MenuBar
         surfaceRef={menuBarRef}
         onOpenSpotlight={openSpotlight}
-        activeAppName={
-          apps.find((app) => app.id === frontmostAppId)?.menuName ??
-          apps.find((app) => app.id === frontmostAppId)?.name ??
-          defaultApp.name
-        }
+        activeAppName={activeApp.menuName ?? activeApp.name}
         onAction={(command) => {
           if (command.type === "activate-app" && controllers[command.appId])
             dispatch(command.appId, { type: "ACTIVATE_FROM_MENU" }, true);
@@ -134,14 +132,13 @@ export function App({
           }}
         />
       )}
-      <Suspense fallback={null}>
-        {apps.map((app) => {
-          const controller = controllers[app.id];
-          if (controller.window.presence !== "open") return null;
-          const AppWindow = app.Window;
-          return (
+      {apps.map((app) => {
+        const controller = controllers[app.id];
+        if (controller.window.presence !== "open") return null;
+        const AppWindow = app.Window;
+        return (
+          <Suspense key={app.id} fallback={null}>
             <AppWindow
-              key={app.id}
               appId={app.id}
               frontmost={app.id === frontmostAppId}
               windowState={controller.window}
@@ -151,9 +148,9 @@ export function App({
               workspace={workspace}
               dockTargetRectProvider={() => getDockTargetRect(app.id)}
             />
-          );
-        })}
-      </Suspense>
+          </Suspense>
+        );
+      })}
       <Dock
         apps={apps}
         surfaceRef={dockSurfaceRef}

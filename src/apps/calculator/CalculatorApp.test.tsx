@@ -60,13 +60,16 @@ describe("CalculatorApp", () => {
     expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("20");
   });
 
-  it("supports pointer input and clear", () => {
+  it("switches the touch clear key between entry clear and all-clear", () => {
     renderCalculator();
     fireEvent.click(screen.getByRole("button", { name: "9" }));
     fireEvent.click(screen.getByRole("button", { name: "+" }));
     fireEvent.click(screen.getByRole("button", { name: "1" }));
+    fireEvent.click(screen.getByRole("button", { name: "C" }));
+    expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("0");
+    fireEvent.click(screen.getByRole("button", { name: "2" }));
     fireEvent.click(screen.getByRole("button", { name: "=" }));
-    expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("10");
+    expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("11");
     fireEvent.click(screen.getByRole("button", { name: "AC" }));
     expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("0");
   });

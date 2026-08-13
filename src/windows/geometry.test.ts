@@ -102,6 +102,16 @@ describe("pure workspace geometry boundary table", () => {
       if (direction.toLowerCase().endsWith("left")) expect(next.x + next.width).toBe(right);
     }
   });
+
+  it("honors an app-specific minimum during live resize", () => {
+    const current = workspace(1000, 800, 36, 730);
+    const resized = frameFromResize("bottomRight", { width: 300, height: 440 }, { x: 200, y: 100 }, current, {
+      width: 320,
+      height: 460,
+    });
+
+    expect(resized).toMatchObject({ width: 320, height: 460 });
+  });
 });
 
 const numberArbitrary = fc.double({ min: 0, max: 2400, noNaN: true, noDefaultInfinity: true });
