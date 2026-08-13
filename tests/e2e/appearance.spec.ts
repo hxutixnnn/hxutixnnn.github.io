@@ -1258,9 +1258,6 @@ test.describe("appearance modes", () => {
     );
     const details = page.locator('.settings-scroll-viewport[aria-label="Settings details"]');
     await page.setViewportSize({ width: 700, height: 520 });
-    await details.evaluate((node) => {
-      node.scrollTop = 80;
-    });
     await page.getByPlaceholder("Search").fill("appearance");
     await page.getByPlaceholder("Search").evaluate((input: HTMLInputElement) => {
       input.setSelectionRange(2, 7);
@@ -1268,6 +1265,10 @@ test.describe("appearance modes", () => {
     const highlight = page.getByRole("combobox", { name: "Text highlight color" });
     await highlight.click();
     await expect(page.getByRole("listbox")).toBeVisible();
+    await details.evaluate((node) => {
+      node.scrollTop = 80;
+    });
+    await expect.poll(() => details.evaluate((node) => node.scrollTop)).toBe(80);
     const preservedState = await page.evaluate(() => ({
       activeLabel: document.activeElement?.getAttribute("aria-label"),
       scrollTop: document.querySelector<HTMLElement>(

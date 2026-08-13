@@ -63,7 +63,7 @@ test("launches the registry app from closed, minimized, background, and frontmos
   await launch();
 
   await page.getByRole("button", { name: "Minimize System Settings" }).click();
-  await expect(page.getByRole("navigation", { name: "Dock" }).getByRole("status")).toHaveText(
+  await expect(page.locator("#system-settings-dock-status")).toHaveText(
     "System Settings is running and minimized",
   );
   await launch();
@@ -98,13 +98,18 @@ test("ranks, navigates, and launches apps from a multi-app registry", async ({ p
 
   await page.getByRole("button", { name: "Close System Settings" }).click();
   await page.keyboard.press("Meta+Space");
-  const options = page.getByRole("option");
-  await expect(options.nth(0)).toContainText("Auxiliary");
-  await expect(options.nth(1)).toContainText("System Settings");
-  await expect(options.nth(0)).toHaveAttribute("aria-selected", "true");
+  const auxiliaryOption = page.getByRole("option", { name: /Auxiliary/ });
+  const calendarOption = page.getByRole("option", { name: /Calendar/ });
+  const settingsOption = page.getByRole("option", { name: /System Settings/ });
+  await expect(auxiliaryOption).toHaveAttribute("aria-selected", "true");
+  await expect(calendarOption).toHaveAttribute("aria-selected", "false");
+  await expect(settingsOption).toHaveAttribute("aria-selected", "false");
   await spotlight.press("ArrowDown");
-  await expect(options.nth(0)).toHaveAttribute("aria-selected", "false");
-  await expect(options.nth(1)).toHaveAttribute("aria-selected", "true");
+  await expect(auxiliaryOption).toHaveAttribute("aria-selected", "false");
+  await expect(calendarOption).toHaveAttribute("aria-selected", "true");
+  await spotlight.press("ArrowDown");
+  await expect(calendarOption).toHaveAttribute("aria-selected", "false");
+  await expect(settingsOption).toHaveAttribute("aria-selected", "true");
   await spotlight.press("Enter");
   await expect(settings).toHaveAttribute("data-window-active", "true");
   await expect(auxiliary).toHaveCount(0);
