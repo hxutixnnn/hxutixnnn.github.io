@@ -77,4 +77,37 @@ describe("useDesktopAppController", () => {
     expect(Object.values(result.current.controllers).every((controller) => !controller.window.active)).toBe(true);
     expect(result.current.frontmostAppId).toBe("second");
   });
+
+  it("transfers frontmost activity when the frontmost app closes", () => {
+    const { result } = renderHook(() => useDesktopAppController(apps, "first"));
+
+    act(() => result.current.dispatch("second", { type: "ACTIVATE_FROM_DOCK" }, true));
+    act(() => result.current.dispatch("first", { type: "WINDOW_INTERACTION" }, true));
+    expect(result.current.frontmostAppId).toBe("first");
+
+    act(() => result.current.dispatch("first", { type: "CLOSE" }));
+
+    expect(result.current.controllers.first.window.presence).toBe("closed");
+    expect(result.current.controllers.second.window.active).toBe(true);
+    expect(result.current.frontmostAppId).toBe("second");
+    expect(result.current.controllers.second.pendingEffects.at(-1)?.type).toBe("FOCUS");
+  });
+
+  it("transfers frontmost activity when the frontmost app minimizes", () => {
+    const { result } = renderHook(() => useDesktopAppController(apps, "first"));
+
+    act(() => result.current.dispatch("second", { type: "ACTIVATE_FROM_DOCK" }, true));
+    act(() => result.current.dispatch("first", { type: "WINDOW_INTERACTION" }, true));
+    expect(result.current.frontmostAppId).toBe("first");
+
+    act(() => result.current.dispatch("first", { type: "MINIMIZE" }));
+
+    expect(result.current.controllers.first.window).toMatchObject({
+      visibility: "minimizing",
+      active: false,
+    });
+    expect(result.current.controllers.second.window.active).toBe(true);
+    expect(result.current.frontmostAppId).toBe("second");
+    expect(result.current.controllers.second.pendingEffects.at(-1)?.type).toBe("FOCUS");
+  });
 });

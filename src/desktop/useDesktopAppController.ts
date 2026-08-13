@@ -64,6 +64,25 @@ function applyEvent(controller: AppControllerState, event: WindowEvent): AppCont
   };
 }
 
+function isVisibleApp(controller: AppControllerState) {
+  return controller.window.presence === "open" && controller.window.visibility === "visible";
+}
+
+function promoteVisibleApp(
+  controllers: DesktopControllerState["controllers"],
+  excludedAppId: AppId,
+) {
+  const entry = Object.entries(controllers).find(
+    ([appId, controller]) => appId !== excludedAppId && isVisibleApp(controller),
+  );
+  if (!entry) return null;
+  const [appId, controller] = entry;
+  return {
+    appId,
+    controllers: { ...controllers, [appId]: applyEvent(controller, { type: "ACTIVATE_FROM_MENU" }) },
+  };
+}
+
 function reduceControllers(state: DesktopControllerState, action: DesktopControllerAction) {
   if (action.type === "DESKTOP_POINTER") {
     return {
@@ -97,15 +116,16 @@ function reduceControllers(state: DesktopControllerState, action: DesktopControl
     : state.controllers;
   const controllers = { ...next, [action.appId]: applyEvent(next[action.appId], action.event) };
   const target = controllers[action.appId];
+  if (state.frontmostAppId === action.appId && !isVisibleApp(target)) {
+    const promoted = promoteVisibleApp(controllers, action.appId);
+    if (promoted) return { controllers: promoted.controllers, frontmostAppId: promoted.appId };
+  }
   return {
     controllers,
     frontmostAppId:
       action.exclusive && target.window.presence === "open"
         ? action.appId
-        : state.frontmostAppId === action.appId && target.window.presence === "closed"
-          ? (Object.entries(controllers).find(([, controller]) => controller.window.active)?.[0] ??
-            state.frontmostAppId)
-          : state.frontmostAppId,
+        : state.frontmostAppId,
   };
 }
 
