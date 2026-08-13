@@ -28,6 +28,12 @@ const AuxiliaryWindow: DesktopAppDescriptor["Window"] = ({
 const apps = [
   ...desktopApps,
   { id: "auxiliary", name: "Auxiliary", icon: "sparkle", Window: AuxiliaryWindow },
+  ...Array.from({ length: 12 }, (_, index) => ({
+    id: `zulu-${String(index + 1).padStart(2, "0")}`,
+    name: `Zulu ${String(index + 1).padStart(2, "0")}`,
+    icon: "sparkle" as const,
+    Window: AuxiliaryWindow,
+  })),
 ] as const satisfies readonly DesktopAppDescriptor[];
 
 const root = document.getElementById("root");

@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AppId, DesktopAppDescriptor } from "../desktop/apps";
 import { FontAwesomeIcon } from "../components/FontAwesomeIcon";
 import { searchDesktopApps } from "./searchDesktopApps";
@@ -15,12 +15,19 @@ export function Spotlight({ apps, open, onDismiss, onLaunch }: SpotlightProps) {
   const [selected, setSelected] = useState(0);
   const overlayRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const optionRefs = useRef(new Map<AppId, HTMLButtonElement>());
   const listId = useId();
   const results = useMemo(() => searchDesktopApps(apps, query), [apps, query]);
 
   useEffect(() => {
     if (open) inputRef.current?.focus();
   }, [open]);
+
+  useLayoutEffect(() => {
+    const selectedResult = results[selected];
+    if (!open || !selectedResult) return;
+    optionRefs.current.get(selectedResult.app.id)?.scrollIntoView?.({ block: "nearest" });
+  }, [open, results, selected]);
 
   useEffect(() => {
     if (!open) return;
@@ -117,6 +124,10 @@ export function Spotlight({ apps, open, onDismiss, onLaunch }: SpotlightProps) {
         >
           {results.map(({ app }, index) => (
             <button
+              ref={(element) => {
+                if (element) optionRefs.current.set(app.id, element);
+                else optionRefs.current.delete(app.id);
+              }}
               id={`${listId}-${app.id}`}
               role="option"
               tabIndex={-1}

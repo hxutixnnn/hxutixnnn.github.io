@@ -99,7 +99,8 @@ test("ranks, navigates, and launches apps from a multi-app registry", async ({ p
   await page.getByRole("button", { name: "Close System Settings" }).click();
   await page.keyboard.press("Meta+Space");
   const options = page.getByRole("option");
-  await expect(options).toHaveText([/Auxiliary/, /System Settings/]);
+  await expect(options.nth(0)).toContainText("Auxiliary");
+  await expect(options.nth(1)).toContainText("System Settings");
   await expect(options.nth(0)).toHaveAttribute("aria-selected", "true");
   await spotlight.press("ArrowDown");
   await expect(options.nth(0)).toHaveAttribute("aria-selected", "false");
@@ -121,6 +122,31 @@ test("ranks, navigates, and launches apps from a multi-app registry", async ({ p
   await spotlight.press("Enter");
   await expect(auxiliary).toHaveAttribute("data-window-frontmost", "true");
   await expect(settings).toHaveAttribute("data-window-active", "false");
+});
+
+test("keeps keyboard selection visible beyond compact result rows", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 480 });
+  await page.goto(`${fixtureBaseURL}/tests/e2e/fixtures/multiple-apps.html`);
+  await page.keyboard.press("Meta+Space");
+  const spotlight = page.getByRole("combobox", { name: "Search apps" });
+  const listbox = page.getByRole("listbox", { name: "Applications" });
+  await spotlight.fill("zulu");
+  await expect(page.getByRole("option")).toHaveCount(12);
+  for (let index = 0; index < 9; index += 1) await spotlight.press("ArrowDown");
+
+  const selected = page.getByRole("option", { name: /Zulu 10/ });
+  await expect(selected).toHaveAttribute("aria-selected", "true");
+  await expect
+    .poll(async () => {
+      const [listBounds, optionBounds] = await Promise.all([listbox.boundingBox(), selected.boundingBox()]);
+      return (
+        listBounds !== null &&
+        optionBounds !== null &&
+        optionBounds.y >= listBounds.y &&
+        optionBounds.y + optionBounds.height <= listBounds.y + listBounds.height
+      );
+    })
+    .toBe(true);
 });
 
 test("keeps Spotlight usable in a compact viewport and supports an empty result", async ({ page }) => {
