@@ -4,14 +4,8 @@ import { App } from "../../../src/App";
 import { desktopApps, type DesktopAppDescriptor } from "../../../src/desktop/apps";
 import "../../../src/styles.css";
 
-const AuxiliaryWindow: DesktopAppDescriptor["Window"] = ({
-  appId,
-  frontmost,
-  windowState,
-  onEvent,
-}) => (
+const AuxiliaryWindow: DesktopAppDescriptor["Window"] = ({ appId, frontmost, windowState, onEvent }) => (
   <section
-    role="region"
     aria-label="Auxiliary"
     data-desktop-activity={appId}
     data-window-active={windowState.active}

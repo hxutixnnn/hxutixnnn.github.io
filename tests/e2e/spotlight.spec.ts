@@ -113,7 +113,10 @@ test("ranks, navigates, and launches apps from a multi-app registry", async ({ p
   await spotlight.fill("auxiliary");
   await spotlight.press("Enter");
   await expect(auxiliary).toHaveAttribute("data-window-frontmost", "true");
-  await page.getByRole("navigation", { name: "Dock" }).getByRole("button", { name: "System Settings" }).click();
+  await page
+    .getByRole("navigation", { name: "Dock" })
+    .getByRole("button", { name: "System Settings" })
+    .click();
   await expect(auxiliary).toHaveAttribute("data-window-frontmost", "false");
   await expect(settings).toHaveAttribute("data-window-active", "true");
 

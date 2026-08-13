@@ -2,7 +2,7 @@
 
 The current registry contains one retained System Settings instance, while the shell lifecycle boundary is keyed by `AppId` so each registered app receives an independent single-window controller.
 Each app lifecycle is owned by the pure single-window machine and `useDesktopAppController`; this does not introduce same-app window IDs or z-order.
-`App` composes projections for the menu, Dock, and registered window surfaces without deciding visibility transitions, keeping lifecycle counters, or owning effect transport.
+`App` composes projections for the menu, Dock, Spotlight, and registered window surfaces without deciding visibility transitions, keeping lifecycle counters, or owning effect transport.
 `WindowFrame` projects state and executes typed effects through the narrow genie driver.
 The driver reports generation-tagged settlement and never chooses lifecycle destination truth.
 The `SystemSettingsApp` content boundary and pane ownership are documented in [`docs/system-settings.md`](system-settings.md).
@@ -33,13 +33,13 @@ A registered app can reuse `WindowFrame` by supplying grouped lifecycle and geom
 - There is one presence and one visibility value per registered app; no independent open/minimized/visibility lifecycle truth exists.
 - Closed state is inactive and not fullscreen. The state has no same-app window collection, window IDs, z-order, or persistence.
 - A completion whose generation is not current is a no-op. Close/relaunch therefore cannot consume a stale minimize or restore request.
-- Dock and menu activation are deterministic under repetition; an activation that reverses a transition supersedes the prior generation.
+- Dock and shell activation are deterministic under repetition; an activation that reverses a transition supersedes the prior generation.
 - Fullscreen is app-contained and survives minimize/restore; closing starts a fresh normal window.
 - Focus requests use the reducer's epoch. Restore focus is emitted only when the current restore settles visibly.
 
 ## Extension boundary and non-goals
 
-Each registered app is intentionally a single-window owner. `src/desktop/apps.ts` owns static descriptors, and the shell projects those descriptors into Dock launchers and app-keyed controller state. This phase does not define `WindowId`, same-app collections, z-order, event buses, persistence, external-app execution, or a generalized window framework. Appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
+Each registered app is intentionally a single-window owner. `src/desktop/apps.ts` owns static descriptors, and the shell projects those descriptors into Dock launchers, Spotlight results, and app-keyed controller state. This phase does not define `WindowId`, same-app collections, z-order, event buses, persistence, external-app execution, or a generalized window framework. Appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
 
 ## Phase 1 measurements
 
