@@ -95,19 +95,9 @@ async function mountApplication() {
 
   if (!stylesReady || bootController?.isFinished()) return;
 
-  const fixtureApps =
-    import.meta.env.VITE_E2E_FIXTURES === "1" &&
-    new URLSearchParams(window.location.search).get("desktop-fixture") === "multiple-apps"
-      ? (await import("./testing/multipleDesktopApps")).multipleDesktopApps
-      : undefined;
-
   createRoot(applicationRoot).render(
     <StrictMode>
-      <App
-        desktopAssetsReady={desktopAssetsReady}
-        onDesktopReady={bootController?.ready}
-        apps={fixtureApps}
-      />
+      <App desktopAssetsReady={desktopAssetsReady} onDesktopReady={bootController?.ready} />
     </StrictMode>,
   );
 }

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { fixtureBaseURL } from "./fixtures/server";
 
 async function ready(page: Page) {
   await page.goto("/");
@@ -90,8 +91,7 @@ test("supports touch selection from the live registry", async ({ browser }) => {
 });
 
 test("launches an actual background app from a multi-app registry", async ({ page }) => {
-  await page.goto("/?desktop-fixture=multiple-apps");
-  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  await page.goto(`${fixtureBaseURL}/tests/e2e/fixtures/multiple-apps.html`);
   const spotlight = page.getByRole("combobox", { name: "Search apps" });
   const auxiliary = page.getByRole("region", { name: "Auxiliary" });
   const settings = page.getByRole("region", { name: "System Settings" });

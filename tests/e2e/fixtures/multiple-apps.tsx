@@ -1,4 +1,8 @@
-import { desktopApps, type DesktopAppDescriptor } from "../desktop/apps";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { App } from "../../../src/App";
+import { desktopApps, type DesktopAppDescriptor } from "../../../src/desktop/apps";
+import "../../../src/styles.css";
 
 const AuxiliaryWindow: DesktopAppDescriptor["Window"] = ({
   appId,
@@ -21,7 +25,16 @@ const AuxiliaryWindow: DesktopAppDescriptor["Window"] = ({
   </section>
 );
 
-export const multipleDesktopApps = [
+const apps = [
   ...desktopApps,
   { id: "auxiliary", name: "Auxiliary", icon: "sparkle", Window: AuxiliaryWindow },
 ] as const satisfies readonly DesktopAppDescriptor[];
+
+const root = document.getElementById("root");
+if (!root) throw new Error("Fixture root is missing");
+
+createRoot(root).render(
+  <StrictMode>
+    <App apps={apps} />
+  </StrictMode>,
+);
