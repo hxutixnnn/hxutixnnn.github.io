@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useReducer } from "react";
+import { useCallback, useReducer } from "react";
 import {
   initialSingleWindowState,
   reduceWindow,
@@ -9,7 +9,6 @@ import {
 
 export type SingleWindowControllerOptions = {
   initialState?: SingleWindowState;
-  onEffect?: (effect: WindowEffect) => void;
 };
 
 type ControllerAction = { type: "EVENT"; event: WindowEvent } | { type: "CONSUME_EFFECTS"; count: number };
@@ -33,7 +32,6 @@ function reduceController(state: ControllerState, action: ControllerAction): Con
 
 export function useSingleWindowController({
   initialState = initialSingleWindowState,
-  onEffect,
 }: SingleWindowControllerOptions = {}) {
   const [controller, dispatchController] = useReducer(reduceController, {
     window: initialState,
@@ -46,12 +44,6 @@ export function useSingleWindowController({
   const effectsConsumed = useCallback((count: number) => {
     dispatchController({ type: "CONSUME_EFFECTS", count });
   }, []);
-
-  useLayoutEffect(() => {
-    if (!onEffect || controller.pendingEffects.length === 0) return;
-    for (const effect of controller.pendingEffects) onEffect(effect);
-    dispatchController({ type: "CONSUME_EFFECTS", count: controller.pendingEffects.length });
-  }, [controller.pendingEffects, onEffect]);
 
   return {
     state: controller.window,
