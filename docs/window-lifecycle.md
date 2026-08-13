@@ -1,8 +1,8 @@
-# Single-window lifecycle ownership
+# App-keyed single-window lifecycle ownership
 
-The current desktop contract is one retained System Settings instance.
-Its lifecycle is owned by the pure single-window machine and the `useSingleWindowController` hook.
-`App` composes projections for the menu, Dock, and Settings surface without deciding visibility transitions, keeping lifecycle counters, or owning effect transport.
+The current registry contains one retained System Settings instance, while the shell lifecycle boundary is keyed by `AppId` so each registered app receives an independent single-window controller.
+Each app lifecycle is owned by the pure single-window machine and `useDesktopAppController`; this does not introduce same-app window IDs or z-order.
+`App` composes projections for the menu, Dock, and registered window surfaces without deciding visibility transitions, keeping lifecycle counters, or owning effect transport.
 `WindowFrame` projects state and executes typed effects through the narrow genie driver.
 The driver reports generation-tagged settlement and never chooses lifecycle destination truth.
 The `SystemSettingsApp` content boundary and pane ownership are documented in [`docs/system-settings.md`](system-settings.md).
@@ -26,12 +26,12 @@ The controller is the sole owner of their ordered queue at the React boundary.
 `WindowFrame` solely owns physical animation, focus restoration, inertness, lifecycle data attributes, fullscreen coordination, chrome, and `react-rnd` mechanics.
 `src/windows/transitions/genie.ts` owns run identity, interruption, live retargeting, settlement rejection, reduced motion, and cleanup.
 Pure frame policy and shell workspace measurement are owned by [`docs/window-geometry.md`](window-geometry.md).
-A future app can reuse `WindowFrame` by supplying grouped lifecycle and geometry ports plus content without app IDs, registries, or service lookup.
+A registered app can reuse `WindowFrame` by supplying grouped lifecycle and geometry ports plus content; app identity stays at the shell/controller boundary.
 
 ## Invariants
 
-- There is one presence and one visibility value; no independent open/minimized/visibility lifecycle truth exists.
-- Closed state is inactive and not fullscreen. The state has no window collection, IDs, z-order, persistence, or registry.
+- There is one presence and one visibility value per registered app; no independent open/minimized/visibility lifecycle truth exists.
+- Closed state is inactive and not fullscreen. The state has no same-app window collection, window IDs, z-order, or persistence.
 - A completion whose generation is not current is a no-op. Close/relaunch therefore cannot consume a stale minimize or restore request.
 - Dock and menu activation are deterministic under repetition; an activation that reverses a transition supersedes the prior generation.
 - Fullscreen is app-contained and survives minimize/restore; closing starts a fresh normal window.
@@ -39,7 +39,7 @@ A future app can reuse `WindowFrame` by supplying grouped lifecycle and geometry
 
 ## Extension boundary and non-goals
 
-The controller is intentionally a single-window owner. A future second app may compose another explicitly approved controller, but this phase does not define `WindowId`, collections, z-order, app registries, event buses, persistence, or a generalized window framework. Appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
+Each registered app is intentionally a single-window owner. `src/desktop/apps.ts` owns static descriptors, and the shell projects those descriptors into Dock launchers and app-keyed controller state. This phase does not define `WindowId`, same-app collections, z-order, event buses, persistence, external-app execution, or a generalized window framework. Appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
 
 ## Phase 1 measurements
 

@@ -6,11 +6,13 @@ const itemClass =
   "flex min-h-8 cursor-default items-center gap-2 rounded-[8px] px-2 data-[highlighted]:bg-[var(--tienos-color-accent)] data-[highlighted]:text-[var(--tienos-color-text-on-accent)] data-[highlighted]:outline-none";
 
 export function SettingsSelect({
+  appId,
   label,
   value,
   options,
   onValueChange,
 }: {
+  appId: string;
   label: string;
   value: string;
   options: readonly string[];
@@ -23,7 +25,12 @@ export function SettingsSelect({
         <Select.Icon className="size-1.5 rotate-45 border-r border-b border-current text-[var(--tienos-color-text-secondary)]" />
       </Select.Trigger>
       <Select.Portal>
-        <Select.Positioner data-settings-portal sideOffset={5} className="z-[60] outline-none">
+        <Select.Positioner
+          data-settings-portal
+          data-desktop-activity={appId}
+          sideOffset={5}
+          className="z-[60] outline-none"
+        >
           <Select.Popup className="min-w-[var(--anchor-width)] rounded-[10px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-menu)] p-1 text-[var(--tienos-color-text-primary)] shadow-[0_16px_36px_rgb(0_0_0/.3)] backdrop-blur-xl [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none">
             <Select.List>
               {options.map((option) => (

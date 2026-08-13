@@ -3,22 +3,10 @@ import { Menubar } from "@base-ui/react/menubar";
 import { useHotkeys } from "react-hotkeys-hook";
 import { useEffect, useState, type RefObject } from "react";
 import { FontAwesomeIcon } from "./FontAwesomeIcon";
-
-export type MenuCommand =
-  | "about-this-os"
-  | "system-settings"
-  | "app-store"
-  | "force-quit"
-  | "sleep"
-  | "restart"
-  | "shut-down"
-  | "lock-screen"
-  | "about-navigator"
-  | "navigator-preferences"
-  | "hide-navigator";
+import type { DesktopCommand } from "../desktop/commands";
 
 type MenuBarProps = {
-  onAction?: (command: MenuCommand) => void;
+  onAction?: (command: DesktopCommand) => void;
   surfaceRef?: RefObject<HTMLElement | null>;
 };
 
@@ -42,7 +30,7 @@ function Shortcut({ children }: { children: string }) {
 function MenuPopup({ children }: { children: React.ReactNode }) {
   return (
     <Menu.Portal>
-      <Menu.Positioner sideOffset={6} className="z-50 outline-none">
+      <Menu.Positioner data-menu-activity sideOffset={6} className="z-50 outline-none">
         <Menu.Popup className={popupClassName}>{children}</Menu.Popup>
       </Menu.Positioner>
     </Menu.Portal>
@@ -68,7 +56,7 @@ export function MenuBar({ onAction, surfaceRef }: MenuBarProps) {
     { enableOnFormTags: true },
   );
 
-  const announce = (command: MenuCommand) => {
+  const announce = (command: DesktopCommand) => {
     setSystemMenuOpen(false);
     onAction?.(command);
   };
@@ -93,15 +81,18 @@ export function MenuBar({ onAction, surfaceRef }: MenuBarProps) {
             <FontAwesomeIcon name="sparkle" className="text-[15px]" />
           </Menu.Trigger>
           <MenuPopup>
-            <Menu.Item className={itemClassName} onClick={() => announce("about-this-os")}>
+            <Menu.Item className={itemClassName} onClick={() => announce({ type: "about-this-os" })}>
               <span>About This OS</span>
             </Menu.Item>
             <Menu.Separator className={separatorClassName} />
-            <Menu.Item className={itemClassName} onClick={() => announce("system-settings")}>
+            <Menu.Item
+              className={itemClassName}
+              onClick={() => announce({ type: "activate-app", appId: "system-settings" })}
+            >
               <span>System Settings…</span>
               <Shortcut>⌘,</Shortcut>
             </Menu.Item>
-            <Menu.Item className={itemClassName} onClick={() => announce("app-store")}>
+            <Menu.Item className={itemClassName} onClick={() => announce({ type: "app-store" })}>
               <span>App Store</span>
             </Menu.Item>
             <Menu.Separator className={separatorClassName} />
@@ -114,7 +105,13 @@ export function MenuBar({ onAction, surfaceRef }: MenuBarProps) {
                 />
               </Menu.SubmenuTrigger>
               <Menu.Portal>
-                <Menu.Positioner side="right" align="start" sideOffset={3} className="z-50 outline-none">
+                <Menu.Positioner
+                  data-menu-activity
+                  side="right"
+                  align="start"
+                  sideOffset={3}
+                  className="z-50 outline-none"
+                >
                   <Menu.Popup className={popupClassName}>
                     <Menu.Item className={itemClassName} disabled>
                       No Recent Items
@@ -124,22 +121,22 @@ export function MenuBar({ onAction, surfaceRef }: MenuBarProps) {
               </Menu.Portal>
             </Menu.SubmenuRoot>
             <Menu.Separator className={separatorClassName} />
-            <Menu.Item className={itemClassName} onClick={() => announce("force-quit")}>
+            <Menu.Item className={itemClassName} onClick={() => announce({ type: "force-quit" })}>
               <span>Force Quit</span>
               <Shortcut>⌥⌘⎋</Shortcut>
             </Menu.Item>
             <Menu.Separator className={separatorClassName} />
-            <Menu.Item className={itemClassName} onClick={() => announce("sleep")}>
+            <Menu.Item className={itemClassName} onClick={() => announce({ type: "sleep" })}>
               <span>Sleep</span>
             </Menu.Item>
-            <Menu.Item className={itemClassName} onClick={() => announce("restart")}>
+            <Menu.Item className={itemClassName} onClick={() => announce({ type: "restart" })}>
               <span>Restart…</span>
             </Menu.Item>
-            <Menu.Item className={itemClassName} onClick={() => announce("shut-down")}>
+            <Menu.Item className={itemClassName} onClick={() => announce({ type: "shut-down" })}>
               <span>Shut Down…</span>
             </Menu.Item>
             <Menu.Separator className={separatorClassName} />
-            <Menu.Item className={itemClassName} onClick={() => announce("lock-screen")}>
+            <Menu.Item className={itemClassName} onClick={() => announce({ type: "lock-screen" })}>
               <span>Lock Screen</span>
               <Shortcut>⌃⌘Q</Shortcut>
             </Menu.Item>
@@ -149,15 +146,15 @@ export function MenuBar({ onAction, surfaceRef }: MenuBarProps) {
         <Menu.Root>
           <Menu.Trigger className={triggerClassName}>Navigator</Menu.Trigger>
           <MenuPopup>
-            <Menu.Item className={itemClassName} onClick={() => announce("about-navigator")}>
+            <Menu.Item className={itemClassName} onClick={() => announce({ type: "about-navigator" })}>
               <span>About Navigator</span>
             </Menu.Item>
             <Menu.Separator className={separatorClassName} />
-            <Menu.Item className={itemClassName} onClick={() => announce("navigator-preferences")}>
+            <Menu.Item className={itemClassName} onClick={() => announce({ type: "navigator-preferences" })}>
               <span>Preferences…</span>
               <Shortcut>⌘,</Shortcut>
             </Menu.Item>
-            <Menu.Item className={itemClassName} onClick={() => announce("hide-navigator")}>
+            <Menu.Item className={itemClassName} onClick={() => announce({ type: "hide-navigator" })}>
               <span>Hide Navigator</span>
               <Shortcut>⌘H</Shortcut>
             </Menu.Item>

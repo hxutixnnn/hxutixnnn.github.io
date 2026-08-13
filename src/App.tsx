@@ -1,44 +1,53 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { Dock } from "./components/Dock";
 import { MenuBar } from "./components/MenuBar";
-import { SystemSettingsApp } from "./apps/system-settings/SystemSettingsApp";
-import { useSingleWindowController } from "./windows/useSingleWindowController";
+import { defaultDesktopApp, desktopApps, type DesktopAppDescriptor } from "./desktop/apps";
+import { useDesktopAppController } from "./desktop/useDesktopAppController";
 import { useWorkspaceGeometry } from "./windows/useWorkspaceGeometry";
 
 type AppProps = {
   desktopAssetsReady?: Promise<void>;
   onDesktopReady?: () => void;
+  apps?: readonly DesktopAppDescriptor[];
+  defaultApp?: DesktopAppDescriptor;
 };
 
-export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
-  const {
-    state: windowState,
-    dispatch,
-    effects: windowEffects,
-    effectsConsumed,
-  } = useSingleWindowController();
+export function App({
+  desktopAssetsReady,
+  onDesktopReady,
+  apps = desktopApps,
+  defaultApp = defaultDesktopApp,
+}: AppProps = {}) {
+  const { controllers, frontmostAppId, dispatch, desktopPointer, effectsConsumed } = useDesktopAppController(
+    apps,
+    defaultApp.id,
+  );
   const menuBarRef = useRef<HTMLElement>(null);
   const dockSurfaceRef = useRef<HTMLElement>(null);
-  const settingsDockItemRef = useRef<HTMLButtonElement>(null);
+  const dockItemRefs = useRef(new Map<string, HTMLButtonElement>());
   const { workspace, getDockTargetRect } = useWorkspaceGeometry({
     menuBarRef,
     dockSurfaceRef,
-    settingsDockItemRef,
+    dockItemRefs,
   });
   useEffect(() => {
     const classifyDesktopPointer = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
-      if (target.closest("[data-genie-window],[data-settings-portal]")) {
-        dispatch({ type: "WINDOW_INTERACTION" });
+      if (target.closest("[data-desktop-activity]")) {
+        const appId = target.closest("[data-desktop-activity]")?.getAttribute("data-desktop-activity");
+        if (appId && !controllers[appId]) return;
+        const resolvedAppId =
+          appId || Object.entries(controllers).find(([, value]) => value.window.active)?.[0];
+        if (resolvedAppId) dispatch(resolvedAppId, { type: "WINDOW_INTERACTION" }, true);
         return;
       }
-      if (target.closest("[data-dock-surface]")) return;
-      dispatch({ type: "DESKTOP_POINTER" });
+      if (target.closest("[data-dock-surface],[data-menu-bar-surface],[data-menu-activity]")) return;
+      desktopPointer();
     };
     document.addEventListener("pointerdown", classifyDesktopPointer, true);
     return () => document.removeEventListener("pointerdown", classifyDesktopPointer, true);
-  }, [dispatch]);
+  }, [controllers, desktopPointer, dispatch]);
 
   useLayoutEffect(() => {
     if (!onDesktopReady) return;
@@ -73,24 +82,39 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
       <MenuBar
         surfaceRef={menuBarRef}
         onAction={(command) => {
-          if (command === "system-settings") dispatch({ type: "ACTIVATE_FROM_MENU" });
+          if (command.type === "activate-app" && controllers[command.appId])
+            dispatch(command.appId, { type: "ACTIVATE_FROM_MENU" }, true);
         }}
       />
-      {windowState.presence === "open" && (
-        <SystemSettingsApp
-          windowState={windowState}
-          effects={windowEffects}
-          onEffectsConsumed={effectsConsumed}
-          onEvent={dispatch}
-          workspace={workspace}
-          dockTargetRectProvider={getDockTargetRect}
-        />
-      )}
+      {apps.map((app) => {
+        const controller = controllers[app.id];
+        if (controller.window.presence !== "open") return null;
+        const AppWindow = app.Window;
+        return (
+          <AppWindow
+            key={app.id}
+            appId={app.id}
+            frontmost={app.id === frontmostAppId}
+            windowState={controller.window}
+            effects={controller.pendingEffects}
+            onEffectsConsumed={() => effectsConsumed(app.id, controller.pendingEffects.length)}
+            onEvent={(event) => dispatch(app.id, event, event.type === "WINDOW_INTERACTION")}
+            workspace={workspace}
+            dockTargetRectProvider={() => getDockTargetRect(app.id)}
+          />
+        );
+      })}
       <Dock
+        apps={apps}
         surfaceRef={dockSurfaceRef}
-        settingsTargetRef={settingsDockItemRef}
-        windowState={windowState}
-        onActivateSettings={() => dispatch({ type: "ACTIVATE_FROM_DOCK" })}
+        targetRef={(appId, element) => {
+          if (element) dockItemRefs.current.set(appId, element);
+          else dockItemRefs.current.delete(appId);
+        }}
+        windowStates={Object.fromEntries(
+          Object.entries(controllers).map(([id, controller]) => [id, controller.window]),
+        )}
+        onActivate={(app) => dispatch(app.id, { type: "ACTIVATE_FROM_DOCK" }, true)}
       />
     </main>
   );

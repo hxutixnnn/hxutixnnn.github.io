@@ -31,6 +31,8 @@ import {
 } from "../../windows/singleWindowMachine";
 
 type SystemSettingsProps = {
+  appId?: string;
+  frontmost?: boolean;
   windowState?: SingleWindowState;
   effects?: readonly WindowEffect[];
   onEffectsConsumed?: (count: number) => void;
@@ -99,6 +101,8 @@ function SettingsScrollArea({
 }
 
 export function SystemSettingsApp({
+  appId = "system-settings",
+  frontmost = true,
   windowState = initialSingleWindowState,
   effects = [],
   onEffectsConsumed,
@@ -184,6 +188,8 @@ export function SystemSettingsApp({
   };
   const settingsWindow = (
     <WindowFrame
+      appId={appId}
+      frontmost={frontmost}
       title="System Settings"
       lifecycle={{ state: windowState, effects, dispatch: emit, effectsConsumed: onEffectsConsumed }}
       geometry={{
@@ -339,6 +345,7 @@ export function SystemSettingsApp({
               )}
 
               <SelectedPane
+                appId={appId}
                 pane={selectedCategory}
                 demoSettings={appearanceDemoSettings}
                 onDemoSettingsChange={setAppearanceDemoSettings}

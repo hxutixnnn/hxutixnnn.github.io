@@ -4,13 +4,13 @@ import { workspaceFromMeasurements, type Rect, type Viewport, type Workspace } f
 export type WorkspaceGeometryRefs = {
   menuBarRef: RefObject<HTMLElement | null>;
   dockSurfaceRef: RefObject<HTMLElement | null>;
-  settingsDockItemRef: RefObject<HTMLElement | null>;
+  dockItemRefs: RefObject<ReadonlyMap<string, HTMLElement>>;
 };
 
 export type WorkspaceGeometrySnapshot = Readonly<{
   workspace: Workspace;
   dockTargetRect: Rect | null;
-  getDockTargetRect: () => Rect | null;
+  getDockTargetRect: (appId: string) => Rect | null;
 }>;
 
 type MeasuredGeometry = {
@@ -35,6 +35,10 @@ function readRect(element: HTMLElement | null): Rect | null {
   const width = Math.max(0, finiteOr(rect.width, finiteOr(rect.right, x) - x));
   const height = Math.max(0, finiteOr(rect.height, finiteOr(rect.bottom, y) - y));
   return Object.freeze({ x, y, width, height });
+}
+
+function readDockTargetRect(dockItemRefs: RefObject<ReadonlyMap<string, HTMLElement>>, appId: string) {
+  return readRect(dockItemRefs.current.get(appId) ?? null);
 }
 
 function readSafeAreaBottom() {
@@ -103,10 +107,13 @@ function cancelFrame(frame: FrameHandle) {
 export function useWorkspaceGeometry({
   menuBarRef,
   dockSurfaceRef,
-  settingsDockItemRef,
+  dockItemRefs,
 }: WorkspaceGeometryRefs): WorkspaceGeometrySnapshot {
   const [geometry, setGeometry] = useState(initialGeometry);
-  const getDockTargetRect = useCallback(() => readRect(settingsDockItemRef.current), [settingsDockItemRef]);
+  const getDockTargetRect = useCallback(
+    (appId: string) => readDockTargetRect(dockItemRefs, appId),
+    [dockItemRefs],
+  );
 
   useLayoutEffect(() => {
     let cancelled = false;
@@ -118,7 +125,7 @@ export function useWorkspaceGeometry({
       const viewport = readViewport();
       const menu = readRect(menuBarRef.current);
       const dock = readRect(dockSurfaceRef.current);
-      const dockTargetRect = readRect(settingsDockItemRef.current);
+      const dockTargetRect = readRect(dockItemRefs.current.values().next().value ?? null);
       const next = {
         workspace: workspaceFromMeasurements(
           viewport,
@@ -141,14 +148,14 @@ export function useWorkspaceGeometry({
       typeof MutationObserver === "undefined" ? null : new MutationObserver(scheduleMeasure);
     const menu = menuBarRef.current;
     const dock = dockSurfaceRef.current;
-    const dockElement = settingsDockItemRef.current;
+    const dockElements = [...dockItemRefs.current.values()];
 
     if (menu) observer?.observe(menu);
     if (dock) observer?.observe(dock);
-    if (dockElement) observer?.observe(dockElement);
+    for (const dockElement of dockElements) observer?.observe(dockElement);
     if (menu) mutationObserver?.observe(menu, { attributes: true });
     if (dock) mutationObserver?.observe(dock, { attributes: true });
-    if (dockElement) mutationObserver?.observe(dockElement, { attributes: true });
+    for (const dockElement of dockElements) mutationObserver?.observe(dockElement, { attributes: true });
     if (typeof document !== "undefined") {
       mutationObserver?.observe(document.documentElement, { attributes: true });
     }
@@ -171,10 +178,8 @@ export function useWorkspaceGeometry({
         window.removeEventListener("orientationchange", scheduleMeasure);
       }
     };
-  }, [dockSurfaceRef, menuBarRef, settingsDockItemRef]);
+  }, [dockItemRefs, dockSurfaceRef, menuBarRef]);
 
-  // The provider is passed through render but reads the target ref only when an effect or event invokes it.
-  // eslint-disable-next-line react-hooks/refs
   return Object.freeze({
     workspace: geometry.workspace,
     dockTargetRect: geometry.dockTargetRect,

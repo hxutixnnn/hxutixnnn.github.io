@@ -114,6 +114,19 @@ describe("SystemSettings", () => {
     expect(wallpaperTint).not.toBeChecked();
   });
 
+  it("assigns app-owned control portals to the hosting app", async () => {
+    const user = userEvent.setup();
+    render(<SystemSettingsApp appId="host-app" onEvent={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Appearance" }));
+    await user.click(screen.getByRole("combobox", { name: "Text highlight color" }));
+
+    expect(screen.getByRole("listbox").closest("[data-desktop-activity]")).toHaveAttribute(
+      "data-desktop-activity",
+      "host-app",
+    );
+  });
+
   it("preserves every Appearance demo control across pane navigation", async () => {
     const user = userEvent.setup();
     render(<SystemSettingsApp onEvent={vi.fn()} />);

@@ -15,6 +15,7 @@ export type SettingsPaneMetadata = Readonly<{
 }>;
 
 type SettingsPaneProps = {
+  appId: string;
   pane: SettingsPaneMetadata;
   demoSettings: AppearanceDemoSettings;
   onDemoSettingsChange: Dispatch<SetStateAction<AppearanceDemoSettings>>;

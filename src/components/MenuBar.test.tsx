@@ -1,6 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { MenuBar } from "./MenuBar";
+
+afterEach(cleanup);
 
 describe("MenuBar", () => {
   it("renders the system menu with the approved menu structure", async () => {
@@ -35,16 +38,31 @@ describe("MenuBar", () => {
     expect(document.body.textContent).not.toMatch(/[✦⌁▰›‹]/u);
   });
 
-  it("opens the system menu with the registered keyboard shortcut", async () => {
+  it("opens the system menu with keyboard activation", async () => {
+    const user = userEvent.setup();
     render(<MenuBar />);
 
-    fireEvent.keyDown(document, {
-      code: "KeyO",
-      key: "o",
-      metaKey: true,
-      shiftKey: true,
-    });
+    screen.getByRole("menuitem", { name: "Open tienOS menu" }).focus();
+    await user.keyboard("{Enter}");
 
     expect(await screen.findByText("About This OS")).toBeVisible();
+  });
+
+  it.each(["pointer", "keyboard"])("emits a typed app activation command by %s", async (input) => {
+    const onAction = vi.fn();
+    const user = userEvent.setup();
+    render(<MenuBar onAction={onAction} />);
+    const trigger = screen.getByRole("menuitem", { name: "Open tienOS menu" });
+    if (input === "pointer") {
+      fireEvent.click(trigger);
+      fireEvent.click(await screen.findByText("System Settings…"));
+    } else {
+      trigger.focus();
+      await user.keyboard("{Enter}");
+      await screen.findByText("System Settings…");
+      await user.keyboard("{ArrowDown}{Enter}");
+    }
+
+    expect(onAction).toHaveBeenCalledWith({ type: "activate-app", appId: "system-settings" });
   });
 });
