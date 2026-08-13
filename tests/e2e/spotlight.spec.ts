@@ -100,11 +100,14 @@ test("ranks, navigates, and launches apps from a multi-app registry", async ({ p
   await page.keyboard.press("Meta+Space");
   const options = page.getByRole("option");
   await expect(options.nth(0)).toContainText("Auxiliary");
-  await expect(options.nth(1)).toContainText("System Settings");
+  await expect(options.nth(1)).toContainText("Calculator");
+  await expect(options.nth(2)).toContainText("System Settings");
   await expect(options.nth(0)).toHaveAttribute("aria-selected", "true");
   await spotlight.press("ArrowDown");
-  await expect(options.nth(0)).toHaveAttribute("aria-selected", "false");
   await expect(options.nth(1)).toHaveAttribute("aria-selected", "true");
+  await spotlight.press("ArrowDown");
+  await expect(options.nth(0)).toHaveAttribute("aria-selected", "false");
+  await expect(options.nth(2)).toHaveAttribute("aria-selected", "true");
   await spotlight.press("Enter");
   await expect(settings).toHaveAttribute("data-window-active", "true");
   await expect(auxiliary).toHaveCount(0);

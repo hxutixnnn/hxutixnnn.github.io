@@ -76,15 +76,15 @@ assets:
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering.
-    sha256: ccaa2d73da12ec2274a0c7e51351bddf9ea68d8580388a1bff87d06339cde47b
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering with the registry-backed Dock.
+    sha256: 6f3623422a16e9f155b347a1e16056e82669cb6b8e4afd2e7e6a9cc0496d88d2
   - path: tests/e2e/main-screen.spec.ts-snapshots/auto-live-dark-to-light-with-portal-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering.
-    sha256: 71628975e79a2bdf84d342594c4215a3ef7f05a842ff408f5351082123f83534
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering with the registry-backed Dock.
+    sha256: c3f15752303ab6d5bdc211270ffe0ff7a3e2126b2959c0cf2b564790fb1a2fa6
   - path: tests/e2e/main-screen.spec.ts-snapshots/delayed-wallpaper-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
@@ -97,8 +97,8 @@ assets:
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop.
-    sha256: 18a1d627992e3c6963c314c2c079b6b309ab26991f4b4caec2b94ac0d0f634df
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering with the registry-backed Dock.
+    sha256: 729c0f293e4e87adb1b643c4dbcf8bc67c9de64fdbf8a40fe6aecd6affddbaac
   - path: tests/e2e/main-screen.spec.ts-snapshots/delayed-wallpaper-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
@@ -160,8 +160,8 @@ assets:
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop.
-    sha256: 7bf8463b840ca5f0b7d3711a4527364a2c532c60013bf201fb97fe024c739697
+    modified: Deterministic Playwright visual baseline for compact global resolved-theme transition rendering with the registry-backed Dock.
+    sha256: e065e2496184e808abc101ae40b2394c46373ee6767eb99f4bed3f808409a5c6
   - path: tests/e2e/main-screen.spec.ts-snapshots/rapid-light-dark-light-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
@@ -181,12 +181,12 @@ assets:
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpaper; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpaper Copyright Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline captured at 1440x900 for backdrop-free Light wallpaper review.
-    sha256: 9740bc8e43f390c96ab612a9fe2095c2b6365b188d2e3c3dd0485c20b0359f1c
+    modified: Deterministic Playwright visual baseline captured at 1440x900 for backdrop-free Light wallpaper and registry-backed Dock review.
+    sha256: 8ac052eae7f80c3425428b799052b56edddd405b2211303ebd2bbed3cd1add7d
   - path: tests/e2e/main-screen.spec.ts-snapshots/light-wallpaper-mobile-chromium-linux.png
     author: tienOS contributors; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpaper; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpaper Copyright Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline captured at 320x568 for backdrop-free Light wallpaper review.
-    sha256: 83106f09e350c5926f86af8dd0bcf18d655fa03c76012ac9c8d20c65fe3ea932
+    modified: Deterministic Playwright visual baseline captured at 320x568 for backdrop-free Light wallpaper and registry-backed Dock review.
+    sha256: 3fc5deb090d08e41fb1a5e087f2ec154fc82914b879b2c09fe87be1f9bdbe0ef

@@ -928,14 +928,18 @@ test("uses a visible high-contrast scrollbar palette in Light mode", async ({ pa
   await expect(thumb).toHaveCSS("background-color", "rgba(15, 23, 42, 0.82)");
 });
 
-test("Dock renders, reports, focuses, and layers the single Settings window", async ({ page }, testInfo) => {
+test("Dock renders registered apps, reports, focuses, and layers the Settings window", async ({
+  page,
+}, testInfo) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
   const dock = page.getByRole("navigation", { name: "Dock" });
   const app = dock.getByRole("button", { name: "System Settings" });
+  const calculatorApp = dock.getByRole("button", { name: "Calculator" });
   const settingsWindow = page.getByRole("region", { name: "System Settings" });
-  await expect(dock.getByRole("button")).toHaveCount(1);
+  await expect(dock.getByRole("button")).toHaveCount(2);
+  await expect(calculatorApp).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Dock preview (non-interactive)" })).toHaveCount(0);
   await expect(app).not.toHaveAttribute("aria-pressed");
   await expect(dock.getByRole("status")).toHaveText("System Settings is running");
@@ -1030,6 +1034,7 @@ test("Dock supports touch and compact viewport boundaries", async ({ browser }, 
   });
   const dock = page.getByRole("navigation", { name: "Dock" });
   const app = dock.getByRole("button", { name: "System Settings" });
+  const calculatorApp = dock.getByRole("button", { name: "Calculator" });
   await expect(app).toHaveCSS("width", "56px");
   await expect(app).toHaveCSS("height", "56px");
   await page.getByRole("button", { name: "Close System Settings" }).tap();
@@ -1149,9 +1154,11 @@ test("Dock supports touch and compact viewport boundaries", async ({ browser }, 
   expect(Math.round(afterResize!.x)).toBe(Math.round(beforeResize!.x));
   expect(Math.round(afterResize!.y)).toBe(Math.round(beforeResize!.y));
   await expectCompactBounds(21);
-  await expect(dock.getByRole("button")).toHaveCount(1);
+  await expect(dock.getByRole("button")).toHaveCount(2);
   await expect(app).toHaveAccessibleName("System Settings");
   await expect(app).toHaveAttribute("title", "System Settings");
+  await expect(calculatorApp).toHaveAccessibleName("Calculator");
+  await expect(calculatorApp).toHaveAttribute("title", "Calculator");
   await expect(page.getByRole("button", { name: "Close System Settings" })).toBeVisible();
   await expect(page.locator('.settings-scroll-viewport[aria-label="Settings details"]')).toBeVisible();
   await page.screenshot({ animations: "disabled", path: testInfo.outputPath("dock-iphone-landscape.png") });
@@ -1258,6 +1265,22 @@ test.describe("appearance modes", () => {
     );
     const details = page.locator('.settings-scroll-viewport[aria-label="Settings details"]');
     await page.setViewportSize({ width: 700, height: 520 });
+    await expect
+      .poll(async () => {
+        const [menuBounds, windowBounds, dockBounds] = await Promise.all([
+          page.locator("[data-menu-bar-surface]").boundingBox(),
+          page.locator(".settings-rnd").boundingBox(),
+          page.locator("[data-dock-surface]").boundingBox(),
+        ]);
+        if (!menuBounds || !windowBounds || !dockBounds) return false;
+        return (
+          windowBounds.x >= 0 &&
+          windowBounds.y >= menuBounds.y + menuBounds.height &&
+          windowBounds.x + windowBounds.width <= 700 &&
+          windowBounds.y + windowBounds.height <= dockBounds.y
+        );
+      })
+      .toBe(true);
     await details.evaluate((node) => {
       node.scrollTop = 80;
     });
