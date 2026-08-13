@@ -127,13 +127,17 @@ export function fullscreenFrame(workspace: Workspace): Frame {
   return freezeFrame(0, top, workspace.viewport.width, Math.max(0, bottomBoundary - top));
 }
 
-export function clampFrame(frame: Frame, workspace: Workspace): Frame {
+export function clampFrame(
+  frame: Frame,
+  workspace: Workspace,
+  minimum: Readonly<{ width: number; height: number }> = DESKTOP_MINIMUM,
+): Frame {
   const { viewport } = workspace;
   const top = Math.ceil(nonNegative(workspace.menuBottom));
   const bottomBoundary = workspaceBottomBoundary(workspace);
   const availableHeight = Math.max(0, bottomBoundary - top);
-  const width = clamp(frame.width, Math.min(DESKTOP_MINIMUM.width, viewport.width), viewport.width);
-  const height = clamp(frame.height, Math.min(DESKTOP_MINIMUM.height, availableHeight), availableHeight);
+  const width = clamp(frame.width, Math.min(minimum.width, viewport.width), viewport.width);
+  const height = clamp(frame.height, Math.min(minimum.height, availableHeight), availableHeight);
 
   return freezeFrame(
     clamp(frame.x, 0, viewport.width - width),
@@ -143,8 +147,14 @@ export function clampFrame(frame: Frame, workspace: Workspace): Frame {
   );
 }
 
-export function restoreNormalFrame(savedFrame: Frame, workspace: Workspace): Frame {
-  return workspace.layout === "compact" ? defaultCompactFrame(workspace) : clampFrame(savedFrame, workspace);
+export function restoreNormalFrame(
+  savedFrame: Frame,
+  workspace: Workspace,
+  minimum: Readonly<{ width: number; height: number }> = DESKTOP_MINIMUM,
+): Frame {
+  return workspace.layout === "compact"
+    ? defaultCompactFrame(workspace)
+    : clampFrame(savedFrame, workspace, minimum);
 }
 
 export function frameFromResize(

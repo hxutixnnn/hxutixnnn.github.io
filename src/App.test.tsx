@@ -24,16 +24,19 @@ describe("tienOS main screen", () => {
     await waitFor(() => expect(onDesktopReady).toHaveBeenCalledOnce());
   });
 
-  it("opens, raises, and reports the Settings window from the multi-app Dock", async () => {
+  it("opens, raises, and reports the single Settings window from the Dock", async () => {
     const user = userEvent.setup();
-    const { getByRole, getAllByRole, getByText, queryByRole } = render(<App />);
+    const { getByRole, getAllByRole, queryByRole } = render(<App />);
 
     const dock = getByRole("navigation", { name: "Dock" });
     const app = getByRole("button", { name: "System Settings" });
-    expect(dock.querySelectorAll("button")).toHaveLength(2);
+    expect(dock.querySelectorAll("button")).toHaveLength(3);
     expect(getByRole("button", { name: "Notes" })).toBeInTheDocument();
+    expect(getByRole("button", { name: "Calculator" })).toBeInTheDocument();
     expect(app).not.toHaveAttribute("aria-pressed");
-    expect(getByText("System Settings is running")).toBeInTheDocument();
+    expect(document.querySelector("#system-settings-dock-status")).toHaveTextContent(
+      "System Settings is running",
+    );
 
     await user.click(getByRole("main", { name: "tienOS desktop" }));
     await user.click(app);
@@ -42,12 +45,16 @@ describe("tienOS main screen", () => {
 
     await user.click(getByRole("button", { name: "Close System Settings" }));
     expect(queryByRole("region", { name: "System Settings" })).not.toBeInTheDocument();
-    expect(getByText("System Settings is not running")).toBeInTheDocument();
+    expect(document.querySelector("#system-settings-dock-status")).toHaveTextContent(
+      "System Settings is not running",
+    );
 
     app.focus();
     await user.keyboard("{Enter}");
     expect(getAllByRole("region", { name: "System Settings" })).toHaveLength(1);
-    expect(getByText("System Settings is running")).toBeInTheDocument();
+    expect(document.querySelector("#system-settings-dock-status")).toHaveTextContent(
+      "System Settings is running",
+    );
   });
 
   it("keeps an inactive app inactive while its menu owns pointer and keyboard activation", async () => {
