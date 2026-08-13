@@ -1,15 +1,10 @@
-import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Dock } from "./components/Dock";
 import { MenuBar } from "./components/MenuBar";
+import { SystemSettingsApp } from "./apps/system-settings/SystemSettingsApp";
 import { useSingleWindowController } from "./windows/useSingleWindowController";
 import type { WindowEffect } from "./windows/singleWindowMachine";
 import { useWorkspaceGeometry } from "./windows/useWorkspaceGeometry";
-
-const loadSystemSettingsApp = () =>
-  import("./apps/system-settings/SystemSettingsApp").then(({ SystemSettingsApp }) => ({
-    default: SystemSettingsApp,
-  }));
-const SystemSettingsApp = lazy(loadSystemSettingsApp);
 
 type AppProps = {
   desktopAssetsReady?: Promise<void>;
@@ -51,7 +46,7 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
 
     let cancelled = false;
     let frame = 0;
-    void Promise.all([desktopAssetsReady, loadSystemSettingsApp()]).then(() => {
+    void Promise.resolve(desktopAssetsReady).then(() => {
       if (cancelled) return;
       frame = window.requestAnimationFrame(onDesktopReady);
     });
@@ -81,16 +76,14 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
         }}
       />
       {windowState.presence === "open" && (
-        <Suspense fallback={null}>
-          <SystemSettingsApp
-            windowState={windowState}
-            effects={windowEffects}
-            onEffectsConsumed={clearWindowEffects}
-            onEvent={dispatch}
-            workspace={workspace}
-            dockTargetRectProvider={getDockTargetRect}
-          />
-        </Suspense>
+        <SystemSettingsApp
+          windowState={windowState}
+          effects={windowEffects}
+          onEffectsConsumed={clearWindowEffects}
+          onEvent={dispatch}
+          workspace={workspace}
+          dockTargetRectProvider={getDockTargetRect}
+        />
       )}
       <Dock
         surfaceRef={dockSurfaceRef}
