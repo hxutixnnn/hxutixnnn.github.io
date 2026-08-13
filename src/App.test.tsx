@@ -67,6 +67,38 @@ describe("tienOS main screen", () => {
     expect(window).toHaveAttribute("data-window-active", "false");
   });
 
+  it("invokes Spotlight from keyboard and menu, restores focus, and launches through the registry controller", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const trigger = screen.getByRole("button", { name: "Open Spotlight" });
+    trigger.focus();
+    await user.click(trigger);
+    expect(screen.getByRole("dialog", { name: "Spotlight" })).toBeVisible();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "Spotlight" })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+
+    await user.keyboard("{Meta>} {/Meta}");
+    const search = screen.getByRole("combobox", { name: "Search apps" });
+    await user.type(search, "settings{Enter}");
+    expect(screen.queryByRole("dialog", { name: "Spotlight" })).not.toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "System Settings" })).toHaveAttribute(
+      "data-window-active",
+      "true",
+    );
+  });
+
+  it("dismisses Spotlight from a desktop interaction without changing window lifecycle", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("button", { name: "Open Spotlight" }));
+    const window = screen.getByRole("region", { name: "System Settings" });
+    await user.click(screen.getByRole("main", { name: "tienOS desktop" }));
+    expect(screen.queryByRole("dialog", { name: "Spotlight" })).not.toBeInTheDocument();
+    expect(window).toHaveAttribute("data-window-active", "false");
+    expect(window).toHaveAttribute("data-window-visibility", "visible");
+  });
+
   it("ignores activity markers owned by unregistered apps", async () => {
     const user = userEvent.setup();
     render(<App />);

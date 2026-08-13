@@ -1,9 +1,10 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Dock } from "./components/Dock";
 import { MenuBar } from "./components/MenuBar";
 import { defaultDesktopApp, desktopApps, type DesktopAppDescriptor } from "./desktop/apps";
 import { useDesktopAppController } from "./desktop/useDesktopAppController";
 import { useWorkspaceGeometry } from "./windows/useWorkspaceGeometry";
+import { Spotlight } from "./spotlight/Spotlight";
 
 type AppProps = {
   desktopAssetsReady?: Promise<void>;
@@ -23,6 +24,16 @@ export function App({
     defaultApp.id,
   );
   const menuBarRef = useRef<HTMLElement>(null);
+  const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const spotlightReturnFocusRef = useRef<HTMLElement | null>(null);
+  const openSpotlight = useCallback((trigger?: HTMLElement | null) => {
+    spotlightReturnFocusRef.current = trigger ?? (document.activeElement as HTMLElement | null);
+    setSpotlightOpen(true);
+  }, []);
+  const dismissSpotlight = useCallback(() => {
+    setSpotlightOpen(false);
+    spotlightReturnFocusRef.current?.focus();
+  }, []);
   const dockSurfaceRef = useRef<HTMLElement>(null);
   const dockItemRefs = useRef(new Map<string, HTMLButtonElement>());
   const { workspace, getDockTargetRect } = useWorkspaceGeometry({
@@ -31,9 +42,21 @@ export function App({
     dockItemRefs,
   });
   useEffect(() => {
+    const invokeSpotlight = (event: KeyboardEvent) => {
+      if (event.metaKey && !event.ctrlKey && !event.altKey && event.code === "Space") {
+        event.preventDefault();
+        openSpotlight();
+      }
+    };
+    window.addEventListener("keydown", invokeSpotlight);
+    return () => window.removeEventListener("keydown", invokeSpotlight);
+  }, [openSpotlight]);
+
+  useEffect(() => {
     const classifyDesktopPointer = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
+      if (target.closest("[data-shell-overlay]")) return;
       if (target.closest("[data-desktop-activity]")) {
         const appId = target.closest("[data-desktop-activity]")?.getAttribute("data-desktop-activity");
         if (appId && !controllers[appId]) return;
@@ -43,11 +66,12 @@ export function App({
         return;
       }
       if (target.closest("[data-dock-surface],[data-menu-bar-surface],[data-menu-activity]")) return;
+      if (spotlightOpen) dismissSpotlight();
       desktopPointer();
     };
     document.addEventListener("pointerdown", classifyDesktopPointer, true);
     return () => document.removeEventListener("pointerdown", classifyDesktopPointer, true);
-  }, [controllers, desktopPointer, dispatch]);
+  }, [controllers, desktopPointer, dismissSpotlight, dispatch, spotlightOpen]);
 
   useLayoutEffect(() => {
     if (!onDesktopReady) return;
@@ -81,11 +105,20 @@ export function App({
       />
       <MenuBar
         surfaceRef={menuBarRef}
+        onOpenSpotlight={openSpotlight}
         onAction={(command) => {
           if (command.type === "activate-app" && controllers[command.appId])
             dispatch(command.appId, { type: "ACTIVATE_FROM_MENU" }, true);
         }}
       />
+      {spotlightOpen && (
+        <Spotlight
+          apps={apps}
+          open
+          onDismiss={dismissSpotlight}
+          onLaunch={(appId) => dispatch(appId, { type: "ACTIVATE_FROM_MENU" }, true)}
+        />
+      )}
       {apps.map((app) => {
         const controller = controllers[app.id];
         if (controller.window.presence !== "open") return null;
