@@ -39,7 +39,12 @@ function MenuPopup({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function MenuBar({ onAction, onOpenSpotlight, surfaceRef, activeAppName = "Navigator" }: MenuBarProps) {
+export function MenuBar({
+  onAction,
+  onOpenSpotlight,
+  surfaceRef,
+  activeAppName = "Navigator",
+}: MenuBarProps) {
   const [systemMenuOpen, setSystemMenuOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const systemMenuTriggerId = "tienos-system-menu-trigger";
