@@ -96,6 +96,7 @@ export function WindowFrame({
   const normalScrollTopRef = useRef<number | null>(null);
   const compactRef = useRef(compact);
   const focusEpochRef = useRef(-1);
+  const dispatchRef = useRef(dispatch);
   const [dragBoundaryElement, setDragBoundaryElement] = useState<HTMLElement | null>(null);
   const targetProviderRef = useRef(geometry.transitionTargetRect);
   const driverRef = useRef<GenieTransitionDriver | null>(null);
@@ -105,19 +106,23 @@ export function WindowFrame({
   }, [geometry.transitionTargetRect]);
 
   useLayoutEffect(() => {
+    dispatchRef.current = dispatch;
+  }, [dispatch]);
+
+  useLayoutEffect(() => {
     const driver = createGenieTransitionDriver({
       element: () => windowRef.current,
       targetRect: () => targetProviderRef.current(),
       reducedMotion: () => window.matchMedia("(prefers-reduced-motion: reduce)").matches,
       onSettled: ({ generation, destination }) =>
-        dispatch({ type: "TRANSITION_SETTLED", generation, destination }),
+        dispatchRef.current({ type: "TRANSITION_SETTLED", generation, destination }),
     });
     driverRef.current = driver;
     return () => {
       driver.dispose();
       driverRef.current = null;
     };
-  }, [dispatch]);
+  }, []);
 
   useLayoutEffect(() => {
     if (!effects.length) return;

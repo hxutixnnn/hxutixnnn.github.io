@@ -42,7 +42,7 @@ export function App({
         if (resolvedAppId) dispatch(resolvedAppId, { type: "WINDOW_INTERACTION" }, true);
         return;
       }
-      if (target.closest("[data-dock-surface],[data-menu-bar-surface]")) return;
+      if (target.closest("[data-dock-surface],[data-menu-bar-surface],[data-menu-activity]")) return;
       desktopPointer();
     };
     document.addEventListener("pointerdown", classifyDesktopPointer, true);
