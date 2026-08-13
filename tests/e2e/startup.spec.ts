@@ -403,10 +403,10 @@ for (const colorScheme of ["dark", "light"] as const) {
         colorScheme === "light" ? "**/wallpapers/tienos-light.jpg" : "**/wallpapers/tienos-default.jpg";
       await page.route(wallpaperUrl, (route) => route.abort("failed"));
       const session = await context.newCDPSession(page);
-      const renderedFrames: { frame: Buffer; timestamp: number }[] = [];
+      const renderedFrames: { data: Buffer; timestamp: number }[] = [];
       session.on("Page.screencastFrame", ({ data, metadata, sessionId }) => {
         renderedFrames.push({
-          frame: Buffer.from(data, "base64"),
+          data: Buffer.from(data, "base64"),
           timestamp: metadata.timestamp ?? renderedFrames.length,
         });
         void session.send("Page.screencastFrameAck", { sessionId });
@@ -426,15 +426,13 @@ for (const colorScheme of ["dark", "light"] as const) {
       const warmStableFrame = await page.screenshot();
       const warmFrameEnd = renderedFrames.length;
       await session.send("Page.stopScreencast");
-      const chronologicalFrames = (frames: typeof renderedFrames) =>
-        frames.toSorted((left, right) => left.timestamp - right.timestamp).map(({ frame }) => frame);
       await expectCapturedFramesToMatchStableReveal(
-        chronologicalFrames(renderedFrames.slice(0, warmFrameStart)),
+        renderedFrames.slice(0, warmFrameStart),
         coldStableFrame,
         colorScheme,
       );
       await expectCapturedFramesToMatchStableReveal(
-        chronologicalFrames(renderedFrames.slice(warmFrameStart, warmFrameEnd)),
+        renderedFrames.slice(warmFrameStart, warmFrameEnd),
         warmStableFrame,
         colorScheme,
       );

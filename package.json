@@ -37,7 +37,6 @@
     "react-dom": "19.2.8",
     "react-hotkeys-hook": "^5.3.3",
     "react-rnd": "10.5.3",
-    "zod": "4.4.3",
     "zustand": "5.0.11"
   },
   "devDependencies": {
@@ -45,7 +44,6 @@
     "@eslint/js": "9.39.5",
     "@lhci/cli": "0.15.1",
     "@playwright/test": "1.62.1",
-    "@tailwindcss/cli": "^4.3.3",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "7.0.0",
     "@testing-library/react": "16.3.2",
@@ -60,7 +58,6 @@
     "fast-check": "4.9.0",
     "jsdom": "30.0.1",
     "prettier": "3.9.6",
-    "serve": "14.2.6",
     "sharp": "0.35.3",
     "tailwindcss": "^4.3.3",
     "typescript": "6.0.3",

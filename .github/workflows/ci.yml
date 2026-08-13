@@ -2,8 +2,6 @@ name: Validate
 
 on:
   pull_request:
-  push:
-    branches: [main]
 
 permissions:
   contents: read
@@ -13,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  validate:
+  quality:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -29,22 +27,89 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm validate
       - run: pnpm build
-      - run: pnpm exec playwright install --with-deps chromium
-      - run: pnpm test:e2e
-      - run: pnpm test:lighthouse
-      - name: Package the exact GitHub Pages artifact
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-pages-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
+          name: production-dist
           path: dist
+          if-no-files-found: error
+          retention-days: 1
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: validated-pages-artifact
-          path: |
-            dist
-            coverage
-            playwright-report
-            .lighthouseci
+          name: coverage
+          path: coverage
           if-no-files-found: warn
           retention-days: 14
+
+  browser:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.10.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: production-dist
+          path: dist
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+        env:
+          TIENOS_E2E_SKIP_BUILD: "1"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report
+          if-no-files-found: warn
+          retention-days: 14
+
+  lighthouse:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.10.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - uses: actions/download-artifact@v4
+        with:
+          name: production-dist
+          path: dist
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:lighthouse
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighthouse-report
+          path: .lighthouseci
+          if-no-files-found: warn
+          retention-days: 14
+
+  package:
+    needs: [quality, browser, lighthouse]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: production-dist
+          path: dist
+      - name: Package the exact validated GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: dist

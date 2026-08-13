@@ -494,12 +494,13 @@ export function expectDismissalFrameGeometry(
 }
 
 export async function expectCapturedFramesToMatchStableReveal(
-  frames: Buffer[],
+  frames: { data: Buffer; timestamp: number }[],
   stableFrame: Buffer,
   theme: "dark" | "light" = "dark",
 ) {
+  const orderedFrames = [...frames].sort((left, right) => left.timestamp - right.timestamp);
   const decoded = await Promise.all(
-    [...frames, stableFrame].map(async (frame) => {
+    [...orderedFrames.map((frame) => frame.data), stableFrame].map(async (frame) => {
       const { data, info } = await sharp(frame).removeAlpha().raw().toBuffer({ resolveWithObject: true });
       return { data, width: info.width, height: info.height, channels: info.channels };
     }),

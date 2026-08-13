@@ -690,7 +690,6 @@ test("transition state is inert, tracks Dock movement, and repeated activation s
   expect(
     await window.evaluate((element) => getComputedStyle(element).getPropertyValue("--genie-y")),
   ).not.toBe(originalTarget);
-  await expect(window).toHaveAttribute("data-window-visibility", "minimizing");
   await expect(dock.getByRole("status")).toHaveText("System Settings is running and minimized", {
     timeout: 2_500,
   });

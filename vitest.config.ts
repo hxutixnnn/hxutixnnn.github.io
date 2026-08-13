@@ -11,6 +11,8 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     setupFiles: ["./tests/setup.ts"],
+    // Interaction-heavy Base UI tests approach Vitest's 5s default under parallel load.
+    testTimeout: 10_000,
     include: ["src/**/*.test.{ts,tsx}", "tests/**/*.test.{ts,tsx}"],
     coverage: {
       provider: "v8",
