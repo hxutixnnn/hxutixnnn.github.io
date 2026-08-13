@@ -21,6 +21,10 @@ test("invokes, navigates, dismisses, and launches Spotlight without disturbing t
   await page.keyboard.press("Meta+Space");
   await expect(search).toBeFocused();
   await page.getByRole("option", { name: /System Settings/ }).focus();
+  await page.keyboard.press("Tab");
+  await expect(search).toBeFocused();
+  await page.keyboard.press("Shift+Tab");
+  await expect(search).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(trigger).toBeFocused();
@@ -83,6 +87,29 @@ test("supports touch selection from the live registry", async ({ browser }) => {
     "true",
   );
   await context.close();
+});
+
+test("launches an actual background app from a multi-app registry", async ({ page }) => {
+  await page.goto("/?desktop-fixture=multiple-apps");
+  await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
+  const spotlight = page.getByRole("combobox", { name: "Search apps" });
+  const auxiliary = page.getByRole("region", { name: "Auxiliary" });
+  const settings = page.getByRole("region", { name: "System Settings" });
+
+  await page.keyboard.press("Meta+Space");
+  await expect(page.getByRole("option")).toHaveCount(2);
+  await spotlight.fill("auxiliary");
+  await spotlight.press("Enter");
+  await expect(auxiliary).toHaveAttribute("data-window-frontmost", "true");
+  await page.getByRole("navigation", { name: "Dock" }).getByRole("button", { name: "System Settings" }).click();
+  await expect(auxiliary).toHaveAttribute("data-window-frontmost", "false");
+  await expect(settings).toHaveAttribute("data-window-active", "true");
+
+  await page.keyboard.press("Meta+Space");
+  await spotlight.fill("auxiliary");
+  await spotlight.press("Enter");
+  await expect(auxiliary).toHaveAttribute("data-window-frontmost", "true");
+  await expect(settings).toHaveAttribute("data-window-active", "false");
 });
 
 test("keeps Spotlight usable in a compact viewport and supports an empty result", async ({ page }) => {

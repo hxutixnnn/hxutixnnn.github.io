@@ -44,4 +44,20 @@ describe("Spotlight", () => {
     await user.keyboard("{Escape}");
     expect(dismiss).toHaveBeenCalledOnce();
   });
+
+  it("contains keyboard focus while open", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <button type="button">Underlying control</button>
+        <Spotlight apps={apps} open onDismiss={() => undefined} onLaunch={() => undefined} />
+      </>,
+    );
+    const input = screen.getByRole("combobox", { name: "Search apps" });
+    await waitFor(() => expect(input).toHaveFocus());
+    await user.keyboard("{Shift>}{Tab}{/Shift}");
+    expect(input).toHaveFocus();
+    screen.getByRole("button", { name: "Underlying control" }).focus();
+    expect(input).toHaveFocus();
+  });
 });

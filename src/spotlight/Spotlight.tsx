@@ -13,6 +13,7 @@ type SpotlightProps = {
 export function Spotlight({ apps, open, onDismiss, onLaunch }: SpotlightProps) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
+  const overlayRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
   const results = useMemo(() => searchDesktopApps(apps, query), [apps, query]);
@@ -21,14 +22,35 @@ export function Spotlight({ apps, open, onDismiss, onLaunch }: SpotlightProps) {
     if (open) inputRef.current?.focus();
   }, [open]);
 
+  useEffect(() => {
+    if (!open) return;
+    const containFocus = (event: FocusEvent) => {
+      if (event.target instanceof Node && !overlayRef.current?.contains(event.target)) {
+        inputRef.current?.focus();
+      }
+    };
+    const dismissFromEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      onDismiss();
+    };
+    document.addEventListener("focusin", containFocus, true);
+    document.addEventListener("keydown", dismissFromEscape, true);
+    return () => {
+      document.removeEventListener("focusin", containFocus, true);
+      document.removeEventListener("keydown", dismissFromEscape, true);
+    };
+  }, [onDismiss, open]);
+
   if (!open) return null;
   const launch = (appId: AppId) => {
     onLaunch(appId);
   };
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Escape") {
+    if (event.key === "Tab") {
       event.preventDefault();
-      onDismiss();
+      inputRef.current?.focus();
       return;
     }
     if (event.key === "ArrowDown" && results.length) {
@@ -46,18 +68,21 @@ export function Spotlight({ apps, open, onDismiss, onLaunch }: SpotlightProps) {
   };
   return (
     <div
+      ref={overlayRef}
       className="fixed inset-0 z-[60] flex items-start justify-center px-3 pt-[max(12vh,3.5rem)] sm:pt-[18vh]"
       data-shell-overlay="spotlight"
       onKeyDown={handleKeyDown}
     >
       <button
         type="button"
+        tabIndex={-1}
         aria-label="Dismiss Spotlight"
         className="absolute inset-0 cursor-default bg-transparent"
         onClick={onDismiss}
       />
       <section
         role="dialog"
+        aria-modal="true"
         tabIndex={-1}
         aria-label="Spotlight"
         className="tienos-spotlight relative w-full max-w-[42rem] overflow-hidden rounded-[var(--tienos-radius-window)] border border-white/30 bg-[var(--tienos-color-menu)] shadow-[0_28px_80px_rgb(0_0_0/.42),inset_0_1px_rgb(255_255_255/.35)] backdrop-blur-[28px] backdrop-saturate-[1.6] contrast-more:border-[var(--tienos-color-border)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:bg-[Canvas] [@media(forced-colors:active)]:shadow-none motion-safe:animate-[spotlight-in_var(--tienos-motion-standard)_ease-out]"
@@ -94,6 +119,7 @@ export function Spotlight({ apps, open, onDismiss, onLaunch }: SpotlightProps) {
             <button
               id={`${listId}-${app.id}`}
               role="option"
+              tabIndex={-1}
               aria-selected={index === selected}
               key={app.id}
               className="flex min-h-12 w-full items-center gap-3 rounded-[var(--tienos-radius-menu-item)] px-3 text-left text-[var(--tienos-color-menu-text-primary)] aria-selected:bg-[var(--tienos-color-accent)] aria-selected:text-[var(--tienos-color-text-on-accent)] [@media(pointer:coarse)]:min-h-14"

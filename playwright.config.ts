@@ -36,7 +36,7 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: `TIENOS_E2E_PORT=${taskPort} node scripts/e2e-preview.mjs`,
+          command: `VITE_E2E_FIXTURES=1 TIENOS_E2E_PORT=${taskPort} node scripts/e2e-preview.mjs`,
           url: baseURL,
           reuseExistingServer: false,
           timeout: 120_000,

@@ -37,7 +37,8 @@ export function App({
     if (!spotlightOpenRef.current) return;
     spotlightOpenRef.current = false;
     setSpotlightOpen(false);
-    if (restoreFocus) spotlightReturnFocusRef.current?.focus();
+    const returnTarget = spotlightReturnFocusRef.current;
+    if (restoreFocus) queueMicrotask(() => returnTarget?.isConnected && returnTarget.focus());
   }, []);
   const dismissSpotlight = useCallback(() => closeSpotlight(true), [closeSpotlight]);
   const dockSurfaceRef = useRef<HTMLElement>(null);
