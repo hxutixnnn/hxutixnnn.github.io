@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { Dock } from "./components/Dock";
 import { MenuBar } from "./components/MenuBar";
-import { SystemSettingsApp } from "./apps/system-settings/SystemSettingsApp";
+import { defaultDesktopApp, desktopApps } from "./desktop/apps";
 import { useSingleWindowController } from "./windows/useSingleWindowController";
 import { useWorkspaceGeometry } from "./windows/useWorkspaceGeometry";
 
@@ -11,6 +11,7 @@ type AppProps = {
 };
 
 export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
+  const ActiveAppWindow = defaultDesktopApp.Window;
   const {
     state: windowState,
     dispatch,
@@ -19,21 +20,21 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
   } = useSingleWindowController();
   const menuBarRef = useRef<HTMLElement>(null);
   const dockSurfaceRef = useRef<HTMLElement>(null);
-  const settingsDockItemRef = useRef<HTMLButtonElement>(null);
+  const primaryDockItemRef = useRef<HTMLButtonElement>(null);
   const { workspace, getDockTargetRect } = useWorkspaceGeometry({
     menuBarRef,
     dockSurfaceRef,
-    settingsDockItemRef,
+    settingsDockItemRef: primaryDockItemRef,
   });
   useEffect(() => {
     const classifyDesktopPointer = (event: PointerEvent) => {
       const target = event.target;
       if (!(target instanceof Element)) return;
-      if (target.closest("[data-genie-window],[data-settings-portal]")) {
+      if (target.closest("[data-desktop-activity]")) {
         dispatch({ type: "WINDOW_INTERACTION" });
         return;
       }
-      if (target.closest("[data-dock-surface]")) return;
+      if (target.closest("[data-dock-surface],[data-menu-bar-surface]")) return;
       dispatch({ type: "DESKTOP_POINTER" });
     };
     document.addEventListener("pointerdown", classifyDesktopPointer, true);
@@ -73,24 +74,29 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
       <MenuBar
         surfaceRef={menuBarRef}
         onAction={(command) => {
-          if (command === "system-settings") dispatch({ type: "ACTIVATE_FROM_MENU" });
+          if (command.type === "activate-app" && command.appId === defaultDesktopApp.id) {
+            dispatch({ type: "ACTIVATE_FROM_MENU" });
+          }
         }}
       />
       {windowState.presence === "open" && (
-        <SystemSettingsApp
+        <ActiveAppWindow
           windowState={windowState}
           effects={windowEffects}
-          onEffectsConsumed={effectsConsumed}
+          onEffectsConsumed={() => effectsConsumed(windowEffects.length)}
           onEvent={dispatch}
           workspace={workspace}
           dockTargetRectProvider={getDockTargetRect}
         />
       )}
       <Dock
+        apps={desktopApps}
         surfaceRef={dockSurfaceRef}
-        settingsTargetRef={settingsDockItemRef}
+        primaryTargetRef={primaryDockItemRef}
         windowState={windowState}
-        onActivateSettings={() => dispatch({ type: "ACTIVATE_FROM_DOCK" })}
+        onActivate={(app) => {
+          if (app.id === defaultDesktopApp.id) dispatch({ type: "ACTIVATE_FROM_DOCK" });
+        }}
       />
     </main>
   );
