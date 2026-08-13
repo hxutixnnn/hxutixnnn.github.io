@@ -64,7 +64,7 @@ function makeRefs(): {
     refs: {
       menuBarRef: { current: menu },
       dockSurfaceRef: { current: dock },
-      settingsDockItemRef: { current: target },
+      dockItemRefs: { current: new Map([["system-settings", target]]) },
     } satisfies WorkspaceGeometryRefs,
     menu,
     dock,
@@ -102,20 +102,35 @@ describe("useWorkspaceGeometry", () => {
       layout: "desktop",
     });
     expect(result.current.dockTargetRect).toMatchObject({ x: 370, y: 736, width: 56, height: 56 });
-    expect(result.current.getDockTargetRect()).toMatchObject({ x: 370, y: 736, width: 56, height: 56 });
+    expect(result.current.getDockTargetRect("system-settings")).toMatchObject({
+      x: 370,
+      y: 736,
+      width: 56,
+      height: 56,
+    });
     expect(TestResizeObserver.instances).toHaveLength(2);
     expect(TestResizeObserver.instances[0].observed).toEqual([menu, dock, target]);
     expect(TestResizeObserver.instances[1].observed.slice(0, 3)).toEqual([menu, dock, target]);
     expect(TestResizeObserver.instances[1].observed[3]).toBe(document.documentElement);
 
     target.getBoundingClientRect = vi.fn(() => elementRect({ x: 20, y: 30, width: 40, height: 50 }));
-    expect(result.current.getDockTargetRect()).toMatchObject({ x: 20, y: 30, width: 40, height: 50 });
+    expect(result.current.getDockTargetRect("system-settings")).toMatchObject({
+      x: 20,
+      y: 30,
+      width: 40,
+      height: 50,
+    });
     expect(result.current.dockTargetRect).toMatchObject({ x: 370, y: 736, width: 56, height: 56 });
     act(() => {
       TestResizeObserver.instances[0].trigger();
       vi.advanceTimersByTime(16);
     });
-    expect(result.current.getDockTargetRect()).toMatchObject({ x: 20, y: 30, width: 40, height: 50 });
+    expect(result.current.getDockTargetRect("system-settings")).toMatchObject({
+      x: 20,
+      y: 30,
+      width: 40,
+      height: 50,
+    });
 
     unmount();
     expect(TestResizeObserver.instances.every((observer) => observer.disconnected)).toBe(true);
@@ -177,7 +192,7 @@ describe("useWorkspaceGeometry", () => {
     const second = makeRefs();
     second.refs.menuBarRef.current = null;
     second.refs.dockSurfaceRef.current = null;
-    second.refs.settingsDockItemRef.current = null;
+    second.refs.dockItemRefs.current = new Map();
     const { rerender, result } = renderHook(
       ({ currentRefs }: { currentRefs: WorkspaceGeometryRefs }) => useWorkspaceGeometry(currentRefs),
       { initialProps: { currentRefs: first.refs } },
@@ -186,6 +201,6 @@ describe("useWorkspaceGeometry", () => {
     rerender({ currentRefs: second.refs });
     expect(TestResizeObserver.instances[0].disconnected).toBe(true);
     expect(TestResizeObserver.instances[2].observed).toEqual([]);
-    expect(result.current.getDockTargetRect()).toBeNull();
+    expect(result.current.getDockTargetRect("system-settings")).toBeNull();
   });
 });

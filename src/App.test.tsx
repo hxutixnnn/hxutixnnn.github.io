@@ -57,8 +57,8 @@ describe("tienOS main screen", () => {
     const window = screen.getByRole("region", { name: "System Settings" });
     expect(window).toHaveAttribute("data-window-active", "false");
 
-    fireEvent.click(screen.getByRole("menuitem", { name: "Open tienOS menu" }));
-    fireEvent.click(await screen.findByText("About This OS"));
+    await user.click(screen.getByRole("menuitem", { name: "Open tienOS menu" }));
+    await user.click(await screen.findByText("About This OS"));
     expect(window).toHaveAttribute("data-window-active", "false");
 
     const trigger = screen.getByRole("menuitem", { name: "Open tienOS menu" });
@@ -69,10 +69,16 @@ describe("tienOS main screen", () => {
 
   it("launches and projects lifecycle for every registered app id", async () => {
     const user = userEvent.setup();
-    const AuxiliaryWindow: DesktopAppDescriptor["Window"] = ({ appId, onEvent, windowState }) => (
+    const AuxiliaryWindow: DesktopAppDescriptor["Window"] = ({
+      appId,
+      dockTargetRectProvider,
+      onEvent,
+      windowState,
+    }) => (
       <section data-desktop-activity={appId} aria-label="Auxiliary App">
         {windowState.active ? "active" : "inactive"}
         <button onClick={() => onEvent({ type: "CLOSE" })}>Close Auxiliary App</button>
+        <output aria-label="Auxiliary target">{JSON.stringify(dockTargetRectProvider())}</output>
       </section>
     );
     const apps: readonly DesktopAppDescriptor[] = [
@@ -87,9 +93,24 @@ describe("tienOS main screen", () => {
 
     render(<App apps={apps} defaultApp={apps[0]} />);
     expect(screen.getByText("Auxiliary is not running")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: "Auxiliary" }));
+    const auxiliaryLauncher = screen.getByRole("button", { name: "Auxiliary" });
+    vi.spyOn(auxiliaryLauncher, "getBoundingClientRect").mockReturnValue({
+      x: 220,
+      y: 700,
+      width: 56,
+      height: 56,
+      top: 700,
+      right: 276,
+      bottom: 756,
+      left: 220,
+      toJSON: () => undefined,
+    });
+    await user.click(auxiliaryLauncher);
 
     expect(screen.getByRole("region", { name: "Auxiliary App" })).toHaveTextContent("active");
+    expect(screen.getByRole("status", { name: "Auxiliary target" })).toHaveTextContent(
+      '{"x":220,"y":700,"width":56,"height":56}',
+    );
     expect(screen.getByText("Auxiliary is running")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Close Auxiliary App" }));
     expect(screen.queryByRole("region", { name: "Auxiliary App" })).not.toBeInTheDocument();

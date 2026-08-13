@@ -8,11 +8,11 @@ type DockProps = {
   windowStates: Readonly<Record<string, Pick<SingleWindowState, "presence" | "visibility">>>;
   onActivate: (app: DesktopAppDescriptor) => void;
   surfaceRef?: RefObject<HTMLElement | null>;
-  primaryTargetRef?: RefObject<HTMLButtonElement | null>;
+  targetRef?: (appId: string, element: HTMLButtonElement | null) => void;
 };
 
 /** Projects registered apps into launch controls; window policy remains shell-owned. */
-export function Dock({ apps, windowStates, onActivate, surfaceRef, primaryTargetRef }: DockProps) {
+export function Dock({ apps, windowStates, onActivate, surfaceRef, targetRef }: DockProps) {
   return (
     <nav
       ref={surfaceRef}
@@ -20,7 +20,7 @@ export function Dock({ apps, windowStates, onActivate, surfaceRef, primaryTarget
       data-dock-surface
       className="dock-surface fixed bottom-[max(10px,var(--tienos-safe-area-bottom))] left-1/2 z-[45] flex -translate-x-1/2 items-center rounded-[20px] border border-white/30 [background:linear-gradient(145deg,rgb(255_255_255/0.24),rgb(255_255_255/0.08)_42%,rgb(8_15_26/0.25)),var(--tienos-color-dock)] p-[7px] shadow-[0_18px_45px_rgb(0_0_0/0.4),0_3px_10px_rgb(0_0_0/0.24),inset_0_1px_0_rgb(255_255_255/0.48),inset_0_-1px_0_rgb(0_0_0/0.2)] backdrop-blur-[28px] backdrop-saturate-[1.55] contrast-more:border-2 contrast-more:border-[var(--tienos-color-border)] contrast-more:bg-[var(--tienos-color-dock)] [@media(prefers-reduced-transparency:reduce)]:bg-[var(--tienos-color-dock)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:bg-[Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none"
     >
-      {apps.map((app, index) => {
+      {apps.map((app) => {
         const windowState = windowStates[app.id];
         const isOpen = windowState.presence === "open";
         const isMinimized = windowState.visibility === "minimized";
@@ -28,7 +28,7 @@ export function Dock({ apps, windowStates, onActivate, surfaceRef, primaryTarget
         return (
           <div key={app.id}>
             <button
-              ref={index === 0 ? primaryTargetRef : undefined}
+              ref={(element) => targetRef?.(app.id, element)}
               type="button"
               data-dock-app={app.id}
               data-dock-settings={app.id === "system-settings" ? "" : undefined}

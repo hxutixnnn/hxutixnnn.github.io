@@ -24,11 +24,11 @@ export function App({
   );
   const menuBarRef = useRef<HTMLElement>(null);
   const dockSurfaceRef = useRef<HTMLElement>(null);
-  const primaryDockItemRef = useRef<HTMLButtonElement>(null);
+  const dockItemRefs = useRef(new Map<string, HTMLButtonElement>());
   const { workspace, getDockTargetRect } = useWorkspaceGeometry({
     menuBarRef,
     dockSurfaceRef,
-    settingsDockItemRef: primaryDockItemRef,
+    dockItemRefs,
   });
   useEffect(() => {
     const classifyDesktopPointer = (event: PointerEvent) => {
@@ -97,14 +97,17 @@ export function App({
             onEffectsConsumed={() => effectsConsumed(app.id, controller.pendingEffects.length)}
             onEvent={(event) => dispatch(app.id, event, event.type === "WINDOW_INTERACTION")}
             workspace={workspace}
-            dockTargetRectProvider={getDockTargetRect}
+            dockTargetRectProvider={() => getDockTargetRect(app.id)}
           />
         );
       })}
       <Dock
         apps={apps}
         surfaceRef={dockSurfaceRef}
-        primaryTargetRef={primaryDockItemRef}
+        targetRef={(appId, element) => {
+          if (element) dockItemRefs.current.set(appId, element);
+          else dockItemRefs.current.delete(appId);
+        }}
         windowStates={Object.fromEntries(
           Object.entries(controllers).map(([id, controller]) => [id, controller.window]),
         )}
