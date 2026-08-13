@@ -36,7 +36,7 @@ export function Dock({ apps, windowStates, onActivate, surfaceRef, targetRef }: 
               aria-describedby={statusId}
               title={app.name}
               onClick={() => onActivate(app)}
-              className="group relative flex size-[56px] touch-manipulation items-center justify-center rounded-[14px] border border-white/30 bg-[linear-gradient(145deg,#f4f5f7,#aeb4bd)] text-[#30343a] shadow-[0_5px_12px_rgb(0_0_0/0.3),inset_0_1px_1px_white] transition-transform duration-[var(--tienos-motion-fast)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)] active:translate-y-0 motion-reduce:transition-none [@media(forced-colors:active)]:border-[ButtonText] [@media(forced-colors:active)]:bg-[ButtonFace] [@media(forced-colors:active)]:text-[ButtonText]"
+              className={`group relative flex size-[56px] touch-manipulation items-center justify-center rounded-[14px] border border-white/30 bg-[linear-gradient(145deg,#f4f5f7,#aeb4bd)] text-[#30343a] shadow-[0_5px_12px_rgb(0_0_0/0.3),inset_0_1px_1px_white] transition-transform duration-[var(--tienos-motion-fast)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)] active:translate-y-0 motion-reduce:transition-none [@media(forced-colors:active)]:border-[ButtonText] [@media(forced-colors:active)]:bg-[ButtonFace] [@media(forced-colors:active)]:text-[ButtonText] ${app.iconClassName ?? ""}`}
             >
               <FontAwesomeIcon
                 name={app.icon}
@@ -48,7 +48,11 @@ export function Dock({ apps, windowStates, onActivate, surfaceRef, targetRef }: 
                 className={`absolute -bottom-[6px] left-1/2 size-1 -translate-x-1/2 rounded-full bg-[var(--tienos-color-dock-indicator)] shadow-[0_0_4px_rgb(255_255_255/0.45)] transition-opacity motion-reduce:transition-none [@media(forced-colors:active)]:bg-[CanvasText] ${isOpen ? "opacity-100" : "opacity-0"}`}
               />
             </button>
-            <span id={statusId} role="status" className="sr-only">
+            <span
+              id={statusId}
+              role={app.id === "system-settings" ? "status" : undefined}
+              className="sr-only"
+            >
               {app.name} is {isOpen ? (isMinimized ? "running and minimized" : "running") : "not running"}
             </span>
           </div>

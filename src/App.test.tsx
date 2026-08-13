@@ -30,9 +30,9 @@ describe("tienOS main screen", () => {
 
     const dock = getByRole("navigation", { name: "Dock" });
     const app = getByRole("button", { name: "System Settings" });
-    expect(dock.querySelectorAll("button")).toHaveLength(1);
+    expect(dock.querySelectorAll("button")).toHaveLength(2);
     expect(app).not.toHaveAttribute("aria-pressed");
-    expect(getByRole("status")).toHaveTextContent("System Settings is running");
+    expect(screen.getByText("System Settings is running")).toBeInTheDocument();
 
     await user.click(getByRole("main", { name: "tienOS desktop" }));
     await user.click(app);
@@ -41,12 +41,36 @@ describe("tienOS main screen", () => {
 
     await user.click(getByRole("button", { name: "Close System Settings" }));
     expect(queryByRole("region", { name: "System Settings" })).not.toBeInTheDocument();
-    expect(getByRole("status")).toHaveTextContent("System Settings is not running");
+    expect(screen.getByText("System Settings is not running")).toBeInTheDocument();
 
     app.focus();
     await user.keyboard("{Enter}");
     expect(getAllByRole("region", { name: "System Settings" })).toHaveLength(1);
-    expect(getByRole("status")).toHaveTextContent("System Settings is running");
+    expect(screen.getByText("System Settings is running")).toBeInTheDocument();
+  });
+
+  it("launches Calendar independently and transfers active-app menu ownership", async () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Calendar" }));
+    const calendar = await screen.findByRole("region", { name: "Calendar" });
+    expect(calendar).toHaveAttribute("data-window-active", "true");
+    expect(screen.getByRole("region", { name: "System Settings" })).toHaveAttribute(
+      "data-window-active",
+      "false",
+    );
+    expect(screen.getByRole("menuitem", { name: "Calendar" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Minimize Calendar" }));
+    expect(screen.getByRole("region", { name: "System Settings" })).toHaveAttribute(
+      "data-window-active",
+      "true",
+    );
+    await user.click(screen.getByRole("button", { name: "Calendar" }));
+    await user.click(screen.getByRole("button", { name: "Close Calendar" }));
+    expect(screen.queryByRole("region", { name: "Calendar" })).not.toBeInTheDocument();
   });
 
   it("keeps an inactive app inactive while its menu owns pointer and keyboard activation", async () => {

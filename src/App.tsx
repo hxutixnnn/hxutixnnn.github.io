@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { Suspense, useEffect, useLayoutEffect, useRef } from "react";
 import { Dock } from "./components/Dock";
 import { MenuBar } from "./components/MenuBar";
 import { defaultDesktopApp, desktopApps, type DesktopAppDescriptor } from "./desktop/apps";
@@ -81,6 +81,7 @@ export function App({
       />
       <MenuBar
         surfaceRef={menuBarRef}
+        activeAppName={apps.find((app) => app.id === frontmostAppId)?.name}
         onAction={(command) => {
           if (command.type === "activate-app" && controllers[command.appId])
             dispatch(command.appId, { type: "ACTIVATE_FROM_MENU" }, true);
@@ -91,17 +92,18 @@ export function App({
         if (controller.window.presence !== "open") return null;
         const AppWindow = app.Window;
         return (
-          <AppWindow
-            key={app.id}
-            appId={app.id}
-            frontmost={app.id === frontmostAppId}
-            windowState={controller.window}
-            effects={controller.pendingEffects}
-            onEffectsConsumed={() => effectsConsumed(app.id, controller.pendingEffects.length)}
-            onEvent={(event) => dispatch(app.id, event, event.type === "WINDOW_INTERACTION")}
-            workspace={workspace}
-            dockTargetRectProvider={() => getDockTargetRect(app.id)}
-          />
+          <Suspense key={app.id} fallback={null}>
+            <AppWindow
+              appId={app.id}
+              frontmost={app.id === frontmostAppId}
+              windowState={controller.window}
+              effects={controller.pendingEffects}
+              onEffectsConsumed={() => effectsConsumed(app.id, controller.pendingEffects.length)}
+              onEvent={(event) => dispatch(app.id, event, event.type === "WINDOW_INTERACTION")}
+              workspace={workspace}
+              dockTargetRectProvider={() => getDockTargetRect(app.id)}
+            />
+          </Suspense>
         );
       })}
       <Dock
