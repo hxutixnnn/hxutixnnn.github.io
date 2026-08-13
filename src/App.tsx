@@ -37,7 +37,8 @@ export function App({
       if (target.closest("[data-desktop-activity]")) {
         const appId = target.closest("[data-desktop-activity]")?.getAttribute("data-desktop-activity");
         if (appId && !controllers[appId]) return;
-        const resolvedAppId = appId || Object.entries(controllers).find(([, value]) => value.window.active)?.[0];
+        const resolvedAppId =
+          appId || Object.entries(controllers).find(([, value]) => value.window.active)?.[0];
         if (resolvedAppId) dispatch(resolvedAppId, { type: "WINDOW_INTERACTION" }, true);
         return;
       }

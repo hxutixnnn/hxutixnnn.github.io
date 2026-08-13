@@ -82,7 +82,9 @@ describe("useDesktopAppController", () => {
     expect(result.current.frontmostAppId).toBe("second");
     act(() => result.current.desktopPointer());
 
-    expect(Object.values(result.current.controllers).every((controller) => !controller.window.active)).toBe(true);
+    expect(Object.values(result.current.controllers).every((controller) => !controller.window.active)).toBe(
+      true,
+    );
     expect(result.current.frontmostAppId).toBe("second");
   });
 

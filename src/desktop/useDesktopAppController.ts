@@ -35,7 +35,10 @@ function initializeControllers(apps: readonly DesktopAppDescriptor[], defaultApp
     controllers: Object.fromEntries(
       apps.map((app) => [
         app.id,
-        { window: app.id === defaultAppId ? initialSingleWindowState : closedWindowState, pendingEffects: [] },
+        {
+          window: app.id === defaultAppId ? initialSingleWindowState : closedWindowState,
+          pendingEffects: [],
+        },
       ]),
     ),
     frontmostAppId: defaultAppId,
@@ -126,11 +129,7 @@ function reduceControllers(state: DesktopControllerState, action: DesktopControl
   const target = controllers[action.appId];
   const frontmost = controllers[state.frontmostAppId];
   if (!frontmost || !isVisibleApp(frontmost)) {
-    const promoted = promoteVisibleApp(
-      controllers,
-      state.frontmostAppId,
-      state.activationOrder,
-    );
+    const promoted = promoteVisibleApp(controllers, state.frontmostAppId, state.activationOrder);
     if (promoted)
       return {
         controllers: promoted.controllers,
@@ -156,10 +155,8 @@ function reduceControllers(state: DesktopControllerState, action: DesktopControl
 }
 
 export function useDesktopAppController(apps: readonly DesktopAppDescriptor[], defaultAppId: AppId) {
-  const [state, dispatchController] = useReducer(
-    reduceControllers,
-    undefined,
-    () => initializeControllers(apps, defaultAppId),
+  const [state, dispatchController] = useReducer(reduceControllers, undefined, () =>
+    initializeControllers(apps, defaultAppId),
   );
   const dispatch = useCallback((appId: AppId, event: WindowEvent, exclusive = false) => {
     dispatchController({ type: "EVENT", appId, event, exclusive });

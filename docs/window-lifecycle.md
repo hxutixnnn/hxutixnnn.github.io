@@ -2,7 +2,7 @@
 
 The current registry contains one retained System Settings instance, while the shell lifecycle boundary is keyed by `AppId` so each registered app receives an independent single-window controller.
 Each app lifecycle is owned by the pure single-window machine and `useDesktopAppController`; this does not introduce same-app window IDs or z-order.
-`App` composes projections for the menu, Dock, and Settings surface without deciding visibility transitions, keeping lifecycle counters, or owning effect transport.
+`App` composes projections for the menu, Dock, and registered window surfaces without deciding visibility transitions, keeping lifecycle counters, or owning effect transport.
 `WindowFrame` projects state and executes typed effects through the narrow genie driver.
 The driver reports generation-tagged settlement and never chooses lifecycle destination truth.
 The `SystemSettingsApp` content boundary and pane ownership are documented in [`docs/system-settings.md`](system-settings.md).

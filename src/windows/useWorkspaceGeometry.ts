@@ -37,6 +37,10 @@ function readRect(element: HTMLElement | null): Rect | null {
   return Object.freeze({ x, y, width, height });
 }
 
+function readDockTargetRect(dockItemRefs: RefObject<ReadonlyMap<string, HTMLElement>>, appId: string) {
+  return readRect(dockItemRefs.current.get(appId) ?? null);
+}
+
 function readSafeAreaBottom() {
   if (typeof document === "undefined" || typeof window === "undefined") return 0;
   if (typeof window.getComputedStyle !== "function") return 0;
@@ -107,7 +111,7 @@ export function useWorkspaceGeometry({
 }: WorkspaceGeometryRefs): WorkspaceGeometrySnapshot {
   const [geometry, setGeometry] = useState(initialGeometry);
   const getDockTargetRect = useCallback(
-    (appId: string) => readRect(dockItemRefs.current.get(appId) ?? null),
+    (appId: string) => readDockTargetRect(dockItemRefs, appId),
     [dockItemRefs],
   );
 
@@ -176,8 +180,6 @@ export function useWorkspaceGeometry({
     };
   }, [dockItemRefs, dockSurfaceRef, menuBarRef]);
 
-  // The provider is passed through render but reads the target ref only when an effect or event invokes it.
-  // eslint-disable-next-line react-hooks/refs
   return Object.freeze({
     workspace: geometry.workspace,
     dockTargetRect: geometry.dockTargetRect,
