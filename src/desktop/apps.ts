@@ -1,4 +1,5 @@
 import type { ComponentType } from "react";
+import { NotesApp } from "../apps/notes/NotesApp";
 import { SystemSettingsApp } from "../apps/system-settings/SystemSettingsApp";
 import type { FontAwesomeIconName } from "../components/FontAwesomeIcon";
 import type { Rect, Workspace } from "../windows/geometry";
@@ -31,6 +32,12 @@ export const desktopApps = [
     name: "System Settings",
     icon: "gear",
     Window: SystemSettingsApp,
+  },
+  {
+    id: "notes",
+    name: "Notes",
+    icon: "bars",
+    Window: NotesApp,
   },
 ] as const satisfies readonly DesktopAppDescriptor[];
 
