@@ -144,6 +144,16 @@ const gzipTotal = async (paths) =>
     Promise.resolve(0),
   );
 const jsGzip = await gzipTotal(files.filter((path) => extname(path) === ".js"));
+const initialModuleReferences = [
+  ...indexHtml.matchAll(/<script[^>]+type=["']module["'][^>]+src=["']([^"']+)/gi),
+].map((match) => outputPath(match[1]));
+if (initialModuleReferences.length !== 1 || !(await exists(initialModuleReferences[0]))) {
+  throw new Error("Canonical route must load exactly one local JavaScript entry module");
+}
+const initialJsGzip = await gzipTotal(initialModuleReferences);
+if (initialJsGzip > 125 * 1024) {
+  throw new Error(`Initial JavaScript budget exceeded: ${(initialJsGzip / 1024).toFixed(1)} KiB gzip`);
+}
 const cssGzip = await gzipTotal(cssFiles);
 if (jsGzip > 160 * 1024) {
   throw new Error(`JavaScript budget exceeded: ${(jsGzip / 1024).toFixed(1)} KiB gzip`);
@@ -171,5 +181,5 @@ if (wallpaperTotal > 400 * 1024) {
 }
 
 console.log(
-  `Static output verified: useful HTML fallback, ${(jsGzip / 1024).toFixed(1)} KiB JS gzip, ${(cssGzip / 1024).toFixed(1)} KiB CSS gzip, ${(wallpaperTotal / 1024).toFixed(1)} KiB wallpapers.`,
+  `Static output verified: useful HTML fallback, ${(initialJsGzip / 1024).toFixed(1)} KiB initial JS gzip, ${(jsGzip / 1024).toFixed(1)} KiB total JS gzip, ${(cssGzip / 1024).toFixed(1)} KiB CSS gzip, ${(wallpaperTotal / 1024).toFixed(1)} KiB wallpapers.`,
 );
