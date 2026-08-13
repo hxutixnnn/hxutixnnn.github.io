@@ -494,12 +494,13 @@ export function expectDismissalFrameGeometry(
 }
 
 export async function expectCapturedFramesToMatchStableReveal(
-  frames: Buffer[],
+  frames: { data: Buffer; timestamp: number }[],
   stableFrame: Buffer,
   theme: "dark" | "light" = "dark",
 ) {
+  const orderedFrames = [...frames].sort((left, right) => left.timestamp - right.timestamp);
   const decoded = await Promise.all(
-    [...frames, stableFrame].map(async (frame) => {
+    [...orderedFrames.map((frame) => frame.data), stableFrame].map(async (frame) => {
       const { data, info } = await sharp(frame).removeAlpha().raw().toBuffer({ resolveWithObject: true });
       return { data, width: info.width, height: info.height, channels: info.channels };
     }),
@@ -560,9 +561,7 @@ export async function expectCapturedFramesToMatchStableReveal(
         samples += 1;
       }
     }
-    // CDP screencast delivery can sample adjacent compositor frames out of opacity order.
-    // Preserve the user-visible contract: once desktop exposure starts, the splash must not flash opaque again.
-    if (exposedFrames > 0) expect(opacity).toBeLessThan(0.98);
+    expect(opacity).toBeLessThanOrEqual(priorOpacity + 0.03);
     expect(residual / samples).toBeLessThan(8);
     if (opacity < 0.98) exposedFrames += 1;
     priorOpacity = opacity;
