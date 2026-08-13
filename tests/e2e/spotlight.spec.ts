@@ -90,14 +90,25 @@ test("supports touch selection from the live registry", async ({ browser }) => {
   await context.close();
 });
 
-test("launches an actual background app from a multi-app registry", async ({ page }) => {
+test("ranks, navigates, and launches apps from a multi-app registry", async ({ page }) => {
   await page.goto(`${fixtureBaseURL}/tests/e2e/fixtures/multiple-apps.html`);
   const spotlight = page.getByRole("combobox", { name: "Search apps" });
   const auxiliary = page.getByRole("region", { name: "Auxiliary" });
   const settings = page.getByRole("region", { name: "System Settings" });
 
+  await page.getByRole("button", { name: "Close System Settings" }).click();
   await page.keyboard.press("Meta+Space");
-  await expect(page.getByRole("option")).toHaveCount(2);
+  const options = page.getByRole("option");
+  await expect(options).toHaveText([/Auxiliary/, /System Settings/]);
+  await expect(options.nth(0)).toHaveAttribute("aria-selected", "true");
+  await spotlight.press("ArrowDown");
+  await expect(options.nth(0)).toHaveAttribute("aria-selected", "false");
+  await expect(options.nth(1)).toHaveAttribute("aria-selected", "true");
+  await spotlight.press("Enter");
+  await expect(settings).toHaveAttribute("data-window-active", "true");
+  await expect(auxiliary).toHaveCount(0);
+
+  await page.keyboard.press("Meta+Space");
   await spotlight.fill("auxiliary");
   await spotlight.press("Enter");
   await expect(auxiliary).toHaveAttribute("data-window-frontmost", "true");
