@@ -93,7 +93,7 @@ describe("SystemSettings", () => {
     expect(screen.getByRole("radio", { name: "Light" })).toBeChecked();
     const highlight = screen.getByRole("combobox", { name: "Text highlight color" });
     await user.click(highlight);
-    await user.click(screen.getByRole("option", { name: "Purple" }));
+    await user.click(await screen.findByRole("option", { name: "Purple" }));
     expect(highlight).toHaveTextContent("Purple");
 
     const folder = screen.getByRole("combobox", { name: "Folder color" });
@@ -104,7 +104,7 @@ describe("SystemSettings", () => {
 
     const iconSize = screen.getByRole("combobox", { name: "Sidebar icon size" });
     await user.click(iconSize);
-    await user.click(screen.getByRole("option", { name: "Large" }));
+    await user.click(await screen.findByRole("option", { name: "Large" }));
     expect(iconSize).toHaveTextContent("Large");
     const wallpaperTint = screen.getByRole("switch", {
       name: "Tint window background with wallpaper color",
@@ -144,7 +144,7 @@ describe("SystemSettings", () => {
     );
     const highlight = screen.getByRole("combobox", { name: "Text highlight color" });
     await user.click(highlight);
-    await user.click(screen.getByRole("option", { name: "Purple" }));
+    await user.click(await screen.findByRole("option", { name: "Purple" }));
     await user.click(
       within(screen.getByRole("radiogroup", { name: "Icon and widget style" })).getByRole("radio", {
         name: "Dark",
@@ -152,10 +152,10 @@ describe("SystemSettings", () => {
     );
     const folder = screen.getByRole("combobox", { name: "Folder color" });
     await user.click(folder);
-    await user.click(screen.getByRole("option", { name: "Blue" }));
+    await user.click(await screen.findByRole("option", { name: "Blue" }));
     const iconSize = screen.getByRole("combobox", { name: "Sidebar icon size" });
     await user.click(iconSize);
-    await user.click(screen.getByRole("option", { name: "Large" }));
+    await user.click(await screen.findByRole("option", { name: "Large" }));
     await user.click(screen.getByRole("switch", { name: "Tint window background with wallpaper color" }));
 
     const details = screen.getByLabelText("Settings details");
