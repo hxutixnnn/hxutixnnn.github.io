@@ -64,7 +64,7 @@ describe("CalculatorApp", () => {
     renderCalculator();
     fireEvent.click(screen.getByRole("button", { name: "9" }));
     fireEvent.click(screen.getByRole("button", { name: "+" }));
-    fireEvent.click(screen.getByRole("button", { name: "1" }));
+    fireEvent.click(screen.getByRole("button", { name: "0" }));
     fireEvent.click(screen.getByRole("button", { name: "C" }));
     expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("0");
     fireEvent.click(screen.getByRole("button", { name: "2" }));

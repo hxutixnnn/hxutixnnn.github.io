@@ -4,6 +4,7 @@ import { lazy } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import type { DesktopAppDescriptor } from "./desktop/apps";
+import { WindowFrame } from "./windows/WindowFrame";
 
 afterEach(cleanup);
 
@@ -244,6 +245,55 @@ describe("tienOS main screen", () => {
     expect(screen.queryByRole("region", { name: "Lazy App" })).not.toBeInTheDocument();
     release?.();
     expect(await screen.findByRole("region", { name: "Lazy App" })).toBeVisible();
+  });
+
+  it("does not apply stale focus when a lazy app loads after losing activation", async () => {
+    const user = userEvent.setup();
+    let release: (() => void) | undefined;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const HostedWindow: DesktopAppDescriptor["Window"] = (props) => (
+      <WindowFrame
+        appId={props.appId}
+        frontmost={props.frontmost}
+        title={props.appId === "lazy" ? "Lazy App" : "Settings App"}
+        lifecycle={{
+          state: props.windowState,
+          effects: props.effects,
+          dispatch: props.onEvent,
+          effectsConsumed: props.onEffectsConsumed,
+        }}
+        geometry={{
+          frame: { x: 40, y: 40, width: 700, height: 560 },
+          workspace: props.workspace,
+          onFrameChange: vi.fn(),
+          transitionTargetRect: props.dockTargetRectProvider,
+        }}
+      >
+        App content
+      </WindowFrame>
+    );
+    const LazyWindow = lazy(async () => {
+      await pending;
+      return { default: HostedWindow };
+    });
+    const apps: readonly DesktopAppDescriptor[] = [
+      { id: "settings", name: "Settings", icon: "gear", Window: HostedWindow },
+      { id: "lazy", name: "Lazy App", icon: "sparkle", Window: LazyWindow },
+    ];
+
+    render(<App apps={apps} defaultApp={apps[0]} />);
+    await user.click(screen.getByRole("button", { name: "Lazy App" }));
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    release?.();
+
+    const lazyWindow = await screen.findByRole("region", { name: "Lazy App" });
+    expect(lazyWindow).toHaveAttribute("data-window-active", "false");
+    expect(screen.getByRole("region", { name: "Settings App" })).toHaveAttribute(
+      "data-window-active",
+      "true",
+    );
   });
 
   it("stops Calculator keyboard input after desktop deactivation", async () => {

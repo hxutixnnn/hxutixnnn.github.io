@@ -17,6 +17,12 @@ test("Calculator launches, coexists, calculates, and owns the active menu", asyn
   await page.keyboard.press("Enter");
   await expect(calculator.getByRole("status", { name: "Calculator display" })).toHaveText("36");
 
+  await calculator.getByRole("button", { name: "AC" }).click();
+  await page.keyboard.type("123456789012345");
+  const desktopDisplay = calculator.getByRole("status", { name: "Calculator display" });
+  await expect(desktopDisplay).toHaveText("123,456,789,012,345");
+  expect(await desktopDisplay.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+
   await calculator.getByRole("button", { name: "Minimize Calculator" }).click();
   await expect(page.locator("#calculator-dock-status")).toContainText("running and minimized");
   await page.getByRole("button", { name: "Calculator" }).click();
@@ -33,5 +39,10 @@ test("Calculator remains usable in a compact viewport", async ({ page }) => {
   await calculator.getByRole("button", { name: "8" }).click();
   await calculator.getByRole("button", { name: "=" }).click();
   await expect(calculator.getByRole("status", { name: "Calculator display" })).toHaveText("15");
+  await calculator.getByRole("button", { name: "AC" }).click();
+  await page.keyboard.type("123456789012345");
+  const compactDisplay = calculator.getByRole("status", { name: "Calculator display" });
+  await expect(compactDisplay).toHaveText("123,456,789,012,345");
+  expect(await compactDisplay.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
   await expect(calculator).toBeInViewport();
 });

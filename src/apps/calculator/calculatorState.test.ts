@@ -86,6 +86,15 @@ it("toggles the sign of a completed result without changing next-input behavior"
   expect(calculatorReducer(negative, digit("2")).display).toBe("2");
 });
 
+it("clears an entered zero without discarding the pending operation", () => {
+  const enteredZero = run(digit("9"), op("add"), digit("0"));
+  expect(enteredZero.entryActive).toBe(true);
+
+  const cleared = calculatorReducer(enteredZero, { type: "clear" });
+  expect(cleared).toMatchObject({ display: "0", accumulator: 9, pending: "add", entryActive: false });
+  expect(calculatorReducer(calculatorReducer(cleared, digit("2")), { type: "equals" }).display).toBe("11");
+});
+
 describe("error recovery", () => {
   it("reports division by zero and recovers with clear or a digit", () => {
     const errored = run(digit("8"), op("divide"), digit("0"), { type: "equals" });
