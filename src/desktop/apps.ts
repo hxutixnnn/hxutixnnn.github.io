@@ -4,9 +4,10 @@ import type { FontAwesomeIconName } from "../components/FontAwesomeIcon";
 import type { Rect, Workspace } from "../windows/geometry";
 import type { SingleWindowState, WindowEffect, WindowEvent } from "../windows/singleWindowMachine";
 
-export type AppId = "system-settings";
+export type AppId = string;
 
 export type DesktopAppWindowProps = Readonly<{
+  appId: AppId;
   windowState: SingleWindowState;
   effects: readonly WindowEffect[];
   onEffectsConsumed(): void;
@@ -34,6 +35,6 @@ export const desktopApps = [
 
 export const defaultDesktopApp = desktopApps[0];
 
-export function findDesktopApp(id: AppId): DesktopAppDescriptor {
-  return desktopApps.find((app) => app.id === id) ?? defaultDesktopApp;
+export function findDesktopApp(id: AppId): DesktopAppDescriptor | undefined {
+  return desktopApps.find((app) => app.id === id);
 }

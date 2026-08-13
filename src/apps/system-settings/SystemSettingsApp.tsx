@@ -31,6 +31,7 @@ import {
 } from "../../windows/singleWindowMachine";
 
 type SystemSettingsProps = {
+  appId?: string;
   windowState?: SingleWindowState;
   effects?: readonly WindowEffect[];
   onEffectsConsumed?: (count: number) => void;
@@ -99,6 +100,7 @@ function SettingsScrollArea({
 }
 
 export function SystemSettingsApp({
+  appId = "system-settings",
   windowState = initialSingleWindowState,
   effects = [],
   onEffectsConsumed,
@@ -184,6 +186,7 @@ export function SystemSettingsApp({
   };
   const settingsWindow = (
     <WindowFrame
+      appId={appId}
       title="System Settings"
       lifecycle={{ state: windowState, effects, dispatch: emit, effectsConsumed: onEffectsConsumed }}
       geometry={{

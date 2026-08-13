@@ -39,6 +39,7 @@ export type WindowFrameGeometryPort = Readonly<{
 }>;
 
 export type WindowFrameProps = Readonly<{
+  appId?: string;
   title: string;
   lifecycle: WindowFrameLifecyclePort;
   geometry: WindowFrameGeometryPort;
@@ -68,6 +69,7 @@ function applyFrameDuringResize(element: HTMLElement, frame: Frame) {
 }
 
 export function WindowFrame({
+  appId,
   title,
   lifecycle,
   geometry,
@@ -299,7 +301,8 @@ export function WindowFrame({
           ref={windowRef}
           style={contentStyle}
           data-genie-window
-          data-desktop-activity
+          data-desktop-activity={appId}
+          data-window-active={state.active}
           data-window-visibility={visibility}
           data-fullscreen={fullscreen || undefined}
           className="settings-window relative grid h-full w-full overflow-hidden rounded-[var(--tienos-radius-window)] border border-white/25 [background:linear-gradient(135deg,rgb(255_255_255/0.16),transparent_36%,rgb(4_10_20/0.16)),var(--tienos-color-window)] text-[var(--tienos-color-text-primary)] shadow-[var(--tienos-shadow-window),0_10px_32px_rgb(2_8_23/0.24),inset_0_1px_0_rgb(255_255_255/0.3),inset_0_-1px_0_rgb(0_0_0/0.16)] backdrop-blur-[32px] backdrop-saturate-[1.4] contrast-more:border-[var(--tienos-color-border)] contrast-more:[background:var(--tienos-color-window)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-window)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none max-[700px]:rounded-[18px]"

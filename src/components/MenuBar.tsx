@@ -30,7 +30,7 @@ function Shortcut({ children }: { children: string }) {
 function MenuPopup({ children }: { children: React.ReactNode }) {
   return (
     <Menu.Portal>
-      <Menu.Positioner data-desktop-activity sideOffset={6} className="z-50 outline-none">
+      <Menu.Positioner data-menu-bar-surface sideOffset={6} className="z-50 outline-none">
         <Menu.Popup className={popupClassName}>{children}</Menu.Popup>
       </Menu.Positioner>
     </Menu.Portal>
@@ -106,7 +106,7 @@ export function MenuBar({ onAction, surfaceRef }: MenuBarProps) {
               </Menu.SubmenuTrigger>
               <Menu.Portal>
                 <Menu.Positioner
-                  data-desktop-activity
+                  data-menu-bar-surface
                   side="right"
                   align="start"
                   sideOffset={3}

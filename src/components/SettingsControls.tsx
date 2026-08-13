@@ -25,7 +25,7 @@ export function SettingsSelect({
       <Select.Portal>
         <Select.Positioner
           data-settings-portal
-          data-desktop-activity
+          data-desktop-activity="system-settings"
           sideOffset={5}
           className="z-[60] outline-none"
         >
