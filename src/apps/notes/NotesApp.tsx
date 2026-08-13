@@ -15,10 +15,12 @@ export function NotesApp({
   workspace,
   dockTargetRectProvider,
 }: DesktopAppWindowProps) {
-  const [notes, setNotes] = useState<readonly Note[]>(loadNotes);
-  const [selectedId, setSelectedId] = useState<string | null>(() => loadNotes()[0]?.id ?? null);
+  const initialNotes = useMemo(loadNotes, []);
+  const [notes, setNotes] = useState<readonly Note[]>(initialNotes);
+  const [selectedId, setSelectedId] = useState<string | null>(initialNotes[0]?.id ?? null);
   const [query, setQuery] = useState("");
   const [deleted, setDeleted] = useState<{ note: Note; index: number } | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
   const [frame, setFrame] = useState<Frame>(() =>
     workspace.layout === "compact" ? defaultCompactFrame(workspace) : defaultDesktopFrame(workspace.viewport),
   );
@@ -35,8 +37,9 @@ export function NotesApp({
   }, []);
 
   useEffect(() => {
-    saveNotes(notes);
+    setSaveFailed(!saveNotes(notes));
   }, [notes]);
+  const retrySave = () => setSaveFailed(!saveNotes(notes));
   useEffect(() => {
     const shortcut = (event: KeyboardEvent) => {
       if (!frontmost || !(event.metaKey || event.ctrlKey) || event.key.toLowerCase() !== "n") return;
@@ -91,7 +94,7 @@ export function NotesApp({
           <aside className="settings-drag-handle flex min-h-0 flex-col border-r border-[var(--tienos-color-separator)] bg-[var(--tienos-color-sidebar)] p-2 [@media(prefers-reduced-transparency:reduce)]:bg-[var(--tienos-color-sidebar)] [@media(forced-colors:active)]:bg-[Canvas]">
             {chrome}
             <div className="mb-2 flex gap-2">
-              <label className="flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-3">
+              <label className="flex min-h-9 min-w-0 flex-1 items-center gap-2 rounded-xl border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-3 [@media(pointer:coarse)]:min-h-[44px]">
                 <FontAwesomeIcon name="magnifying-glass" />
                 <span className="sr-only">Search notes</span>
                 <input
@@ -107,7 +110,7 @@ export function NotesApp({
                 aria-label="Create note"
                 aria-keyshortcuts="Meta+N Control+N"
                 onClick={addNote}
-                className="min-h-9 min-w-9 touch-manipulation rounded-xl bg-[var(--tienos-color-accent)] text-white"
+                className="min-h-9 min-w-9 touch-manipulation rounded-xl bg-[var(--tienos-color-accent)] text-white [@media(pointer:coarse)]:min-h-[44px] [@media(pointer:coarse)]:min-w-[44px]"
               >
                 ＋
               </button>
@@ -154,7 +157,7 @@ export function NotesApp({
                     type="button"
                     onClick={removeNote}
                     aria-label={`Delete ${selected.title || "Untitled"}`}
-                    className="min-h-10 min-w-10 touch-manipulation rounded-xl text-red-500 hover:bg-[var(--tienos-color-hover)]"
+                    className="min-h-10 min-w-10 touch-manipulation rounded-xl text-red-500 hover:bg-[var(--tienos-color-hover)] [@media(pointer:coarse)]:min-h-[44px] [@media(pointer:coarse)]:min-w-[44px]"
                   >
                     Delete
                   </button>
@@ -175,25 +178,44 @@ export function NotesApp({
                 <button
                   type="button"
                   onClick={addNote}
-                  className="min-h-11 rounded-xl bg-[var(--tienos-color-accent)] px-5 text-white"
+                  className="min-h-11 rounded-xl bg-[var(--tienos-color-accent)] px-5 text-white [@media(pointer:coarse)]:min-h-[44px]"
                 >
                   Create a Note
                 </button>
               </div>
             )}
-            {deleted && (
-              <div
-                role="status"
-                className="absolute right-4 bottom-4 flex items-center gap-3 rounded-xl border border-[var(--tienos-color-border)] bg-[var(--tienos-color-menu)] p-3 shadow-lg"
-              >
-                <span>Note deleted</span>
-                <button
-                  type="button"
-                  onClick={undoDelete}
-                  className="min-h-9 rounded-lg px-3 font-semibold text-[var(--tienos-color-accent)]"
-                >
-                  Undo
-                </button>
+            {(deleted || saveFailed) && (
+              <div className="absolute right-4 bottom-4 flex max-w-[calc(100%-2rem)] flex-col items-end gap-2">
+                {deleted && (
+                  <div
+                    role="status"
+                    className="flex items-center gap-3 rounded-xl border border-[var(--tienos-color-border)] bg-[var(--tienos-color-menu)] p-3 shadow-lg"
+                  >
+                    <span>Note deleted</span>
+                    <button
+                      type="button"
+                      onClick={undoDelete}
+                      className="min-h-9 rounded-lg px-3 font-semibold text-[var(--tienos-color-accent)] [@media(pointer:coarse)]:min-h-[44px]"
+                    >
+                      Undo
+                    </button>
+                  </div>
+                )}
+                {saveFailed && (
+                  <div
+                    role="alert"
+                    className="flex items-center gap-3 rounded-xl border border-red-500 bg-[var(--tienos-color-menu)] p-3 shadow-lg"
+                  >
+                    <span>Changes aren’t saved on this device.</span>
+                    <button
+                      type="button"
+                      onClick={retrySave}
+                      className="min-h-9 rounded-lg px-3 font-semibold text-[var(--tienos-color-accent)] [@media(pointer:coarse)]:min-h-[44px]"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </section>

@@ -45,6 +45,12 @@ describe("Notes persistence", () => {
       }),
     ).toBe(false);
   });
+
+  it("keeps only the first valid note for each persisted ID", () => {
+    const first = createNote(1, "duplicate");
+    const second = updateNote(createNote(2, "duplicate"), { title: "Later", body: "" }, 3);
+    expect(parseNotes(JSON.stringify({ version: 1, notes: [first, second] }))).toEqual([first]);
+  });
 });
 
 describe("Notes operations", () => {

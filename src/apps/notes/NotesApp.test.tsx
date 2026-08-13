@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NotesApp } from "./NotesApp";
 import { initialSingleWindowState } from "../../windows/singleWindowMachine";
 
@@ -23,7 +23,10 @@ const props = {
 
 describe("Notes app", () => {
   beforeEach(() => localStorage.clear());
-  afterEach(cleanup);
+  afterEach(() => {
+    cleanup();
+    vi.restoreAllMocks();
+  });
 
   it("supports accessible create, edit, search, delete and undo", async () => {
     render(<NotesApp {...props} />);
@@ -48,5 +51,16 @@ describe("Notes app", () => {
     render(<NotesApp {...props} />);
     fireEvent.keyDown(document, { key: "n", metaKey: true });
     expect(screen.getByRole("textbox", { name: "Note text" })).toBeInTheDocument();
+  });
+
+  it("reports failed saves and lets the user retry", async () => {
+    const setItem = vi.spyOn(Storage.prototype, "setItem").mockImplementationOnce(() => {
+      throw new Error("full");
+    });
+    render(<NotesApp {...props} />);
+    expect(await screen.findByRole("alert")).toHaveTextContent("Changes aren’t saved");
+    fireEvent.click(screen.getByRole("button", { name: "Retry" }));
+    await waitFor(() => expect(screen.queryByRole("alert")).not.toBeInTheDocument());
+    expect(setItem).toHaveBeenCalledTimes(2);
   });
 });

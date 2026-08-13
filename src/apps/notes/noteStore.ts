@@ -31,7 +31,12 @@ export function parseNotes(raw: string | null): readonly Note[] {
   try {
     const document = JSON.parse(raw) as Partial<NotesDocument>;
     if (document.version !== NOTES_STORAGE_VERSION || !Array.isArray(document.notes)) return [];
-    return document.notes.filter(isNote);
+    const seenIds = new Set<string>();
+    return document.notes.filter((note): note is Note => {
+      if (!isNote(note) || seenIds.has(note.id)) return false;
+      seenIds.add(note.id);
+      return true;
+    });
   } catch {
     return [];
   }

@@ -99,7 +99,7 @@ export async function exerciseTrafficHitPoints(
       await dockApp.click();
       await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
     } else if (point.owner === "Minimize System Settings") {
-      await expect(dock.getByRole("status"), JSON.stringify(point)).toHaveText(
+      await expect(dock.locator("#system-settings-dock-status"), JSON.stringify(point)).toHaveText(
         "System Settings is running and minimized",
       );
       await dockApp.click();
@@ -111,7 +111,7 @@ export async function exerciseTrafficHitPoints(
       await expect(fullscreen).toHaveAttribute("aria-pressed", "false");
     } else {
       await expect(page.getByRole("region", { name: "System Settings" })).toBeVisible();
-      await expect(dock.getByRole("status")).toHaveText("System Settings is running");
+      await expect(dock.locator("#system-settings-dock-status")).toHaveText("System Settings is running");
     }
   }
 }
