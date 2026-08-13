@@ -124,6 +124,9 @@ describe("tienOS main screen", () => {
     await user.click(screen.getByRole("button", { name: "System Settings" }));
     expect(screen.getByRole("status", { name: "System Settings layer" })).toHaveTextContent("frontmost");
     expect(screen.getByRole("status", { name: "Auxiliary layer" })).toHaveTextContent("background");
+    await user.click(screen.getByRole("main", { name: "tienOS desktop" }));
+    expect(screen.getByRole("status", { name: "System Settings layer" })).toHaveTextContent("frontmost");
+    expect(screen.getByRole("status", { name: "Auxiliary layer" })).toHaveTextContent("background");
     await user.click(screen.getByRole("button", { name: "Close Auxiliary App" }));
     expect(screen.queryByRole("region", { name: "Auxiliary App" })).not.toBeInTheDocument();
     expect(screen.getByText("Auxiliary is not running")).toBeInTheDocument();

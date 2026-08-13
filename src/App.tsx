@@ -18,7 +18,7 @@ export function App({
   apps = desktopApps,
   defaultApp = defaultDesktopApp,
 }: AppProps = {}) {
-  const { controllers, dispatch, desktopPointer, effectsConsumed } = useDesktopAppController(
+  const { controllers, frontmostAppId, dispatch, desktopPointer, effectsConsumed } = useDesktopAppController(
     apps,
     defaultApp.id,
   );
@@ -92,7 +92,7 @@ export function App({
           <AppWindow
             key={app.id}
             appId={app.id}
-            frontmost={controller.window.active}
+            frontmost={app.id === frontmostAppId}
             windowState={controller.window}
             effects={controller.pendingEffects}
             onEffectsConsumed={() => effectsConsumed(app.id, controller.pendingEffects.length)}

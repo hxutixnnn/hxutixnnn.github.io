@@ -13,7 +13,10 @@ type AppControllerState = Readonly<{
   pendingEffects: readonly WindowEffect[];
 }>;
 
-type DesktopControllerState = Readonly<Record<AppId, AppControllerState>>;
+type DesktopControllerState = Readonly<{
+  controllers: Readonly<Record<AppId, AppControllerState>>;
+  frontmostAppId: AppId;
+}>;
 
 type DesktopControllerAction =
   | { type: "EVENT"; appId: AppId; event: WindowEvent; exclusive: boolean }
@@ -27,15 +30,27 @@ const closedWindowState: SingleWindowState = {
 };
 
 function initializeControllers(apps: readonly DesktopAppDescriptor[], defaultAppId: AppId) {
-  return Object.fromEntries(
-    apps.map((app) => [
-      app.id,
-      { window: app.id === defaultAppId ? initialSingleWindowState : closedWindowState, pendingEffects: [] },
-    ]),
-  ) as DesktopControllerState;
+  return {
+    controllers: Object.fromEntries(
+      apps.map((app) => [
+        app.id,
+        { window: app.id === defaultAppId ? initialSingleWindowState : closedWindowState, pendingEffects: [] },
+      ]),
+    ),
+    frontmostAppId: defaultAppId,
+  } as DesktopControllerState;
 }
 
 function applyEvent(controller: AppControllerState, event: WindowEvent): AppControllerState {
+  if (
+    controller.window.visibility === "restoring" &&
+    !controller.window.active &&
+    (event.type === "ACTIVATE_FROM_DOCK" ||
+      event.type === "ACTIVATE_FROM_MENU" ||
+      event.type === "WINDOW_INTERACTION")
+  ) {
+    return { ...controller, window: { ...controller.window, active: true } };
+  }
   const reduction = reduceWindow(controller.window, event);
   if (reduction.state === controller.window && reduction.effects.length === 0) return controller;
   const preserveInactiveRestore =
@@ -51,31 +66,51 @@ function applyEvent(controller: AppControllerState, event: WindowEvent): AppCont
 
 function reduceControllers(state: DesktopControllerState, action: DesktopControllerAction) {
   if (action.type === "DESKTOP_POINTER") {
-    return Object.fromEntries(
-      Object.entries(state).map(([id, controller]) => [id, applyEvent(controller, { type: "DESKTOP_POINTER" })]),
-    ) as DesktopControllerState;
-  }
-  if (action.type === "CONSUME_EFFECTS") {
-    const controller = state[action.appId];
     return {
       ...state,
-      [action.appId]: { ...controller, pendingEffects: controller.pendingEffects.slice(action.count) },
+      controllers: Object.fromEntries(
+        Object.entries(state.controllers).map(([id, controller]) => [
+          id,
+          applyEvent(controller, { type: "DESKTOP_POINTER" }),
+        ]),
+      ),
+    };
+  }
+  if (action.type === "CONSUME_EFFECTS") {
+    const controller = state.controllers[action.appId];
+    return {
+      ...state,
+      controllers: {
+        ...state.controllers,
+        [action.appId]: { ...controller, pendingEffects: controller.pendingEffects.slice(action.count) },
+      },
     };
   }
 
   const next = action.exclusive
     ? (Object.fromEntries(
-        Object.entries(state).map(([id, controller]) => [
+        Object.entries(state.controllers).map(([id, controller]) => [
           id,
           id === action.appId ? controller : applyEvent(controller, { type: "DESKTOP_POINTER" }),
         ]),
-      ) as DesktopControllerState)
-    : state;
-  return { ...next, [action.appId]: applyEvent(next[action.appId], action.event) };
+      ) as DesktopControllerState["controllers"])
+    : state.controllers;
+  const controllers = { ...next, [action.appId]: applyEvent(next[action.appId], action.event) };
+  const target = controllers[action.appId];
+  return {
+    controllers,
+    frontmostAppId:
+      action.exclusive && target.window.presence === "open"
+        ? action.appId
+        : state.frontmostAppId === action.appId && target.window.presence === "closed"
+          ? (Object.entries(controllers).find(([, controller]) => controller.window.active)?.[0] ??
+            state.frontmostAppId)
+          : state.frontmostAppId,
+  };
 }
 
 export function useDesktopAppController(apps: readonly DesktopAppDescriptor[], defaultAppId: AppId) {
-  const [controllers, dispatchController] = useReducer(
+  const [state, dispatchController] = useReducer(
     reduceControllers,
     undefined,
     () => initializeControllers(apps, defaultAppId),
@@ -88,5 +123,5 @@ export function useDesktopAppController(apps: readonly DesktopAppDescriptor[], d
     dispatchController({ type: "CONSUME_EFFECTS", appId, count });
   }, []);
 
-  return { controllers, dispatch, desktopPointer, effectsConsumed };
+  return { ...state, dispatch, desktopPointer, effectsConsumed };
 }
