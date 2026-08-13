@@ -385,7 +385,7 @@ test("Dock activation minimizes only the active frontmost Settings window", asyn
   await dockApp.click();
   await expect(window).toBeHidden();
   await expect(dockApp).not.toHaveAttribute("aria-pressed");
-  await expect(page.getByRole("navigation", { name: "Dock" }).getByRole("status")).toHaveText(
+  await expect(page.locator("#system-settings-dock-status")).toHaveText(
     "System Settings is running and minimized",
   );
   await dockApp.click();
@@ -422,7 +422,9 @@ test("traffic lights preserve one window through genie minimize, Dock restore, a
   await page.screenshot({ path: testInfo.outputPath("settings-genie-midpoint.png") });
 
   await expect(window).toBeHidden();
-  await expect(dock.getByRole("status")).toHaveText("System Settings is running and minimized");
+  await expect(dock.locator("#system-settings-dock-status")).toHaveText(
+    "System Settings is running and minimized",
+  );
   await dockApp.click();
   await expect(window).toBeVisible();
   await page.waitForTimeout(430);
@@ -459,7 +461,7 @@ test("traffic lights preserve one window through genie minimize, Dock restore, a
     "true",
   );
   await page.getByRole("button", { name: "Close System Settings" }).click();
-  await expect(dock.getByRole("status")).toHaveText("System Settings is not running");
+  await expect(dock.locator("#system-settings-dock-status")).toHaveText("System Settings is not running");
   await dockApp.click();
   await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Toggle fullscreen System Settings" })).toHaveAttribute(
@@ -592,7 +594,7 @@ test("genie transition is interruptible and reduced motion bypasses warping", as
     });
   expect(reducedStyle.transform).toBe("none");
   expect(reducedStyle.transitionDuration).toBe("0.08s");
-  await expect(page.getByRole("navigation", { name: "Dock" }).getByRole("status")).toHaveText(
+  await expect(page.locator("#system-settings-dock-status")).toHaveText(
     "System Settings is running and minimized",
   );
 });
@@ -690,9 +692,12 @@ test("transition state is inert, tracks Dock movement, and repeated activation s
   expect(
     await window.evaluate((element) => getComputedStyle(element).getPropertyValue("--genie-y")),
   ).not.toBe(originalTarget);
-  await expect(dock.getByRole("status")).toHaveText("System Settings is running and minimized", {
-    timeout: 2_500,
-  });
+  await expect(dock.locator("#system-settings-dock-status")).toHaveText(
+    "System Settings is running and minimized",
+    {
+      timeout: 2_500,
+    },
+  );
 
   const activateTwiceAndReadWindow = (button: HTMLButtonElement) => {
     button.click();
@@ -729,9 +734,12 @@ test("transition state is inert, tracks Dock movement, and repeated activation s
   await expect(window).not.toHaveAttribute("aria-hidden");
   expect(await window.evaluate((element: HTMLElement): boolean => element.inert)).toBe(false);
   await dockApp.evaluate((button: HTMLButtonElement) => button.click());
-  await expect(dock.getByRole("status")).toHaveText("System Settings is running and minimized", {
-    timeout: 2_500,
-  });
+  await expect(dock.locator("#system-settings-dock-status")).toHaveText(
+    "System Settings is running and minimized",
+    {
+      timeout: 2_500,
+    },
+  );
 });
 
 test("keyboard traffic lights preserve focus, geometry, and single-window state", async ({ page }) => {
@@ -740,7 +748,7 @@ test("keyboard traffic lights preserve focus, geometry, and single-window state"
   const dockApp = page
     .getByRole("navigation", { name: "Dock" })
     .getByRole("button", { name: "System Settings" });
-  const dockStatus = page.getByRole("navigation", { name: "Dock" }).getByRole("status");
+  const dockStatus = page.locator("#system-settings-dock-status");
   const window = page.getByRole("region", { name: "System Settings" });
   const search = page.getByPlaceholder("Search");
   const normal = await window.boundingBox();
@@ -777,9 +785,7 @@ test("keyboard traffic lights preserve focus, geometry, and single-window state"
   await close.focus();
   await close.press("Enter");
   await expect(window).toHaveCount(0);
-  await expect(page.getByRole("navigation", { name: "Dock" }).getByRole("status")).toHaveText(
-    "System Settings is not running",
-  );
+  await expect(page.locator("#system-settings-dock-status")).toHaveText("System Settings is not running");
   await dockApp.press("Enter");
   await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
 });
@@ -857,9 +863,7 @@ test("same-tick and repeated Dock activation reverse one minimize transition", a
   expect(states).toEqual(["restoring", "visible"]);
   await expect(page.locator('[data-genie-window][data-window-visibility="visible"]')).toHaveCount(1);
   await expect(page.getByRole("region", { name: "System Settings" })).toHaveCount(1);
-  await expect(page.getByRole("navigation", { name: "Dock" }).getByRole("status")).toHaveText(
-    "System Settings is running",
-  );
+  await expect(page.locator("#system-settings-dock-status")).toHaveText("System Settings is running");
 });
 
 test("fresh Settings lifecycles discard stale and in-flight requests", async ({ page }) => {
@@ -870,7 +874,7 @@ test("fresh Settings lifecycles discard stale and in-flight requests", async ({ 
   const window = page.locator("[data-genie-window]");
   const dock = page.getByRole("navigation", { name: "Dock" });
   const dockApp = dock.getByRole("button", { name: "System Settings" });
-  const dockStatus = dock.getByRole("status");
+  const dockStatus = dock.locator("#system-settings-dock-status");
   const initialFrame = await window.boundingBox();
 
   await dockApp.click();
@@ -975,7 +979,7 @@ test("window lifecycle never installs a desktop-wide visual or pointer backdrop"
   await dockApp.click();
   await expect(window).toHaveAttribute("data-window-visibility", "visible");
   await dockApp.click();
-  await expect(page.getByRole("navigation", { name: "Dock" }).getByRole("status")).toHaveText(
+  await expect(page.locator("#system-settings-dock-status")).toHaveText(
     "System Settings is running and minimized",
   );
   expect((await desktopFrame()).equals(before)).toBe(true);
