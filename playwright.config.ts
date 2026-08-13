@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { defineConfig, devices } from "@playwright/test";
+import { fixtureBaseURL, fixturePort } from "./tests/e2e/fixtures/server";
 
 const externalBaseURL = process.env.PLAYWRIGHT_BASE_URL;
 const taskPort =
@@ -32,14 +33,22 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } },
     },
   ],
-  ...(externalBaseURL
-    ? {}
-    : {
-        webServer: {
-          command: `TIENOS_E2E_PORT=${taskPort} node scripts/e2e-preview.mjs`,
-          url: baseURL,
-          reuseExistingServer: false,
-          timeout: 120_000,
-        },
-      }),
+  webServer: [
+    ...(externalBaseURL
+      ? []
+      : [
+          {
+            command: `TIENOS_E2E_PORT=${taskPort} node scripts/e2e-preview.mjs`,
+            url: baseURL,
+            reuseExistingServer: false,
+            timeout: 120_000,
+          },
+        ]),
+    {
+      command: `pnpm exec vite --host 127.0.0.1 --port ${fixturePort} --strictPort`,
+      url: `${fixtureBaseURL}/tests/e2e/fixtures/multiple-apps.html`,
+      reuseExistingServer: false,
+      timeout: 120_000,
+    },
+  ],
 });

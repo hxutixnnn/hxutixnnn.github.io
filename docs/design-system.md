@@ -63,6 +63,11 @@ Use Base UI menu semantics, complete keyboard operation, familiar shortcuts, and
 Keep menu presentation compact. The menu bar is an edge-to-edge, non-glass transparent overlay with safe-area top padding, wallpaper-colored text, and a restrained text shadow; the static HTML mirrors those utilities to prevent startup style jumps. Popup menus share the Settings layered glass language: wallpaper-dependent translucent fills, blur and saturation, edge highlights, inner and outer shadows, and conventional radii. Their normal-theme separators are subtle one-pixel inset hairlines; increased contrast, reduced transparency, and forced colors restore stronger full-width rules. Resolved themes and those accessibility modes must retain legible opaque fallbacks.
 Selection uses the accent token plus text and positional state, never color alone.
 
+### Spotlight
+
+Spotlight is a transient shell overlay opened by Command-Space or its named menu-bar button; it is not a Dock app or a window lifecycle owner. It searches the live desktop app registry, keeps one keyboard selection visible, and launches through the selected app's existing controller. Escape and desktop interaction dismiss it without changing frontmost window ownership, and dismissal restores focus to the invoking control when applicable.
+Use a centered layered-glass search surface with an opaque reduced-transparency fallback, native forced-color mappings, reduced motion, coarse-pointer targets, and compact viewport bounds. Preserve dialog, combobox, listbox, option, active-descendant, empty-state, and contained-focus semantics across keyboard, pointer, and touch input.
+
 ### Windows
 
 Desktop windows support pointer dragging, eight-direction resizing, viewport bounds, and minimum dimensions.

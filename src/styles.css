@@ -94,6 +94,12 @@
     opacity: 0;
   }
 }
+@keyframes spotlight-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.985);
+  }
+}
 @media (prefers-reduced-motion: reduce),
   (prefers-reduced-transparency: reduce),
   (prefers-contrast: more),
