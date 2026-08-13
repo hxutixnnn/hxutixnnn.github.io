@@ -67,6 +67,21 @@ describe("tienOS main screen", () => {
     expect(window).toHaveAttribute("data-window-active", "false");
   });
 
+  it("ignores activity markers owned by unregistered apps", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    await user.click(screen.getByRole("main", { name: "tienOS desktop" }));
+    const window = screen.getByRole("region", { name: "System Settings" });
+    expect(window).toHaveAttribute("data-window-active", "false");
+
+    const unknownPortal = document.createElement("button");
+    unknownPortal.dataset.desktopActivity = "unregistered";
+    document.body.append(unknownPortal);
+    await user.click(unknownPortal);
+
+    expect(window).toHaveAttribute("data-window-active", "false");
+  });
+
   it("launches and projects lifecycle for every registered app id", async () => {
     const user = userEvent.setup();
     const AuxiliaryWindow: DesktopAppDescriptor["Window"] = ({

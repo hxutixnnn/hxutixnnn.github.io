@@ -345,6 +345,7 @@ export function SystemSettingsApp({
               )}
 
               <SelectedPane
+                appId={appId}
                 pane={selectedCategory}
                 demoSettings={appearanceDemoSettings}
                 onDemoSettingsChange={setAppearanceDemoSettings}

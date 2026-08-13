@@ -26,11 +26,12 @@ export const initialAppearanceDemoSettings: AppearanceDemoSettings = {
 };
 
 type AppearancePaneProps = {
+  appId: string;
   demoSettings: AppearanceDemoSettings;
   onDemoSettingsChange: Dispatch<SetStateAction<AppearanceDemoSettings>>;
 };
 
-export function AppearancePane({ demoSettings, onDemoSettingsChange }: AppearancePaneProps) {
+export function AppearancePane({ appId, demoSettings, onDemoSettingsChange }: AppearancePaneProps) {
   const appearanceMode = useAppearanceStore((state) => state.mode);
   const pendingAppearanceMode = useAppearanceStore((state) => state.pendingMode);
   const setAppearanceMode = useAppearanceStore((state) => state.setMode);
@@ -118,6 +119,7 @@ export function AppearancePane({ demoSettings, onDemoSettingsChange }: Appearanc
         <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t">
           <span>Text highlight color</span>
           <SettingsSelect
+            appId={appId}
             label="Text highlight color"
             value={demoSettings.textHighlightColor}
             onValueChange={(value) => updateDemoSetting("textHighlightColor", value)}
@@ -154,6 +156,7 @@ export function AppearancePane({ demoSettings, onDemoSettingsChange }: Appearanc
         <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t">
           <span>Folder color</span>
           <SettingsSelect
+            appId={appId}
             label="Folder color"
             value={demoSettings.folderColor}
             onValueChange={(value) => updateDemoSetting("folderColor", value)}
@@ -169,6 +172,7 @@ export function AppearancePane({ demoSettings, onDemoSettingsChange }: Appearanc
         <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t">
           <span>Sidebar icon size</span>
           <SettingsSelect
+            appId={appId}
             label="Sidebar icon size"
             value={demoSettings.sidebarIconSize}
             onValueChange={(value) => updateDemoSetting("sidebarIconSize", value)}

@@ -6,11 +6,13 @@ const itemClass =
   "flex min-h-8 cursor-default items-center gap-2 rounded-[8px] px-2 data-[highlighted]:bg-[var(--tienos-color-accent)] data-[highlighted]:text-[var(--tienos-color-text-on-accent)] data-[highlighted]:outline-none";
 
 export function SettingsSelect({
+  appId,
   label,
   value,
   options,
   onValueChange,
 }: {
+  appId: string;
   label: string;
   value: string;
   options: readonly string[];
@@ -25,7 +27,7 @@ export function SettingsSelect({
       <Select.Portal>
         <Select.Positioner
           data-settings-portal
-          data-desktop-activity="system-settings"
+          data-desktop-activity={appId}
           sideOffset={5}
           className="z-[60] outline-none"
         >
