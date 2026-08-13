@@ -15,12 +15,26 @@ test("Notes launches beside Settings and persists keyboard-created content", asy
   await expect(notesWindow).toBeVisible();
   await expect(notesWindow).toBeFocused();
   await expect(settingsWindow).toBeVisible();
+  const fullscreen = page.getByRole("button", { name: "Toggle fullscreen Notes" });
+  await fullscreen.click();
+  await expect(fullscreen).toHaveAttribute("aria-pressed", "true");
+  await expect(notesWindow).toHaveCount(1);
+  await fullscreen.click();
+  await expect(fullscreen).toHaveAttribute("aria-pressed", "false");
   await page.getByRole("button", { name: "Create a Note" }).click();
   await page.getByRole("textbox", { name: "Note title" }).fill("Browser draft");
   await page.getByRole("textbox", { name: "Note text" }).fill("Saved locally");
   await expect
     .poll(() =>
-      page.evaluate(() => JSON.parse(localStorage.getItem("tienos.notes") ?? "null")?.notes?.[0]?.body),
+      page.evaluate(() => {
+        const stored: unknown = JSON.parse(localStorage.getItem("tienos.notes") ?? "null");
+        if (!stored || typeof stored !== "object" || !("notes" in stored) || !Array.isArray(stored.notes)) {
+          return null;
+        }
+        const first: unknown = stored.notes[0];
+        if (!first || typeof first !== "object" || !("body" in first)) return null;
+        return typeof first.body === "string" ? first.body : null;
+      }),
     )
     .toBe("Saved locally");
 

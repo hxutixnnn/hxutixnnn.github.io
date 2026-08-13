@@ -15,7 +15,7 @@ export function NotesApp({
   workspace,
   dockTargetRectProvider,
 }: DesktopAppWindowProps) {
-  const initialNotes = useMemo(loadNotes, []);
+  const initialNotes = useMemo(() => loadNotes(), []);
   const [notes, setNotes] = useState<readonly Note[]>(initialNotes);
   const [selectedId, setSelectedId] = useState<string | null>(initialNotes[0]?.id ?? null);
   const [query, setQuery] = useState("");
@@ -24,6 +24,16 @@ export function NotesApp({
   const [frame, setFrame] = useState<Frame>(() =>
     workspace.layout === "compact" ? defaultCompactFrame(workspace) : defaultDesktopFrame(workspace.viewport),
   );
+  const updateFrame = useCallback((next: Frame) => {
+    setFrame((current) =>
+      current.x === next.x &&
+      current.y === next.y &&
+      current.width === next.width &&
+      current.height === next.height
+        ? current
+        : next,
+    );
+  }, []);
   const editorRef = useRef<HTMLTextAreaElement>(null);
   const filtered = useMemo(() => searchNotes(notes, query), [notes, query]);
   const selected = notes.find((note) => note.id === selectedId) ?? null;
@@ -37,6 +47,8 @@ export function NotesApp({
   }, []);
 
   useEffect(() => {
+    // The storage write is the effect; this state reports its synchronous result to the user.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSaveFailed(!saveNotes(notes));
   }, [notes]);
   const retrySave = () => setSaveFailed(!saveNotes(notes));
@@ -84,7 +96,12 @@ export function NotesApp({
       frontmost={frontmost}
       title="Notes"
       lifecycle={{ state: windowState, effects, dispatch: onEvent, effectsConsumed: onEffectsConsumed }}
-      geometry={{ frame, workspace, onFrameChange: setFrame, transitionTargetRect: dockTargetRectProvider }}
+      geometry={{
+        frame,
+        workspace,
+        onFrameChange: updateFrame,
+        transitionTargetRect: dockTargetRectProvider,
+      }}
       contentStyle={{
         gridTemplateColumns: workspace.layout === "compact" ? "42% minmax(0,1fr)" : "260px minmax(0,1fr)",
       }}
