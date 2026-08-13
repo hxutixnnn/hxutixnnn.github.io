@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import { Dock } from "./components/Dock";
 import { MenuBar } from "./components/MenuBar";
 import { SystemSettingsApp } from "./apps/system-settings/SystemSettingsApp";
 import { useSingleWindowController } from "./windows/useSingleWindowController";
-import type { WindowEffect } from "./windows/singleWindowMachine";
 import { useWorkspaceGeometry } from "./windows/useWorkspaceGeometry";
 
 type AppProps = {
@@ -12,12 +11,12 @@ type AppProps = {
 };
 
 export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
-  const [windowEffects, setWindowEffects] = useState<readonly WindowEffect[]>([]);
-  const handleWindowEffect = useCallback((effect: WindowEffect) => {
-    setWindowEffects((effects) => [...effects, effect]);
-  }, []);
-  const clearWindowEffects = useCallback(() => setWindowEffects([]), []);
-  const { state: windowState, dispatch } = useSingleWindowController({ onEffect: handleWindowEffect });
+  const {
+    state: windowState,
+    dispatch,
+    effects: windowEffects,
+    effectsConsumed,
+  } = useSingleWindowController();
   const menuBarRef = useRef<HTMLElement>(null);
   const dockSurfaceRef = useRef<HTMLElement>(null);
   const settingsDockItemRef = useRef<HTMLButtonElement>(null);
@@ -46,10 +45,12 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
 
     let cancelled = false;
     let frame = 0;
-    void Promise.resolve(desktopAssetsReady).then(() => {
+    const releaseDesktop = () => {
       if (cancelled) return;
       frame = window.requestAnimationFrame(onDesktopReady);
-    });
+    };
+    // Asset failures use the static CSS fallback and must never strand the startup cover.
+    void Promise.resolve(desktopAssetsReady).then(releaseDesktop, releaseDesktop);
     return () => {
       cancelled = true;
       window.cancelAnimationFrame(frame);
@@ -79,7 +80,7 @@ export function App({ desktopAssetsReady, onDesktopReady }: AppProps = {}) {
         <SystemSettingsApp
           windowState={windowState}
           effects={windowEffects}
-          onEffectsConsumed={clearWindowEffects}
+          onEffectsConsumed={effectsConsumed}
           onEvent={dispatch}
           workspace={workspace}
           dockTargetRectProvider={getDockTargetRect}
