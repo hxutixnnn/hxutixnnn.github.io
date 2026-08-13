@@ -23,11 +23,14 @@ export function Spotlight({ apps, open, onDismiss, onLaunch }: SpotlightProps) {
 
   if (!open) return null;
   const launch = (appId: AppId) => {
-    onDismiss();
     onLaunch(appId);
   };
   const handleKeyDown = (event: React.KeyboardEvent) => {
-    if (event.key === "Escape") onDismiss();
+    if (event.key === "Escape") {
+      event.preventDefault();
+      onDismiss();
+      return;
+    }
     if (event.key === "ArrowDown" && results.length) {
       event.preventDefault();
       setSelected((value) => (value + 1) % results.length);
@@ -36,12 +39,16 @@ export function Spotlight({ apps, open, onDismiss, onLaunch }: SpotlightProps) {
       event.preventDefault();
       setSelected((value) => (value - 1 + results.length) % results.length);
     }
-    if (event.key === "Enter" && results[selected]) launch(results[selected].app.id);
+    if (event.key === "Enter" && results[selected]) {
+      event.preventDefault();
+      launch(results[selected].app.id);
+    }
   };
   return (
     <div
       className="fixed inset-0 z-[60] flex items-start justify-center px-3 pt-[max(12vh,3.5rem)] sm:pt-[18vh]"
       data-shell-overlay="spotlight"
+      onKeyDown={handleKeyDown}
     >
       <button
         type="button"
@@ -71,7 +78,6 @@ export function Spotlight({ apps, open, onDismiss, onLaunch }: SpotlightProps) {
             className="min-w-0 flex-1 bg-transparent text-xl text-[var(--tienos-color-menu-text-primary)] placeholder:text-[var(--tienos-color-menu-text-secondary)]"
             placeholder="Spotlight Search"
             value={query}
-            onKeyDown={handleKeyDown}
             onChange={(event) => {
               setQuery(event.target.value);
               setSelected(0);

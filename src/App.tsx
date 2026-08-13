@@ -25,15 +25,21 @@ export function App({
   );
   const menuBarRef = useRef<HTMLElement>(null);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const spotlightOpenRef = useRef(false);
   const spotlightReturnFocusRef = useRef<HTMLElement | null>(null);
   const openSpotlight = useCallback((trigger?: HTMLElement | null) => {
+    if (spotlightOpenRef.current) return;
+    spotlightOpenRef.current = true;
     spotlightReturnFocusRef.current = trigger ?? (document.activeElement as HTMLElement | null);
     setSpotlightOpen(true);
   }, []);
-  const dismissSpotlight = useCallback(() => {
+  const closeSpotlight = useCallback((restoreFocus: boolean) => {
+    if (!spotlightOpenRef.current) return;
+    spotlightOpenRef.current = false;
     setSpotlightOpen(false);
-    spotlightReturnFocusRef.current?.focus();
+    if (restoreFocus) spotlightReturnFocusRef.current?.focus();
   }, []);
+  const dismissSpotlight = useCallback(() => closeSpotlight(true), [closeSpotlight]);
   const dockSurfaceRef = useRef<HTMLElement>(null);
   const dockItemRefs = useRef(new Map<string, HTMLButtonElement>());
   const { workspace, getDockTargetRect } = useWorkspaceGeometry({
@@ -116,7 +122,10 @@ export function App({
           apps={apps}
           open
           onDismiss={dismissSpotlight}
-          onLaunch={(appId) => dispatch(appId, { type: "ACTIVATE_FROM_MENU" }, true)}
+          onLaunch={(appId) => {
+            closeSpotlight(false);
+            dispatch(appId, { type: "ACTIVATE_FROM_MENU" }, true);
+          }}
         />
       )}
       {apps.map((app) => {

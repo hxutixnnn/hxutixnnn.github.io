@@ -21,12 +21,11 @@ describe("Spotlight", () => {
     await waitFor(() => expect(input).toHaveFocus());
     expect(screen.getAllByRole("option")[0]).toHaveAttribute("aria-selected", "true");
     await user.keyboard("{ArrowDown}{Enter}");
-    expect(dismiss).toHaveBeenCalledOnce();
     expect(launch).toHaveBeenCalledWith("beta");
     await user.type(input, "zzz");
     expect(screen.getByText("No applications found")).toBeVisible();
     await user.keyboard("{Escape}");
-    expect(dismiss).toHaveBeenCalledTimes(2);
+    expect(dismiss).toHaveBeenCalledOnce();
   });
 
   it("launches a pointer-selected registry result", async () => {
@@ -35,5 +34,14 @@ describe("Spotlight", () => {
     render(<Spotlight apps={apps} open onDismiss={() => undefined} onLaunch={launch} />);
     await user.click(screen.getByRole("option", { name: /Beta/ }));
     expect(launch).toHaveBeenCalledWith("beta");
+  });
+
+  it("dismisses when focus has moved beyond the search field", async () => {
+    const user = userEvent.setup();
+    const dismiss = vi.fn();
+    render(<Spotlight apps={apps} open onDismiss={dismiss} onLaunch={() => undefined} />);
+    screen.getByRole("option", { name: /Beta/ }).focus();
+    await user.keyboard("{Escape}");
+    expect(dismiss).toHaveBeenCalledOnce();
   });
 });

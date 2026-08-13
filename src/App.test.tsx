@@ -74,6 +74,7 @@ describe("tienOS main screen", () => {
     trigger.focus();
     await user.click(trigger);
     expect(screen.getByRole("dialog", { name: "Spotlight" })).toBeVisible();
+    await user.keyboard("{Meta>} {/Meta}");
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog", { name: "Spotlight" })).not.toBeInTheDocument();
     expect(trigger).toHaveFocus();
@@ -86,6 +87,18 @@ describe("tienOS main screen", () => {
       "data-window-active",
       "true",
     );
+  });
+
+  it("dismisses Spotlight from a focused result", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+    const trigger = screen.getByRole("button", { name: "Open Spotlight" });
+    trigger.focus();
+    await user.click(trigger);
+    screen.getByRole("option", { name: /System Settings/ }).focus();
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog", { name: "Spotlight" })).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
   });
 
   it("dismisses Spotlight from a desktop interaction without changing window lifecycle", async () => {
@@ -126,6 +139,7 @@ describe("tienOS main screen", () => {
       <section data-desktop-activity={appId} aria-label="Auxiliary App">
         {windowState.active ? "active" : "inactive"}
         <output aria-label="Auxiliary layer">{frontmost ? "frontmost" : "background"}</output>
+        <button onClick={() => onEvent({ type: "MINIMIZE" })}>Minimize Auxiliary App</button>
         <button onClick={() => onEvent({ type: "CLOSE" })}>Close Auxiliary App</button>
         <output aria-label="Auxiliary target">{JSON.stringify(dockTargetRectProvider())}</output>
       </section>
@@ -159,7 +173,8 @@ describe("tienOS main screen", () => {
       left: 220,
       toJSON: () => undefined,
     });
-    await user.click(auxiliaryLauncher);
+    await user.click(screen.getByRole("button", { name: "Open Spotlight" }));
+    await user.type(screen.getByRole("combobox", { name: "Search apps" }), "aux{Enter}");
 
     expect(screen.getByRole("region", { name: "Auxiliary App" })).toHaveTextContent("active");
     expect(screen.getByRole("status", { name: "Auxiliary layer" })).toHaveTextContent("frontmost");
@@ -168,9 +183,20 @@ describe("tienOS main screen", () => {
       '{"x":220,"y":700,"width":56,"height":56}',
     );
     expect(screen.getByText("Auxiliary is running")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Minimize Auxiliary App" }));
+    await user.click(screen.getByRole("button", { name: "Open Spotlight" }));
+    await user.type(screen.getByRole("combobox", { name: "Search apps" }), "aux{Enter}");
+    expect(screen.getByRole("region", { name: "Auxiliary App" })).toHaveTextContent("active");
     await user.click(screen.getByRole("button", { name: "System Settings" }));
     expect(screen.getByRole("status", { name: "System Settings layer" })).toHaveTextContent("frontmost");
     expect(screen.getByRole("status", { name: "Auxiliary layer" })).toHaveTextContent("background");
+    await user.click(screen.getByRole("button", { name: "Open Spotlight" }));
+    await user.type(screen.getByRole("combobox", { name: "Search apps" }), "aux{Enter}");
+    expect(screen.getByRole("status", { name: "Auxiliary layer" })).toHaveTextContent("frontmost");
+    await user.click(screen.getByRole("button", { name: "Open Spotlight" }));
+    await user.type(screen.getByRole("combobox", { name: "Search apps" }), "aux{Enter}");
+    expect(screen.getAllByRole("region", { name: "Auxiliary App" })).toHaveLength(1);
+    await user.click(screen.getByRole("button", { name: "System Settings" }));
     await user.click(screen.getByRole("main", { name: "tienOS desktop" }));
     expect(screen.getByRole("status", { name: "System Settings layer" })).toHaveTextContent("frontmost");
     expect(screen.getByRole("status", { name: "Auxiliary layer" })).toHaveTextContent("background");
