@@ -141,7 +141,7 @@ export function WindowFrame({
       if (!current && !reversiblePrior) continue;
       if (effect.type === "CANCEL_TRANSITION") driverRef.current?.cancel(effect.generation);
       else if (effect.type === "FOCUS") {
-        if (visibility !== "visible" || effect.epoch <= focusEpochRef.current) continue;
+        if (!state.active || visibility !== "visible" || effect.epoch <= focusEpochRef.current) continue;
         focusEpochRef.current = effect.epoch;
         (restoreFocusRef.current?.isConnected ? restoreFocusRef.current : windowRef.current)?.focus({
           preventScroll: true,
@@ -153,7 +153,7 @@ export function WindowFrame({
       }
     }
     effectsConsumed?.(effects.length);
-  }, [effects, effectsConsumed, state.generation, visibility]);
+  }, [effects, effectsConsumed, state.active, state.generation, visibility]);
 
   useLayoutEffect(() => {
     const modeChanged = compactRef.current !== compact;

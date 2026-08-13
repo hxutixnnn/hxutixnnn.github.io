@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useReducer, useState } from "react";
+import { useCallback, useEffect, useReducer, useState, type CSSProperties } from "react";
 import type { DesktopAppWindowProps } from "../../desktop/apps";
 import { defaultCompactFrame, type Frame } from "../../windows/geometry";
 import { WindowFrame } from "../../windows/WindowFrame";
@@ -102,7 +102,8 @@ export function CalculatorApp({
   }, [frontmost, windowState.active, windowState.visibility]);
 
   const shown = formatCalculatorDisplay(state.display);
-  const clearEntry = !state.error && !state.waitingForOperand && state.display !== "0";
+  const clearEntry = state.entryActive;
+  const displayUnits = Math.max(shown.length, 8);
   return (
     <WindowFrame
       appId={appId}
@@ -126,12 +127,13 @@ export function CalculatorApp({
       {(chrome) => (
         <div className="flex h-full min-h-0 flex-col p-4 pt-5 max-[430px]:p-3">
           {chrome}
-          <div className="mb-3 flex min-h-20 flex-1 items-end justify-end overflow-hidden rounded-[18px] border border-white/10 bg-[var(--tienos-color-detail)] px-4 py-3 shadow-inner [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:bg-[Canvas]">
+          <div className="mb-3 flex min-h-20 flex-1 items-end justify-end overflow-hidden rounded-[18px] border border-white/10 bg-[var(--tienos-color-detail)] px-4 py-3 shadow-inner [container-type:inline-size] [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:bg-[Canvas]">
             <output
               aria-live="polite"
               aria-atomic="true"
               aria-label="Calculator display"
-              className="block w-full select-text overflow-hidden text-right text-[clamp(2.25rem,12cqw,4.5rem)] font-light leading-none tracking-tight tabular-nums text-[var(--tienos-color-text-primary)]"
+              style={{ "--calculator-display-units": displayUnits } as CSSProperties}
+              className="block w-full select-text overflow-hidden text-right text-[clamp(1rem,calc((100cqw-2rem)/var(--calculator-display-units)*1.65),4.5rem)] font-light leading-none tracking-tight tabular-nums text-[var(--tienos-color-text-primary)]"
             >
               {shown}
             </output>

@@ -5,6 +5,7 @@ export type CalculatorState = Readonly<{
   accumulator: number | null;
   pending: Operator | null;
   waitingForOperand: boolean;
+  entryActive: boolean;
   lastOperator: Operator | null;
   lastOperand: number | null;
   error: boolean;
@@ -25,6 +26,7 @@ export const initialCalculatorState: CalculatorState = {
   accumulator: null,
   pending: null,
   waitingForOperand: false,
+  entryActive: false,
   lastOperator: null,
   lastOperand: null,
   error: false,
@@ -67,9 +69,9 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
     case "all-clear":
       return initialCalculatorState;
     case "clear":
-      return state.display === "0" || state.waitingForOperand
-        ? initialCalculatorState
-        : { ...state, display: "0", waitingForOperand: true, error: false };
+      return state.entryActive
+        ? { ...state, display: "0", waitingForOperand: true, entryActive: false, error: false }
+        : initialCalculatorState;
     case "digit": {
       if (!/^\d$/.test(action.digit)) return state;
       const digits = state.display.replace(/[-.]/g, "").length;
@@ -79,13 +81,16 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
         display:
           state.waitingForOperand || state.display === "0" ? action.digit : state.display + action.digit,
         waitingForOperand: false,
+        entryActive: true,
         lastOperator: state.waitingForOperand ? null : state.lastOperator,
       };
     }
     case "decimal":
       if (state.waitingForOperand)
-        return { ...state, display: "0.", waitingForOperand: false, lastOperator: null };
-      return state.display.includes(".") ? state : { ...state, display: `${state.display}.` };
+        return { ...state, display: "0.", waitingForOperand: false, entryActive: true, lastOperator: null };
+      return state.display.includes(".")
+        ? state
+        : { ...state, display: `${state.display}.`, entryActive: true };
     case "sign":
       if (state.display === "0" || (state.waitingForOperand && state.pending !== null)) return state;
       return {
@@ -98,7 +103,7 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
         (state.pending === "add" || state.pending === "subtract") && state.accumulator !== null
           ? (state.accumulator * current) / 100
           : current / 100;
-      return { ...state, display: canonical(value), waitingForOperand: false };
+      return { ...state, display: canonical(value), waitingForOperand: false, entryActive: true };
     }
     case "operator": {
       const current = Number(state.display);
@@ -113,6 +118,7 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
         accumulator,
         pending: action.operator,
         waitingForOperand: true,
+        entryActive: false,
         lastOperator: null,
         lastOperand: null,
       };
@@ -130,6 +136,7 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
         accumulator: null,
         pending: null,
         waitingForOperand: true,
+        entryActive: false,
         lastOperator: operator,
         lastOperand: right,
       };
