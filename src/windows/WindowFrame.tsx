@@ -40,6 +40,7 @@ export type WindowFrameGeometryPort = Readonly<{
 
 export type WindowFrameProps = Readonly<{
   appId?: string;
+  frontmost?: boolean;
   title: string;
   lifecycle: WindowFrameLifecyclePort;
   geometry: WindowFrameGeometryPort;
@@ -70,6 +71,7 @@ function applyFrameDuringResize(element: HTMLElement, frame: Frame) {
 
 export function WindowFrame({
   appId,
+  frontmost = true,
   title,
   lifecycle,
   geometry,
@@ -278,7 +280,8 @@ export function WindowFrame({
       />
       <Rnd
         ref={rndRef}
-        className={`settings-rnd z-30 ${visibility === "minimized" ? "invisible pointer-events-none" : ""}`}
+        className={`settings-rnd ${visibility === "minimized" ? "invisible pointer-events-none" : ""}`}
+        style={{ zIndex: frontmost ? 31 : 30 }}
         data-window-visibility={visibility}
         size={{ width: frame.width, height: frame.height }}
         position={{ x: frame.x, y: frame.y }}

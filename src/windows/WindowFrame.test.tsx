@@ -9,10 +9,11 @@ const frame = defaultDesktopFrame(workspace.viewport);
 
 afterEach(cleanup);
 
-function renderFrame(state: SingleWindowState = initialSingleWindowState) {
+function renderFrame(state: SingleWindowState = initialSingleWindowState, frontmost = true) {
   const dispatch = vi.fn<(event: WindowEvent) => void>();
   render(
     <WindowFrame
+      frontmost={frontmost}
       title="Example"
       lifecycle={{ state, effects: [], dispatch }}
       geometry={{ frame, workspace, onFrameChange: vi.fn(), transitionTargetRect: () => null }}
@@ -60,4 +61,30 @@ describe("WindowFrame", () => {
       expect(document.querySelector(".settings-rnd")).toHaveAttribute("data-window-visibility", visibility);
     },
   );
+
+  it("projects frontmost activity above background app windows", () => {
+    const { rerender } = render(
+      <WindowFrame
+        frontmost={false}
+        title="Layered"
+        lifecycle={{ state: initialSingleWindowState, effects: [], dispatch: vi.fn() }}
+        geometry={{ frame, workspace, onFrameChange: vi.fn(), transitionTargetRect: () => null }}
+      >
+        Content
+      </WindowFrame>,
+    );
+    expect(document.querySelector(".settings-rnd")).toHaveStyle({ zIndex: "30" });
+
+    rerender(
+      <WindowFrame
+        frontmost
+        title="Layered"
+        lifecycle={{ state: initialSingleWindowState, effects: [], dispatch: vi.fn() }}
+        geometry={{ frame, workspace, onFrameChange: vi.fn(), transitionTargetRect: () => null }}
+      >
+        Content
+      </WindowFrame>,
+    );
+    expect(document.querySelector(".settings-rnd")).toHaveStyle({ zIndex: "31" });
+  });
 });

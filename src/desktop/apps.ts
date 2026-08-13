@@ -8,6 +8,7 @@ export type AppId = string;
 
 export type DesktopAppWindowProps = Readonly<{
   appId: AppId;
+  frontmost: boolean;
   windowState: SingleWindowState;
   effects: readonly WindowEffect[];
   onEffectsConsumed(): void;

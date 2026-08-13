@@ -92,6 +92,7 @@ export function App({
           <AppWindow
             key={app.id}
             appId={app.id}
+            frontmost={controller.window.active}
             windowState={controller.window}
             effects={controller.pendingEffects}
             onEffectsConsumed={() => effectsConsumed(app.id, controller.pendingEffects.length)}

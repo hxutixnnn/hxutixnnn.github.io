@@ -72,11 +72,13 @@ describe("tienOS main screen", () => {
     const AuxiliaryWindow: DesktopAppDescriptor["Window"] = ({
       appId,
       dockTargetRectProvider,
+      frontmost,
       onEvent,
       windowState,
     }) => (
       <section data-desktop-activity={appId} aria-label="Auxiliary App">
         {windowState.active ? "active" : "inactive"}
+        <output aria-label="Auxiliary layer">{frontmost ? "frontmost" : "background"}</output>
         <button onClick={() => onEvent({ type: "CLOSE" })}>Close Auxiliary App</button>
         <output aria-label="Auxiliary target">{JSON.stringify(dockTargetRectProvider())}</output>
       </section>
@@ -86,7 +88,12 @@ describe("tienOS main screen", () => {
         id: "system-settings",
         name: "System Settings",
         icon: "gear",
-        Window: (props) => <div aria-label="System Settings Test Window">{String(props.windowState.active)}</div>,
+        Window: (props) => (
+          <div aria-label="System Settings Test Window">
+            {String(props.windowState.active)}
+            <output aria-label="System Settings layer">{props.frontmost ? "frontmost" : "background"}</output>
+          </div>
+        ),
       },
       { id: "auxiliary", name: "Auxiliary", icon: "sparkle", Window: AuxiliaryWindow },
     ];
@@ -108,10 +115,15 @@ describe("tienOS main screen", () => {
     await user.click(auxiliaryLauncher);
 
     expect(screen.getByRole("region", { name: "Auxiliary App" })).toHaveTextContent("active");
+    expect(screen.getByRole("status", { name: "Auxiliary layer" })).toHaveTextContent("frontmost");
+    expect(screen.getByRole("status", { name: "System Settings layer" })).toHaveTextContent("background");
     expect(screen.getByRole("status", { name: "Auxiliary target" })).toHaveTextContent(
       '{"x":220,"y":700,"width":56,"height":56}',
     );
     expect(screen.getByText("Auxiliary is running")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "System Settings" }));
+    expect(screen.getByRole("status", { name: "System Settings layer" })).toHaveTextContent("frontmost");
+    expect(screen.getByRole("status", { name: "Auxiliary layer" })).toHaveTextContent("background");
     await user.click(screen.getByRole("button", { name: "Close Auxiliary App" }));
     expect(screen.queryByRole("region", { name: "Auxiliary App" })).not.toBeInTheDocument();
     expect(screen.getByText("Auxiliary is not running")).toBeInTheDocument();

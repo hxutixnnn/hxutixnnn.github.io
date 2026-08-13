@@ -38,9 +38,14 @@ function initializeControllers(apps: readonly DesktopAppDescriptor[], defaultApp
 function applyEvent(controller: AppControllerState, event: WindowEvent): AppControllerState {
   const reduction = reduceWindow(controller.window, event);
   if (reduction.state === controller.window && reduction.effects.length === 0) return controller;
+  const preserveInactiveRestore =
+    event.type === "TRANSITION_SETTLED" && event.destination === "visible" && !controller.window.active;
   return {
-    window: reduction.state,
-    pendingEffects: [...controller.pendingEffects, ...reduction.effects],
+    window: preserveInactiveRestore ? { ...reduction.state, active: false } : reduction.state,
+    pendingEffects: [
+      ...controller.pendingEffects,
+      ...reduction.effects.filter((effect) => !preserveInactiveRestore || effect.type !== "FOCUS"),
+    ],
   };
 }
 
