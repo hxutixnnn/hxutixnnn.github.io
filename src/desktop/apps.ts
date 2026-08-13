@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import { lazy, type ComponentType } from "react";
 import { SystemSettingsApp } from "../apps/system-settings/SystemSettingsApp";
 import type { FontAwesomeIconName } from "../components/FontAwesomeIcon";
 import type { Rect, Workspace } from "../windows/geometry";
@@ -22,6 +22,7 @@ export type DesktopAppDescriptor = Readonly<{
   id: AppId;
   name: string;
   icon: FontAwesomeIconName;
+  iconClassName?: string;
   Window: ComponentType<DesktopAppWindowProps>;
 }>;
 
@@ -31,6 +32,15 @@ export const desktopApps = [
     name: "System Settings",
     icon: "gear",
     Window: SystemSettingsApp,
+  },
+  {
+    id: "calendar",
+    name: "Calendar",
+    icon: "calendar-days",
+    iconClassName: "bg-[linear-gradient(#fff_0_28%,#ff3b30_28%)] text-white",
+    Window: lazy(() =>
+      import("../apps/calendar/CalendarApp").then(({ CalendarApp }) => ({ default: CalendarApp })),
+    ),
   },
 ] as const satisfies readonly DesktopAppDescriptor[];
 
