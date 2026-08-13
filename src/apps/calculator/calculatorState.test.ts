@@ -53,6 +53,37 @@ it("uses macOS contextual percent semantics", () => {
       { type: "equals" },
     ).display,
   ).toBe("220");
+  expect(
+    run(
+      digit("5"),
+      digit("0"),
+      digit("0"),
+      op("multiply"),
+      digit("8"),
+      { type: "percent" },
+      { type: "equals" },
+    ).display,
+  ).toBe("40");
+  expect(
+    run(
+      digit("5"),
+      digit("0"),
+      digit("0"),
+      op("divide"),
+      digit("8"),
+      { type: "percent" },
+      {
+        type: "equals",
+      },
+    ).display,
+  ).toBe("6250");
+});
+
+it("toggles the sign of a completed result without changing next-input behavior", () => {
+  const negative = run(digit("2"), op("add"), digit("3"), { type: "equals" }, { type: "sign" });
+  expect(negative.display).toBe("-5");
+  expect(negative.waitingForOperand).toBe(true);
+  expect(calculatorReducer(negative, digit("2")).display).toBe("2");
 });
 
 describe("error recovery", () => {

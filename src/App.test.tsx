@@ -1,5 +1,6 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { lazy } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import type { DesktopAppDescriptor } from "./desktop/apps";
@@ -155,6 +156,7 @@ describe("tienOS main screen", () => {
       {
         id: "system-settings",
         name: "System Settings",
+        menuName: "Navigator",
         icon: "gear",
         Window: (props) => (
           <div aria-label="System Settings Test Window">
@@ -183,6 +185,7 @@ describe("tienOS main screen", () => {
     await user.click(screen.getByRole("button", { name: "Open Spotlight" }));
     await user.type(screen.getByRole("combobox", { name: "Search apps" }), "aux{Enter}");
 
+    expect(screen.getByRole("menuitem", { name: "Auxiliary" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Auxiliary App" })).toHaveTextContent("active");
     expect(screen.getByRole("status", { name: "Auxiliary layer" })).toHaveTextContent("frontmost");
     expect(screen.getByRole("status", { name: "System Settings layer" })).toHaveTextContent("background");
@@ -205,10 +208,41 @@ describe("tienOS main screen", () => {
     expect(screen.getAllByRole("region", { name: "Auxiliary App" })).toHaveLength(1);
     await user.click(screen.getByRole("button", { name: "System Settings" }));
     await user.click(screen.getByRole("main", { name: "tienOS desktop" }));
+    expect(screen.getByRole("menuitem", { name: "Navigator" })).toBeInTheDocument();
     expect(screen.getByRole("status", { name: "System Settings layer" })).toHaveTextContent("frontmost");
     expect(screen.getByRole("status", { name: "Auxiliary layer" })).toHaveTextContent("background");
     await user.click(screen.getByRole("button", { name: "Close Auxiliary App" }));
     expect(screen.queryByRole("region", { name: "Auxiliary App" })).not.toBeInTheDocument();
     expect(screen.getByText("Auxiliary is not running")).toBeInTheDocument();
+  });
+
+  it("keeps loaded app windows mounted while another app suspends", async () => {
+    const user = userEvent.setup();
+    let release: (() => void) | undefined;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const LazyWindow = lazy(async () => {
+      await pending;
+      return { default: () => <section aria-label="Lazy App">Loaded</section> };
+    });
+    const apps: readonly DesktopAppDescriptor[] = [
+      {
+        id: "system-settings",
+        name: "System Settings",
+        menuName: "Navigator",
+        icon: "gear",
+        Window: () => <section aria-label="System Settings Test Window">Settings content</section>,
+      },
+      { id: "lazy", name: "Lazy App", icon: "sparkle", Window: LazyWindow },
+    ];
+
+    render(<App apps={apps} defaultApp={apps[0]} />);
+    await user.click(screen.getByRole("button", { name: "Lazy App" }));
+
+    expect(screen.getByRole("region", { name: "System Settings Test Window" })).toBeVisible();
+    expect(screen.queryByRole("region", { name: "Lazy App" })).not.toBeInTheDocument();
+    release?.();
+    expect(await screen.findByRole("region", { name: "Lazy App" })).toBeVisible();
   });
 });

@@ -87,7 +87,7 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
         return { ...state, display: "0.", waitingForOperand: false, lastOperator: null };
       return state.display.includes(".") ? state : { ...state, display: `${state.display}.` };
     case "sign":
-      if (state.display === "0" || state.waitingForOperand) return state;
+      if (state.display === "0" || (state.waitingForOperand && state.pending !== null)) return state;
       return {
         ...state,
         display: state.display.startsWith("-") ? state.display.slice(1) : `-${state.display}`,
@@ -95,7 +95,7 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
     case "percent": {
       const current = Number(state.display);
       const value =
-        state.pending !== null && state.accumulator !== null
+        (state.pending === "add" || state.pending === "subtract") && state.accumulator !== null
           ? (state.accumulator * current) / 100
           : current / 100;
       return { ...state, display: canonical(value), waitingForOperand: false };
