@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { DesktopAppWindowProps } from "../../desktop/apps";
 import { defaultCompactFrame, defaultDesktopFrame, type Frame } from "../../windows/geometry";
 import { WindowFrame } from "../../windows/WindowFrame";
@@ -12,10 +12,12 @@ import {
   parseCalendarStore,
   saveCalendarStore,
   upsertEvent,
+  weekStartForLocale,
   type CalendarEvent,
 } from "./calendarModel";
 
 const locale = typeof navigator === "undefined" ? "en-US" : navigator.language;
+const weekStartsOn = weekStartForLocale(locale);
 const monthFormatter = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" });
 const detailFormatter = new Intl.DateTimeFormat(locale, { weekday: "long", month: "long", day: "numeric" });
 const dayFormatter = new Intl.DateTimeFormat(locale, { weekday: "short" });
@@ -25,6 +27,22 @@ const iconButtonClass =
   "inline-flex min-h-9 w-9 touch-manipulation items-center justify-center rounded-full border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] text-xl text-inherit [@media(pointer:coarse)]:min-h-11 [@media(forced-colors:active)]:border-[ButtonText] [@media(forced-colors:active)]:bg-[ButtonFace] [@media(forced-colors:active)]:text-[ButtonText]";
 const inputClass =
   "mt-1 block min-h-9 w-full select-text rounded-[var(--tienos-radius-control)] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-[9px] py-[7px] text-inherit [@media(forced-colors:active)]:border-[ButtonText] [@media(forced-colors:active)]:bg-[ButtonFace] [@media(forced-colors:active)]:text-[ButtonText]";
+
+function readStoredEvents(): readonly CalendarEvent[] {
+  try {
+    return parseCalendarStore(globalThis.localStorage.getItem(CALENDAR_STORAGE_KEY)).events;
+  } catch {
+    return [];
+  }
+}
+
+function persistEvents(events: readonly CalendarEvent[]) {
+  try {
+    saveCalendarStore(globalThis.localStorage, events);
+  } catch {
+    return;
+  }
+}
 
 export function CalendarApp({
   appId,
@@ -36,30 +54,38 @@ export function CalendarApp({
   workspace,
   dockTargetRectProvider,
 }: DesktopAppWindowProps) {
-  const today = useMemo(() => new Date(), []);
+  const [today, setToday] = useState(() => new Date());
   const todayKey = dateKey(today);
   const [selected, setSelected] = useState(today);
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1, 12));
-  const [events, setEvents] = useState<readonly CalendarEvent[]>(() =>
-    typeof localStorage === "undefined"
-      ? []
-      : parseCalendarStore(localStorage.getItem(CALENDAR_STORAGE_KEY)).events,
-  );
+  const [events, setEvents] = useState<readonly CalendarEvent[]>(readStoredEvents);
   const [editing, setEditing] = useState<CalendarEvent | null>(null);
   const [creating, setCreating] = useState(false);
   const [frame, setFrame] = useState<Frame>(() =>
     workspace.layout === "compact" ? defaultCompactFrame(workspace) : defaultDesktopFrame(workspace.viewport),
   );
   const gridRef = useRef<HTMLDivElement>(null);
-  const cells = useMemo(() => monthGrid(month), [month]);
+  const cells = useMemo(() => monthGrid(month, weekStartsOn), [month]);
   const selectedKey = dateKey(selected);
   const selectedEvents = events
     .filter((event) => event.date === selectedKey)
     .sort((a, b) => (a.time ?? "24:00").localeCompare(b.time ?? "24:00"));
   const commit = (next: readonly CalendarEvent[]) => {
     setEvents(next);
-    if (typeof localStorage !== "undefined") saveCalendarStore(localStorage, next);
+    persistEvents(next);
   };
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout>;
+    const refreshAtMidnight = () => {
+      const now = new Date();
+      setToday(now);
+      const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      timer = setTimeout(refreshAtMidnight, nextMidnight.getTime() - now.getTime() + 1);
+    };
+    refreshAtMidnight();
+    return () => clearTimeout(timer);
+  }, []);
   const choose = useCallback((date: Date) => {
     setSelected(date);
     setMonth(new Date(date.getFullYear(), date.getMonth(), 1, 12));
@@ -68,8 +94,10 @@ export function CalendarApp({
     const offsets: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
     let next: Date | undefined;
     if (event.key in offsets) next = addDays(selected, offsets[event.key]);
-    else if (event.key === "Home") next = addDays(selected, -selected.getDay());
-    else if (event.key === "End") next = addDays(selected, 6 - selected.getDay());
+    else if (event.key === "Home")
+      next = addDays(selected, -((selected.getDay() - weekStartsOn + 7) % 7));
+    else if (event.key === "End")
+      next = addDays(selected, 6 - ((selected.getDay() - weekStartsOn + 7) % 7));
     else if (event.key === "PageUp") next = addMonths(selected, -1);
     else if (event.key === "PageDown") next = addMonths(selected, 1);
     if (!next) return;
@@ -208,6 +236,7 @@ export function CalendarApp({
               </ul>
               {formEvent && (
                 <EventEditor
+                  key={editing?.id ?? "create"}
                   event={formEvent}
                   onCancel={() => {
                     setEditing(null);

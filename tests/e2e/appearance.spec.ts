@@ -284,7 +284,7 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
     await page.keyboard.press("Escape");
     await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
 
-    await page.getByRole("menuitem", { name: "Navigator" }).click();
+    await page.getByRole("menuitem", { name: "System Settings", exact: true }).click();
     const navigatorPopup = page.locator(".tienos-menu-popup:visible");
     await expect(navigatorPopup).toHaveCSS("background-color", expectedBackground);
     await sampleAgainstWallpapers(navigatorPopup, "navigator", 1);
@@ -380,7 +380,7 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
       await page.keyboard.press("Escape");
       await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
 
-      await page.getByRole("menuitem", { name: "Navigator" }).click();
+      await page.getByRole("menuitem", { name: "System Settings", exact: true }).click();
       const navigatorPopup = page.locator(".tienos-menu-popup:visible");
       await expect(navigatorPopup).toHaveCount(1);
       const navigatorBackground = parseColor(
@@ -388,7 +388,7 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
       );
       expect(navigatorBackground.alpha, `${theme} ${mode.name} navigator should be opaque`).toBe(1);
       await expectColorContrast(
-        page.getByRole("menuitem", { name: "About Navigator" }),
+        page.getByRole("menuitem", { name: "About System Settings" }),
         "color",
         navigatorBackground,
         4.5,
