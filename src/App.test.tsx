@@ -30,9 +30,12 @@ describe("tienOS main screen", () => {
 
     const dock = getByRole("navigation", { name: "Dock" });
     const app = getByRole("button", { name: "System Settings" });
-    expect(dock.querySelectorAll("button")).toHaveLength(1);
+    expect(dock.querySelectorAll("button")).toHaveLength(2);
+    expect(getByRole("button", { name: "Calculator" })).toBeInTheDocument();
     expect(app).not.toHaveAttribute("aria-pressed");
-    expect(getByRole("status")).toHaveTextContent("System Settings is running");
+    expect(document.querySelector("#system-settings-dock-status")).toHaveTextContent(
+      "System Settings is running",
+    );
 
     await user.click(getByRole("main", { name: "tienOS desktop" }));
     await user.click(app);
@@ -41,12 +44,16 @@ describe("tienOS main screen", () => {
 
     await user.click(getByRole("button", { name: "Close System Settings" }));
     expect(queryByRole("region", { name: "System Settings" })).not.toBeInTheDocument();
-    expect(getByRole("status")).toHaveTextContent("System Settings is not running");
+    expect(document.querySelector("#system-settings-dock-status")).toHaveTextContent(
+      "System Settings is not running",
+    );
 
     app.focus();
     await user.keyboard("{Enter}");
     expect(getAllByRole("region", { name: "System Settings" })).toHaveLength(1);
-    expect(getByRole("status")).toHaveTextContent("System Settings is running");
+    expect(document.querySelector("#system-settings-dock-status")).toHaveTextContent(
+      "System Settings is running",
+    );
   });
 
   it("keeps an inactive app inactive while its menu owns pointer and keyboard activation", async () => {

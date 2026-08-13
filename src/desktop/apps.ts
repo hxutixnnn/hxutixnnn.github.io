@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import { lazy, type ComponentType } from "react";
 import { SystemSettingsApp } from "../apps/system-settings/SystemSettingsApp";
 import type { FontAwesomeIconName } from "../components/FontAwesomeIcon";
 import type { Rect, Workspace } from "../windows/geometry";
@@ -21,16 +21,33 @@ export type DesktopAppWindowProps = Readonly<{
 export type DesktopAppDescriptor = Readonly<{
   id: AppId;
   name: string;
+  menuName?: string;
   icon: FontAwesomeIconName;
+  iconText?: string;
+  ownsDockStatus?: boolean;
   Window: ComponentType<DesktopAppWindowProps>;
 }>;
+
+const CalculatorApp = lazy(async () => {
+  const module = await import("../apps/calculator/CalculatorApp");
+  return { default: module.CalculatorApp };
+});
 
 export const desktopApps = [
   {
     id: "system-settings",
     name: "System Settings",
+    menuName: "Navigator",
     icon: "gear",
+    ownsDockStatus: true,
     Window: SystemSettingsApp,
+  },
+  {
+    id: "calculator",
+    name: "Calculator",
+    icon: "display",
+    iconText: "123",
+    Window: CalculatorApp,
   },
 ] as const satisfies readonly DesktopAppDescriptor[];
 

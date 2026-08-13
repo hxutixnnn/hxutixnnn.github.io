@@ -45,6 +45,7 @@ export type WindowFrameProps = Readonly<{
   lifecycle: WindowFrameLifecyclePort;
   geometry: WindowFrameGeometryPort;
   detailViewportRef?: RefObject<HTMLElement | null>;
+  minimumSize?: Readonly<{ width: number; height: number }>;
   contentStyle?: CSSProperties;
   children: ReactNode | ((chrome: ReactNode) => ReactNode);
 }>;
@@ -76,6 +77,7 @@ export function WindowFrame({
   lifecycle,
   geometry,
   detailViewportRef,
+  minimumSize = DESKTOP_MINIMUM,
   contentStyle,
   children,
 }: WindowFrameProps) {
@@ -88,7 +90,7 @@ export function WindowFrame({
   const availableHeight = Math.max(0, bottomBoundary - Math.ceil(workspace.menuBottom));
   const minimumHeight = compact
     ? Math.min(frame.height, availableHeight)
-    : Math.min(DESKTOP_MINIMUM.height, availableHeight);
+    : Math.min(minimumSize.height, availableHeight);
   const rndRef = useRef<Rnd>(null);
   const windowRef = useRef<HTMLElement>(null);
   const restoreFocusRef = useRef<HTMLElement | null>(null);
@@ -159,10 +161,13 @@ export function WindowFrame({
     if (visibility !== "visible") driverRef.current?.retarget();
     if (fullscreen) onFrameChange(fullscreenFrame(workspace));
     else if (compact) onFrameChange(defaultCompactFrame(workspace));
-    else onFrameChange(clampFrame(modeChanged ? defaultDesktopFrame(workspace.viewport) : frame, workspace));
+    else
+      onFrameChange(
+        clampFrame(modeChanged ? defaultDesktopFrame(workspace.viewport) : frame, workspace, minimumSize),
+      );
     // frame is deliberately projected through the controlled geometry port only when policy inputs change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [compact, fullscreen, visibility, workspace]);
+  }, [compact, fullscreen, minimumSize, visibility, workspace]);
 
   useLayoutEffect(() => {
     const element = rndRef.current?.resizableElement.current;
@@ -185,7 +190,7 @@ export function WindowFrame({
       return;
     }
     if (normalFrameRef.current === null) return;
-    const restored = restoreNormalFrame(normalFrameRef.current, workspace);
+    const restored = restoreNormalFrame(normalFrameRef.current, workspace, minimumSize);
     rndRef.current?.updateSize({ width: restored.width, height: restored.height });
     rndRef.current?.updatePosition({ x: restored.x, y: restored.y });
     onFrameChange(restored);
@@ -218,13 +223,14 @@ export function WindowFrame({
       clampFrame(
         { x: bounds.x, y: bounds.y, width: element.offsetWidth, height: element.offsetHeight },
         workspace,
+        minimumSize,
       ),
     );
   };
   const move = useCallback(
     (position: { x: number; y: number }) =>
-      onFrameChange(clampFrame({ ...frame, x: position.x, y: position.y }, workspace)),
-    [frame, onFrameChange, workspace],
+      onFrameChange(clampFrame({ ...frame, x: position.x, y: position.y }, workspace, minimumSize)),
+    [frame, minimumSize, onFrameChange, workspace],
   );
 
   const chrome = (
@@ -291,7 +297,7 @@ export function WindowFrame({
         size={{ width: frame.width, height: frame.height }}
         position={{ x: frame.x, y: frame.y }}
         bounds={dragBoundaryElement ?? undefined}
-        minWidth={compact ? frame.width : Math.min(DESKTOP_MINIMUM.width, workspace.viewport.width)}
+        minWidth={compact ? frame.width : Math.min(minimumSize.width, workspace.viewport.width)}
         minHeight={minimumHeight}
         maxWidth={workspace.viewport.width}
         maxHeight={availableHeight}
