@@ -16,6 +16,7 @@ type AppControllerState = Readonly<{
 type DesktopControllerState = Readonly<{
   controllers: Readonly<Record<AppId, AppControllerState>>;
   frontmostAppId: AppId;
+  previousFrontmostAppId?: AppId;
 }>;
 
 type DesktopControllerAction =
@@ -71,10 +72,15 @@ function isVisibleApp(controller: AppControllerState) {
 function promoteVisibleApp(
   controllers: DesktopControllerState["controllers"],
   excludedAppId: AppId,
+  preferredAppId?: AppId,
 ) {
-  const entry = Object.entries(controllers).find(
-    ([appId, controller]) => appId !== excludedAppId && isVisibleApp(controller),
-  );
+  const preferred = preferredAppId ? controllers[preferredAppId] : undefined;
+  const entry =
+    preferredAppId && preferredAppId !== excludedAppId && preferred && isVisibleApp(preferred)
+      ? ([preferredAppId, preferred] as const)
+      : Object.entries(controllers).find(
+          ([appId, controller]) => appId !== excludedAppId && isVisibleApp(controller),
+        );
   if (!entry) return null;
   const [appId, controller] = entry;
   return {
@@ -116,16 +122,34 @@ function reduceControllers(state: DesktopControllerState, action: DesktopControl
     : state.controllers;
   const controllers = { ...next, [action.appId]: applyEvent(next[action.appId], action.event) };
   const target = controllers[action.appId];
-  if (state.frontmostAppId === action.appId && !isVisibleApp(target)) {
-    const promoted = promoteVisibleApp(controllers, action.appId);
-    if (promoted) return { controllers: promoted.controllers, frontmostAppId: promoted.appId };
+  const frontmost = controllers[state.frontmostAppId];
+  if (!frontmost || !isVisibleApp(frontmost)) {
+    const promoted = promoteVisibleApp(
+      controllers,
+      state.frontmostAppId,
+      state.previousFrontmostAppId,
+    );
+    if (promoted)
+      return {
+        controllers: promoted.controllers,
+        frontmostAppId: promoted.appId,
+        previousFrontmostAppId: state.frontmostAppId,
+      };
+  }
+  const targetOwnsFrontmost =
+    target.window.presence === "open" &&
+    target.window.visibility !== "minimizing" &&
+    target.window.visibility !== "minimized";
+  if (action.exclusive && targetOwnsFrontmost && action.appId !== state.frontmostAppId) {
+    return {
+      controllers,
+      frontmostAppId: action.appId,
+      previousFrontmostAppId: state.frontmostAppId,
+    };
   }
   return {
+    ...state,
     controllers,
-    frontmostAppId:
-      action.exclusive && target.window.presence === "open"
-        ? action.appId
-        : state.frontmostAppId,
   };
 }
 

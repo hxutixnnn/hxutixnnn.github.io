@@ -8,6 +8,10 @@ const apps: readonly DesktopAppDescriptor[] = [
   { id: "first", name: "First", icon: "gear", Window: EmptyWindow },
   { id: "second", name: "Second", icon: "sparkle", Window: EmptyWindow },
 ];
+const threeApps: readonly DesktopAppDescriptor[] = [
+  ...apps,
+  { id: "third", name: "Third", icon: "display", Window: EmptyWindow },
+];
 
 describe("useDesktopAppController", () => {
   it("does not reactivate a background app when restore settles", () => {
@@ -109,5 +113,51 @@ describe("useDesktopAppController", () => {
     expect(result.current.controllers.second.window.active).toBe(true);
     expect(result.current.frontmostAppId).toBe("second");
     expect(result.current.controllers.second.pendingEffects.at(-1)?.type).toBe("FOCUS");
+  });
+
+  it("promotes a restoring prior owner when it becomes visible", () => {
+    const { result } = renderHook(() => useDesktopAppController(apps, "first"));
+
+    act(() => result.current.dispatch("second", { type: "ACTIVATE_FROM_DOCK" }, true));
+    act(() => result.current.dispatch("second", { type: "ACTIVATE_FROM_DOCK" }, true));
+    act(() =>
+      result.current.dispatch("second", {
+        type: "TRANSITION_SETTLED",
+        generation: 2,
+        destination: "minimized",
+      }),
+    );
+    act(() => result.current.dispatch("second", { type: "ACTIVATE_FROM_DOCK" }, true));
+    act(() => result.current.dispatch("first", { type: "WINDOW_INTERACTION" }, true));
+    act(() => result.current.dispatch("first", { type: "CLOSE" }));
+
+    expect(result.current.controllers.second.window.visibility).toBe("restoring");
+    expect(result.current.frontmostAppId).toBe("first");
+
+    act(() =>
+      result.current.dispatch("second", {
+        type: "TRANSITION_SETTLED",
+        generation: 3,
+        destination: "visible",
+      }),
+    );
+
+    expect(result.current.frontmostAppId).toBe("second");
+    expect(result.current.controllers.second.window).toMatchObject({ visibility: "visible", active: true });
+  });
+
+  it("promotes the immediate prior owner instead of registry order", () => {
+    const { result } = renderHook(() => useDesktopAppController(threeApps, "first"));
+
+    act(() => result.current.dispatch("second", { type: "ACTIVATE_FROM_DOCK" }, true));
+    act(() => result.current.dispatch("third", { type: "ACTIVATE_FROM_DOCK" }, true));
+    act(() => result.current.dispatch("first", { type: "WINDOW_INTERACTION" }, true));
+    expect(result.current.frontmostAppId).toBe("first");
+
+    act(() => result.current.dispatch("first", { type: "CLOSE" }));
+
+    expect(result.current.frontmostAppId).toBe("third");
+    expect(result.current.controllers.third.window.active).toBe(true);
+    expect(result.current.controllers.second.window.active).toBe(false);
   });
 });
