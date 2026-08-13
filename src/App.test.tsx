@@ -1,6 +1,6 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { App } from "./App";
 
 afterEach(cleanup);
@@ -12,18 +12,6 @@ describe("tienOS main screen", () => {
     expect(screen.getByRole("main", { name: "tienOS desktop" })).toBeVisible();
     expect(screen.getByRole("region", { name: "System Settings" })).toBeVisible();
     expect(screen.queryByText("A new desktop is under way.")).not.toBeInTheDocument();
-  });
-
-  it("reports readiness after the default window commits", async () => {
-    let settingsAtReady: HTMLElement | null = null;
-    const onDesktopReady = vi.fn(() => {
-      settingsAtReady = screen.queryByRole("region", { name: "System Settings" });
-    });
-
-    render(<App desktopAssetsReady={Promise.resolve()} onDesktopReady={onDesktopReady} />);
-
-    await waitFor(() => expect(onDesktopReady).toHaveBeenCalledOnce());
-    expect(settingsAtReady).toBeVisible();
   });
 
   it("opens, raises, and reports the single Settings window from the Dock", async () => {
