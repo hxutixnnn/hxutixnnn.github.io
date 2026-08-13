@@ -12,6 +12,10 @@ const threeApps: readonly DesktopAppDescriptor[] = [
   ...apps,
   { id: "third", name: "Third", icon: "display", Window: EmptyWindow },
 ];
+const fourApps: readonly DesktopAppDescriptor[] = [
+  ...threeApps,
+  { id: "fourth", name: "Fourth", icon: "circle-info", Window: EmptyWindow },
+];
 
 describe("useDesktopAppController", () => {
   it("does not reactivate a background app when restore settles", () => {
@@ -159,5 +163,23 @@ describe("useDesktopAppController", () => {
     expect(result.current.frontmostAppId).toBe("third");
     expect(result.current.controllers.third.window.active).toBe(true);
     expect(result.current.controllers.second.window.active).toBe(false);
+  });
+
+  it("preserves activation order through consecutive minimize handoffs", () => {
+    const { result } = renderHook(() => useDesktopAppController(fourApps, "first"));
+
+    act(() => result.current.dispatch("second", { type: "ACTIVATE_FROM_DOCK" }, true));
+    act(() => result.current.dispatch("third", { type: "ACTIVATE_FROM_DOCK" }, true));
+    act(() => result.current.dispatch("fourth", { type: "ACTIVATE_FROM_DOCK" }, true));
+    expect(result.current.frontmostAppId).toBe("fourth");
+
+    act(() => result.current.dispatch("fourth", { type: "MINIMIZE" }));
+    expect(result.current.frontmostAppId).toBe("third");
+    expect(result.current.controllers.third.window.active).toBe(true);
+
+    act(() => result.current.dispatch("third", { type: "MINIMIZE" }));
+    expect(result.current.frontmostAppId).toBe("second");
+    expect(result.current.controllers.second.window.active).toBe(true);
+    expect(result.current.controllers.first.window.active).toBe(false);
   });
 });

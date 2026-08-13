@@ -16,7 +16,7 @@ type AppControllerState = Readonly<{
 type DesktopControllerState = Readonly<{
   controllers: Readonly<Record<AppId, AppControllerState>>;
   frontmostAppId: AppId;
-  previousFrontmostAppId?: AppId;
+  activationOrder: readonly AppId[];
 }>;
 
 type DesktopControllerAction =
@@ -39,6 +39,7 @@ function initializeControllers(apps: readonly DesktopAppDescriptor[], defaultApp
       ]),
     ),
     frontmostAppId: defaultAppId,
+    activationOrder: [defaultAppId],
   } as DesktopControllerState;
 }
 
@@ -72,15 +73,16 @@ function isVisibleApp(controller: AppControllerState) {
 function promoteVisibleApp(
   controllers: DesktopControllerState["controllers"],
   excludedAppId: AppId,
-  preferredAppId?: AppId,
+  activationOrder: readonly AppId[],
 ) {
-  const preferred = preferredAppId ? controllers[preferredAppId] : undefined;
-  const entry =
-    preferredAppId && preferredAppId !== excludedAppId && preferred && isVisibleApp(preferred)
-      ? ([preferredAppId, preferred] as const)
-      : Object.entries(controllers).find(
-          ([appId, controller]) => appId !== excludedAppId && isVisibleApp(controller),
-        );
+  const preferredAppId = activationOrder.findLast(
+    (appId) => appId !== excludedAppId && isVisibleApp(controllers[appId]),
+  );
+  const entry = preferredAppId
+    ? ([preferredAppId, controllers[preferredAppId]] as const)
+    : Object.entries(controllers).find(
+        ([appId, controller]) => appId !== excludedAppId && isVisibleApp(controller),
+      );
   if (!entry) return null;
   const [appId, controller] = entry;
   return {
@@ -127,13 +129,13 @@ function reduceControllers(state: DesktopControllerState, action: DesktopControl
     const promoted = promoteVisibleApp(
       controllers,
       state.frontmostAppId,
-      state.previousFrontmostAppId,
+      state.activationOrder,
     );
     if (promoted)
       return {
         controllers: promoted.controllers,
         frontmostAppId: promoted.appId,
-        previousFrontmostAppId: state.frontmostAppId,
+        activationOrder: state.activationOrder,
       };
   }
   const targetOwnsFrontmost =
@@ -144,7 +146,7 @@ function reduceControllers(state: DesktopControllerState, action: DesktopControl
     return {
       controllers,
       frontmostAppId: action.appId,
-      previousFrontmostAppId: state.frontmostAppId,
+      activationOrder: [...state.activationOrder.filter((appId) => appId !== action.appId), action.appId],
     };
   }
   return {
