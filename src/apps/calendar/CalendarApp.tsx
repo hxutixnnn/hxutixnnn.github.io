@@ -94,10 +94,8 @@ export function CalendarApp({
     const offsets: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
     let next: Date | undefined;
     if (event.key in offsets) next = addDays(selected, offsets[event.key]);
-    else if (event.key === "Home")
-      next = addDays(selected, -((selected.getDay() - weekStartsOn + 7) % 7));
-    else if (event.key === "End")
-      next = addDays(selected, 6 - ((selected.getDay() - weekStartsOn + 7) % 7));
+    else if (event.key === "Home") next = addDays(selected, -((selected.getDay() - weekStartsOn + 7) % 7));
+    else if (event.key === "End") next = addDays(selected, 6 - ((selected.getDay() - weekStartsOn + 7) % 7));
     else if (event.key === "PageUp") next = addMonths(selected, -1);
     else if (event.key === "PageDown") next = addMonths(selected, 1);
     if (!next) return;

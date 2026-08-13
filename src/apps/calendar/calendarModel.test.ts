@@ -23,9 +23,7 @@ describe("calendar model", () => {
   it("starts grids on the locale's first weekday", () => {
     expect(weekStartForLocale("en-US")).toBe(0);
     expect(weekStartForLocale("en-GB")).toBe(1);
-    expect(monthGrid(new Date(2025, 0, 15, 12), weekStartForLocale("en-GB"))[0].key).toBe(
-      "2024-12-30",
-    );
+    expect(monthGrid(new Date(2025, 0, 15, 12), weekStartForLocale("en-GB"))[0].key).toBe("2024-12-30");
   });
 
   it("creates, updates, and deletes events immutably", () => {

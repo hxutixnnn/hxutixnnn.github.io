@@ -100,7 +100,9 @@ describe("CalendarApp", () => {
     render(<CalendarApp {...props} />);
     fireEvent.click(screen.getByRole("button", { name: "Previous month" }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("December 2024");
-    act(() => vi.advanceTimersByTime(1_000));
+    act(() => {
+      vi.advanceTimersByTime(1_000);
+    });
     fireEvent.click(screen.getByRole("button", { name: "Today" }));
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("February 2025");
   });

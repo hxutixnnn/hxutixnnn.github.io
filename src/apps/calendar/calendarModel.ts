@@ -31,9 +31,8 @@ export type CalendarCell = Readonly<{ date: Date; key: string; inMonth: boolean 
 
 export function weekStartForLocale(locale: string): number {
   try {
-    const firstDay = (
-      new Intl.Locale(locale) as Intl.Locale & { weekInfo?: { firstDay?: number } }
-    ).weekInfo?.firstDay;
+    const firstDay = (new Intl.Locale(locale) as Intl.Locale & { weekInfo?: { firstDay?: number } }).weekInfo
+      ?.firstDay;
     return typeof firstDay === "number" ? firstDay % 7 : 0;
   } catch {
     return 0;
