@@ -28,7 +28,7 @@ export type WindowFrameLifecyclePort = Readonly<{
   state: SingleWindowState;
   effects: readonly WindowEffect[];
   dispatch(event: WindowEvent): void;
-  effectsConsumed?(): void;
+  effectsConsumed?(count: number): void;
 }>;
 
 export type WindowFrameGeometryPort = Readonly<{
@@ -141,7 +141,7 @@ export function WindowFrame({
         else driverRef.current?.start(effect.generation, destination, { defer: effect.defer });
       }
     }
-    effectsConsumed?.();
+    effectsConsumed?.(effects.length);
   }, [effects, effectsConsumed, state.generation, visibility]);
 
   useLayoutEffect(() => {

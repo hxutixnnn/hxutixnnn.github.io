@@ -33,7 +33,7 @@ import {
 type SystemSettingsProps = {
   windowState?: SingleWindowState;
   effects?: readonly WindowEffect[];
-  onEffectsConsumed?: () => void;
+  onEffectsConsumed?: (count: number) => void;
   onEvent?: (event: WindowEvent) => void;
   workspace?: Workspace;
   dockTargetRectProvider?: () => Rect | null;

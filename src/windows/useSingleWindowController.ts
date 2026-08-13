@@ -43,12 +43,20 @@ export function useSingleWindowController({
   const dispatch = useCallback((event: WindowEvent) => {
     dispatchController({ type: "EVENT", event });
   }, []);
+  const effectsConsumed = useCallback((count: number) => {
+    dispatchController({ type: "CONSUME_EFFECTS", count });
+  }, []);
 
   useLayoutEffect(() => {
-    if (controller.pendingEffects.length === 0) return;
-    for (const effect of controller.pendingEffects) onEffect?.(effect);
+    if (!onEffect || controller.pendingEffects.length === 0) return;
+    for (const effect of controller.pendingEffects) onEffect(effect);
     dispatchController({ type: "CONSUME_EFFECTS", count: controller.pendingEffects.length });
   }, [controller.pendingEffects, onEffect]);
 
-  return { state: controller.window, dispatch };
+  return {
+    state: controller.window,
+    dispatch,
+    effects: controller.pendingEffects,
+    effectsConsumed,
+  };
 }
