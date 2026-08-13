@@ -246,4 +246,20 @@ describe("tienOS main screen", () => {
     release?.();
     expect(await screen.findByRole("region", { name: "Lazy App" })).toBeVisible();
   });
+
+  it("stops Calculator keyboard input after desktop deactivation", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Calculator" }));
+    const calculator = await screen.findByRole("region", { name: "Calculator" });
+    await user.keyboard("4");
+    expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("4");
+
+    await user.click(screen.getByRole("main", { name: "tienOS desktop" }));
+    expect(calculator).toHaveAttribute("data-window-active", "false");
+    await user.keyboard("9");
+
+    expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("4");
+  });
 });

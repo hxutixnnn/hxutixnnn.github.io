@@ -81,7 +81,7 @@ export function CalculatorApp({
   );
 
   useEffect(() => {
-    if (!frontmost || windowState.visibility !== "visible") return;
+    if (!frontmost || !windowState.active || windowState.visibility !== "visible") return;
     const handleKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return;
       let action: CalculatorAction | undefined;
@@ -99,7 +99,7 @@ export function CalculatorApp({
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [frontmost, windowState.visibility]);
+  }, [frontmost, windowState.active, windowState.visibility]);
 
   const shown = formatCalculatorDisplay(state.display);
   const clearEntry = !state.error && !state.waitingForOperand && state.display !== "0";
