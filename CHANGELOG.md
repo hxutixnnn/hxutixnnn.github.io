@@ -2,9 +2,9 @@
 
 ## Unreleased
 
-- Establish documented semantic UI foundations and add visible focus, increased-contrast, reduced-transparency, and forced-colors treatments.
-- Add `/preview/`, a non-indexed UI-component review gallery with a static HTML baseline and isolated interactive component labs.
-- Refine the desktop with a silent startup splash, contained scrolling, consistent menu geometry, and a desktop-draggable and resizable System Settings window with a fixed compact layout.
+- Relaunch the root as a Vite-powered tienOS desktop with a useful static fallback, appearance modes, macOS-style menus, and a single draggable System Settings window.
+- Split browser contracts by startup, menu, settings layout, appearance, and window lifecycle boundaries while retaining the established visual baselines.
+- Make standalone browser tests build the current checkout, parallelize independent PR browser and Lighthouse gates, and remove retired Astro catalogue tooling.
 
 ## 2026-08-01
 

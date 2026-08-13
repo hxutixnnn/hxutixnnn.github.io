@@ -1,9 +1,20 @@
 /* global fetch, AbortSignal, setTimeout */
 import { spawn } from "node:child_process";
 
+const run = (command, args) =>
+  new Promise((resolve, reject) => {
+    const child = spawn(command, args, { stdio: "inherit", env: process.env });
+    child.once("error", reject);
+    child.once("exit", (code, signal) => {
+      if (code === 0) resolve();
+      else reject(new Error(`${command} ${args.join(" ")} exited with ${code ?? signal}`));
+    });
+  });
+
 const port = process.env.TIENOS_E2E_PORT;
 if (!port) throw new Error("TIENOS_E2E_PORT is required");
 const origin = `http://127.0.0.1:${port}`;
+if (process.env.TIENOS_E2E_SKIP_BUILD !== "1") await run("pnpm", ["build"]);
 const child = spawn(
   "pnpm",
   ["exec", "vite", "preview", "--host", "127.0.0.1", "--port", port, "--strictPort"],
