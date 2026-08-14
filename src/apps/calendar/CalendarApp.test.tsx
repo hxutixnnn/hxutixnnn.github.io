@@ -178,6 +178,55 @@ describe("CalendarApp", () => {
     ]);
   });
 
+  it.each([
+    { scenario: "untouched", title: "", decision: null, closes: true, saves: false },
+    { scenario: "keep", title: "Keep draft", decision: "Keep Editing", closes: false, saves: false },
+    {
+      scenario: "discard",
+      title: "Discard draft",
+      decision: "Discard and Close",
+      closes: true,
+      saves: false,
+    },
+    {
+      scenario: "save",
+      title: "Save draft",
+      decision: "Save and Close",
+      closes: true,
+      saves: true,
+    },
+  ])(
+    "handles the $scenario close decision through the draft guard",
+    async ({ title, decision, closes, saves }) => {
+      const onEvent = vi.fn();
+      const user = userEvent.setup();
+      render(<CalendarApp {...props} onEvent={onEvent} />);
+      await user.click(screen.getByRole("button", { name: "Create event" }));
+      if (title) await user.type(screen.getByLabelText("Title"), title);
+
+      await user.click(screen.getByRole("button", { name: "Close Calendar" }));
+      if (decision) {
+        expect(onEvent).not.toHaveBeenCalledWith({ type: "CLOSE" });
+        expect(screen.getByRole("alertdialog")).toHaveAccessibleName("Save changes before closing?");
+        await user.click(screen.getByRole("button", { name: decision }));
+      } else {
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+      }
+
+      if (closes) expect(onEvent).toHaveBeenCalledWith({ type: "CLOSE" });
+      else {
+        expect(onEvent).not.toHaveBeenCalledWith({ type: "CLOSE" });
+        expect(screen.getByLabelText("Title")).toHaveValue(title);
+        expect(screen.getByLabelText("Title")).toHaveFocus();
+      }
+      expect(parseCalendarStore(localStorage.getItem(CALENDAR_STORAGE_KEY)).events).toHaveLength(
+        saves ? 1 : 0,
+      );
+      if (saves)
+        expect(parseCalendarStore(localStorage.getItem(CALENDAR_STORAGE_KEY)).events[0]?.title).toBe(title);
+    },
+  );
+
   it("guards editor switching and restores focus for every decision", async () => {
     const currentDate = new Date();
     const eventDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;

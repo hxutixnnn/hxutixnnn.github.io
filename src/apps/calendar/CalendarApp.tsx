@@ -31,7 +31,9 @@ const inputClass =
   "mt-1 block min-h-9 w-full select-text rounded-[var(--tienos-radius-control)] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-[9px] py-[7px] text-inherit [@media(forced-colors:active)]:border-[ButtonText] [@media(forced-colors:active)]:bg-[ButtonFace] [@media(forced-colors:active)]:text-[ButtonText]";
 
 type PendingCalendarAction =
-  Readonly<{ type: "navigate"; date: Date }> | Readonly<{ type: "open-editor"; event: CalendarEvent }>;
+  | Readonly<{ type: "navigate"; date: Date }>
+  | Readonly<{ type: "open-editor"; event: CalendarEvent }>
+  | Readonly<{ type: "close" }>;
 
 function readStoredEvents(): readonly CalendarEvent[] {
   try {
@@ -86,6 +88,7 @@ export function CalendarApp({
     draft !== null &&
     draftBaseline !== null &&
     (draft.title !== draftBaseline.title || (draft.time ?? "") !== (draftBaseline.time ?? ""));
+  const pendingClose = pendingAction?.type === "close";
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -118,26 +121,6 @@ export function CalendarApp({
     setSelected(date);
     setMonth(new Date(date.getFullYear(), date.getMonth(), 1, 12));
   };
-  const requestNavigation = (date: Date) => {
-    if (draftModified) {
-      setPendingAction({ type: "navigate", date });
-      return false;
-    }
-    closeEditor();
-    applyNavigation(date);
-    return true;
-  };
-  const requestEditor = (event: CalendarEvent) => {
-    if (draft?.id && draft.id === event.id) {
-      titleInputRef.current?.focus();
-      return;
-    }
-    if (draftModified) {
-      setPendingAction({ type: "open-editor", event });
-      return;
-    }
-    openEditor(event, true);
-  };
   const saveDraft = () => {
     if (!draft) return false;
     const title = draft.title.trim();
@@ -153,13 +136,35 @@ export function CalendarApp({
     closeEditor();
     return true;
   };
-  const continuePendingAction = (action: PendingCalendarAction) => {
+  const continuePendingAction = (action: PendingCalendarAction, focusDestination = true) => {
     if (action.type === "navigate") {
       applyNavigation(action.date);
-      focusSelectedDay();
-    } else {
+      if (focusDestination) focusSelectedDay();
+    } else if (action.type === "open-editor") {
       openEditor(action.event, true);
+    } else {
+      onEvent({ type: "CLOSE" });
     }
+  };
+  const requestDraftAction = (action: PendingCalendarAction, focusDestination = false) => {
+    if (action.type === "open-editor" && draft?.id && draft.id === action.event.id) {
+      titleInputRef.current?.focus();
+      return false;
+    }
+    if (draftModified) {
+      setPendingAction(action);
+      return false;
+    }
+    closeEditor();
+    continuePendingAction(action, focusDestination);
+    return true;
+  };
+  const requestNavigation = (date: Date, focusDestination = false) =>
+    requestDraftAction({ type: "navigate", date }, focusDestination);
+  const requestEditor = (event: CalendarEvent) => requestDraftAction({ type: "open-editor", event });
+  const dispatchWindowEvent = (event: Parameters<typeof onEvent>[0]) => {
+    if (event.type === "CLOSE") requestDraftAction({ type: "close" });
+    else onEvent(event);
   };
   const discardAndContinue = () => {
     if (!pendingAction) return;
@@ -186,7 +191,7 @@ export function CalendarApp({
     else if (event.key === "PageDown") next = addMonthsClamped(selected, 1);
     if (!next) return;
     event.preventDefault();
-    if (requestNavigation(next)) focusSelectedDay();
+    requestNavigation(next, true);
   };
 
   return (
@@ -194,7 +199,12 @@ export function CalendarApp({
       appId={appId}
       frontmost={frontmost}
       title="Calendar"
-      lifecycle={{ state: windowState, effects, dispatch: onEvent, effectsConsumed: onEffectsConsumed }}
+      lifecycle={{
+        state: windowState,
+        effects,
+        dispatch: dispatchWindowEvent,
+        effectsConsumed: onEffectsConsumed,
+      }}
       geometry={{ frame, workspace, onFrameChange: setFrame, transitionTargetRect: dockTargetRectProvider }}
     >
       {(chrome) => (
@@ -318,7 +328,7 @@ export function CalendarApp({
                   className="mt-4 space-y-3 rounded-[var(--tienos-radius-content)] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-content)] p-3 shadow-[var(--tienos-shadow-window)]"
                 >
                   <h3 id="calendar-navigation-prompt-title" className="font-semibold">
-                    Save changes before navigating?
+                    Save changes before {pendingClose ? "closing" : "navigating"}?
                   </h3>
                   <p
                     id="calendar-navigation-prompt-description"
@@ -331,7 +341,7 @@ export function CalendarApp({
                       Keep Editing
                     </button>
                     <button className={controlClass} type="button" onClick={discardAndContinue}>
-                      Discard and Navigate
+                      Discard and {pendingClose ? "Close" : "Navigate"}
                     </button>
                     <button
                       className={`${controlClass} bg-[var(--tienos-color-accent)] text-white`}
@@ -339,7 +349,7 @@ export function CalendarApp({
                       disabled={!draft.title.trim()}
                       onClick={saveAndContinue}
                     >
-                      Save and Navigate
+                      Save and {pendingClose ? "Close" : "Navigate"}
                     </button>
                   </div>
                 </div>
