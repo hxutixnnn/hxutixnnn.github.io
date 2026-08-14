@@ -48,11 +48,7 @@ export function Dock({ apps, windowStates, onActivate, surfaceRef, targetRef }: 
                 className={`absolute -bottom-[6px] left-1/2 size-1 -translate-x-1/2 rounded-full bg-[var(--tienos-color-dock-indicator)] shadow-[0_0_4px_rgb(255_255_255/0.45)] transition-opacity motion-reduce:transition-none [@media(forced-colors:active)]:bg-[CanvasText] ${isOpen ? "opacity-100" : "opacity-0"}`}
               />
             </button>
-            <span
-              id={statusId}
-              role={app.id === "system-settings" ? "status" : undefined}
-              className="sr-only"
-            >
+            <span id={statusId} role="status" className="sr-only">
               {app.name} is {isOpen ? (isMinimized ? "running and minimized" : "running") : "not running"}
             </span>
           </div>

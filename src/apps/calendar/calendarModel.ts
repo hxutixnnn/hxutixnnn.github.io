@@ -27,12 +27,27 @@ export function addMonths(date: Date, amount: number): Date {
   return new Date(date.getFullYear(), date.getMonth() + amount, 1, 12);
 }
 
+export function addMonthsClamped(date: Date, amount: number): Date {
+  const targetMonth = addMonths(date, amount);
+  const lastDay = new Date(targetMonth.getFullYear(), targetMonth.getMonth() + 1, 0, 12).getDate();
+  return new Date(targetMonth.getFullYear(), targetMonth.getMonth(), Math.min(date.getDate(), lastDay), 12);
+}
+
 export type CalendarCell = Readonly<{ date: Date; key: string; inMonth: boolean }>;
 
-export function weekStartForLocale(locale: string): number {
+type WeekInfo = Readonly<{ firstDay?: number }>;
+type LocaleWithWeekInfo = Readonly<{
+  getWeekInfo?: () => WeekInfo;
+  weekInfo?: WeekInfo;
+}>;
+type LocaleConstructor = new (tag: string) => LocaleWithWeekInfo;
+
+export function weekStartForLocale(locale: string, Locale: LocaleConstructor = Intl.Locale): number {
   try {
-    const firstDay = (new Intl.Locale(locale) as Intl.Locale & { weekInfo?: { firstDay?: number } }).weekInfo
-      ?.firstDay;
+    const localeInfo = new Locale(locale);
+    const weekInfo =
+      typeof localeInfo.getWeekInfo === "function" ? localeInfo.getWeekInfo() : localeInfo.weekInfo;
+    const firstDay = weekInfo?.firstDay;
     return typeof firstDay === "number" ? firstDay % 7 : 0;
   } catch {
     return 0;

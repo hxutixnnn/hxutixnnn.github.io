@@ -6,6 +6,7 @@ import {
   CALENDAR_STORAGE_KEY,
   addDays,
   addMonths,
+  addMonthsClamped,
   dateKey,
   deleteEvent,
   monthGrid,
@@ -96,8 +97,8 @@ export function CalendarApp({
     if (event.key in offsets) next = addDays(selected, offsets[event.key]);
     else if (event.key === "Home") next = addDays(selected, -((selected.getDay() - weekStartsOn + 7) % 7));
     else if (event.key === "End") next = addDays(selected, 6 - ((selected.getDay() - weekStartsOn + 7) % 7));
-    else if (event.key === "PageUp") next = addMonths(selected, -1);
-    else if (event.key === "PageDown") next = addMonths(selected, 1);
+    else if (event.key === "PageUp") next = addMonthsClamped(selected, -1);
+    else if (event.key === "PageDown") next = addMonthsClamped(selected, 1);
     if (!next) return;
     event.preventDefault();
     choose(next);

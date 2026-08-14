@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   addMonths,
+  addMonthsClamped,
   dateKey,
   deleteEvent,
   monthGrid,
@@ -24,6 +25,25 @@ describe("calendar model", () => {
     expect(weekStartForLocale("en-US")).toBe(0);
     expect(weekStartForLocale("en-GB")).toBe(1);
     expect(monthGrid(new Date(2025, 0, 15, 12), weekStartForLocale("en-GB"))[0].key).toBe("2024-12-30");
+  });
+
+  it("supports standardized and legacy locale week-info APIs", () => {
+    class StandardLocale {
+      getWeekInfo() {
+        return { firstDay: 6 };
+      }
+    }
+    class LegacyLocale {
+      weekInfo = { firstDay: 7 };
+    }
+    expect(weekStartForLocale("standard", StandardLocale)).toBe(6);
+    expect(weekStartForLocale("legacy", LegacyLocale)).toBe(0);
+  });
+
+  it("preserves the day when changing months and clamps shorter months", () => {
+    expect(dateKey(addMonthsClamped(new Date(2025, 0, 15, 12), 1))).toBe("2025-02-15");
+    expect(dateKey(addMonthsClamped(new Date(2025, 0, 31, 12), 1))).toBe("2025-02-28");
+    expect(dateKey(addMonthsClamped(new Date(2024, 2, 31, 12), -1))).toBe("2024-02-29");
   });
 
   it("creates, updates, and deletes events immutably", () => {

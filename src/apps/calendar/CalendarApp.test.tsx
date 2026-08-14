@@ -40,6 +40,15 @@ describe("CalendarApp", () => {
     expect(screen.getByRole("gridcell", { selected: true })).toHaveTextContent(String(day + 1));
   });
 
+  it("preserves and clamps the selected day during keyboard month navigation", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2025, 0, 31, 12));
+    render(<CalendarApp {...props} />);
+    fireEvent.keyDown(screen.getByRole("gridcell", { selected: true }), { key: "PageDown" });
+    expect(screen.getByRole("gridcell", { selected: true })).toHaveTextContent("28");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("February 2025");
+  });
+
   it("creates, edits, deletes, and restores a persisted event", async () => {
     const user = userEvent.setup();
     const view = render(<CalendarApp {...props} />);

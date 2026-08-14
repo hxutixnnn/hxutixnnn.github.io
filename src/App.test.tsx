@@ -33,6 +33,7 @@ describe("tienOS main screen", () => {
     expect(dock.querySelectorAll("button")).toHaveLength(3);
     expect(getByRole("button", { name: "Notes" })).toBeInTheDocument();
     expect(app).not.toHaveAttribute("aria-pressed");
+    expect(getAllByRole("status")).toHaveLength(3);
     expect(screen.getByText("System Settings is running")).toBeInTheDocument();
 
     await user.click(getByRole("main", { name: "tienOS desktop" }));
