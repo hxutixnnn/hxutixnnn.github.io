@@ -945,7 +945,9 @@ test("Dock renders registered apps, reports, focuses, and layers the Settings wi
   await expect(dock.getByRole("button", { name: "Notes" })).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Dock preview (non-interactive)" })).toHaveCount(0);
   await expect(app).not.toHaveAttribute("aria-pressed");
-  await expect(dock.getByRole("status")).toHaveText("System Settings is running");
+  await expect(dock.getByRole("status")).toHaveCount(4);
+  const settingsStatus = dock.locator("#system-settings-dock-status");
+  await expect(settingsStatus).toHaveText("System Settings is running");
   await expectFontAwesomeIconToPaint(app.locator('[data-fa-icon="gear"]'), "gear");
   await app.focus();
   await expect(app).toBeFocused();
@@ -956,12 +958,12 @@ test("Dock renders registered apps, reports, focuses, and layers the Settings wi
   await expect(settingsWindow).toHaveCount(1);
   await expect(settingsWindow).toBeFocused();
   await page.getByRole("button", { name: "Close System Settings" }).click();
-  await expect(dock.getByRole("status")).toHaveText("System Settings is not running");
+  await expect(settingsStatus).toHaveText("System Settings is not running");
   await app.focus();
   await app.press("Enter");
   await expect(settingsWindow).toHaveCount(1);
   await expect(settingsWindow).toBeFocused();
-  await expect(dock.getByRole("status")).toHaveText("System Settings is running");
+  await expect(settingsStatus).toHaveText("System Settings is running");
 
   const settingsZIndex = Number(
     await page.locator(".settings-rnd").evaluate((node) => getComputedStyle(node).zIndex),
@@ -1810,7 +1812,7 @@ test("Settings portal activity and traffic-light hit regions keep unambiguous ow
   const dockApp = page
     .getByRole("navigation", { name: "Dock" })
     .getByRole("button", { name: "System Settings" });
-  const dockStatus = page.getByRole("navigation", { name: "Dock" }).getByRole("status");
+  const dockStatus = page.getByRole("navigation", { name: "Dock" }).locator("#system-settings-dock-status");
   const window = page.getByRole("region", { name: "System Settings" });
 
   await page.getByRole("button", { name: "Appearance" }).click();

@@ -63,9 +63,9 @@ test("launches the registry app from closed, minimized, background, and frontmos
   await launch();
 
   await page.getByRole("button", { name: "Minimize System Settings" }).click();
-  await expect(page.getByRole("navigation", { name: "Dock" }).getByRole("status")).toHaveText(
-    "System Settings is running and minimized",
-  );
+  await expect(
+    page.getByRole("navigation", { name: "Dock" }).locator("#system-settings-dock-status"),
+  ).toHaveText("System Settings is running and minimized");
   await launch();
 
   await page.getByRole("main", { name: "tienOS desktop" }).click({ position: { x: 4, y: 80 } });

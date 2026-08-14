@@ -25,7 +25,6 @@ export type DesktopAppDescriptor = Readonly<{
   icon: FontAwesomeIconName;
   iconText?: string;
   iconClassName?: string;
-  ownsDockStatus?: boolean;
   Window: ComponentType<DesktopAppWindowProps>;
 }>;
 
@@ -40,7 +39,6 @@ export const desktopApps = [
     name: "System Settings",
     menuName: "Navigator",
     icon: "gear",
-    ownsDockStatus: true,
     Window: SystemSettingsApp,
   },
   {
