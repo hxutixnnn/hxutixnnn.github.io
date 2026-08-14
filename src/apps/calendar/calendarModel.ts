@@ -28,6 +28,17 @@ export function addMonths(date: Date, amount: number): Date {
 }
 
 export type CalendarCell = Readonly<{ date: Date; key: string; inMonth: boolean }>;
+
+export function weekStartForLocale(locale: string): number {
+  try {
+    const firstDay = (new Intl.Locale(locale) as Intl.Locale & { weekInfo?: { firstDay?: number } }).weekInfo
+      ?.firstDay;
+    return typeof firstDay === "number" ? firstDay % 7 : 0;
+  } catch {
+    return 0;
+  }
+}
+
 export function monthGrid(month: Date, weekStartsOn = 0): readonly CalendarCell[] {
   const first = new Date(month.getFullYear(), month.getMonth(), 1, 12);
   const leading = (first.getDay() - weekStartsOn + 7) % 7;

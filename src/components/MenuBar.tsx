@@ -8,6 +8,7 @@ import type { DesktopCommand } from "../desktop/commands";
 type MenuBarProps = {
   onAction?: (command: DesktopCommand) => void;
   surfaceRef?: RefObject<HTMLElement | null>;
+  onOpenSpotlight?: (trigger: HTMLElement) => void;
   activeAppName?: string;
 };
 
@@ -38,7 +39,12 @@ function MenuPopup({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function MenuBar({ onAction, surfaceRef, activeAppName = "Navigator" }: MenuBarProps) {
+export function MenuBar({
+  onAction,
+  onOpenSpotlight,
+  surfaceRef,
+  activeAppName = "Navigator",
+}: MenuBarProps) {
   const [systemMenuOpen, setSystemMenuOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const systemMenuTriggerId = "tienos-system-menu-trigger";
@@ -163,6 +169,15 @@ export function MenuBar({ onAction, surfaceRef, activeAppName = "Navigator" }: M
         </Menu.Root>
       </Menubar>
       <div className="flex items-center gap-2 px-2 text-[13px] font-medium text-white/75">
+        <button
+          type="button"
+          aria-label="Open Spotlight"
+          aria-keyshortcuts="Meta+Space"
+          className="grid min-h-7 min-w-7 place-items-center rounded-full hover:bg-white/16 focus-visible:bg-white/16"
+          onClick={(event) => onOpenSpotlight?.(event.currentTarget)}
+        >
+          <FontAwesomeIcon name="magnifying-glass" className="text-[13px]" />
+        </button>
         <span role="img" aria-label="Wi-Fi connected">
           <FontAwesomeIcon name="wifi" className="text-[13px]" />
         </span>

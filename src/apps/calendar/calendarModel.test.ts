@@ -7,6 +7,7 @@ import {
   parseCalendarStore,
   saveCalendarStore,
   upsertEvent,
+  weekStartForLocale,
 } from "./calendarModel";
 
 describe("calendar model", () => {
@@ -17,6 +18,12 @@ describe("calendar model", () => {
     expect(january[41].key).toBe("2025-02-08");
     expect(dateKey(addMonths(new Date(2024, 1, 29, 12), 12))).toBe("2025-02-01");
     expect(monthGrid(new Date(2024, 1, 1, 12)).filter((day) => day.inMonth)).toHaveLength(29);
+  });
+
+  it("starts grids on the locale's first weekday", () => {
+    expect(weekStartForLocale("en-US")).toBe(0);
+    expect(weekStartForLocale("en-GB")).toBe(1);
+    expect(monthGrid(new Date(2025, 0, 15, 12), weekStartForLocale("en-GB"))[0].key).toBe("2024-12-30");
   });
 
   it("creates, updates, and deletes events immutably", () => {
