@@ -1,5 +1,4 @@
 import { lazy, type ComponentType } from "react";
-import { NotesApp } from "../apps/notes/NotesApp";
 import { SystemSettingsApp } from "../apps/system-settings/SystemSettingsApp";
 import type { FontAwesomeIconName } from "../components/FontAwesomeIcon";
 import type { Rect, Workspace } from "../windows/geometry";
@@ -23,9 +22,15 @@ export type DesktopAppDescriptor = Readonly<{
   id: AppId;
   name: string;
   icon: FontAwesomeIconName;
+  iconText?: string;
   iconClassName?: string;
   Window: ComponentType<DesktopAppWindowProps>;
 }>;
+
+const CalculatorApp = lazy(async () => {
+  const module = await import("../apps/calculator/CalculatorApp");
+  return { default: module.CalculatorApp };
+});
 
 export const desktopApps = [
   {
@@ -38,7 +43,14 @@ export const desktopApps = [
     id: "notes",
     name: "Notes",
     icon: "bars",
-    Window: NotesApp,
+    Window: lazy(() => import("../apps/notes/NotesApp").then(({ NotesApp }) => ({ default: NotesApp }))),
+  },
+  {
+    id: "calculator",
+    name: "Calculator",
+    icon: "display",
+    iconText: "123",
+    Window: CalculatorApp,
   },
   {
     id: "calendar",

@@ -2,6 +2,7 @@ import { Buffer } from "node:buffer";
 import { readFile, readdir, stat } from "node:fs/promises";
 import { extname, relative, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
+import { classifyJavaScriptAssets, enforceJavaScriptBudgets } from "./static-output-budgets.mjs";
 
 const root = resolve(import.meta.dirname, "..");
 const dist = resolve(root, "dist");
@@ -143,11 +144,12 @@ const gzipTotal = async (paths) =>
     async (total, path) => (await total) + gzipSync(await readFile(path)).byteLength,
     Promise.resolve(0),
   );
-const jsGzip = await gzipTotal(files.filter((path) => extname(path) === ".js"));
+const { initial: initialJavaScript, lazy: lazyJavaScript } = classifyJavaScriptAssets(indexHtml, files);
+const initialJsGzip = await gzipTotal(initialJavaScript);
+const lazyJsGzip = await gzipTotal(lazyJavaScript);
+const jsGzip = initialJsGzip + lazyJsGzip;
+enforceJavaScriptBudgets(initialJsGzip, lazyJsGzip);
 const cssGzip = await gzipTotal(cssFiles);
-if (jsGzip > 160 * 1024) {
-  throw new Error(`JavaScript budget exceeded: ${(jsGzip / 1024).toFixed(1)} KiB gzip`);
-}
 if (cssGzip > 30 * 1024) {
   throw new Error(`CSS budget exceeded: ${(cssGzip / 1024).toFixed(1)} KiB gzip`);
 }
@@ -171,5 +173,5 @@ if (wallpaperTotal > 400 * 1024) {
 }
 
 console.log(
-  `Static output verified: useful HTML fallback, ${(jsGzip / 1024).toFixed(1)} KiB JS gzip, ${(cssGzip / 1024).toFixed(1)} KiB CSS gzip, ${(wallpaperTotal / 1024).toFixed(1)} KiB wallpapers.`,
+  `Static output verified: useful HTML fallback, ${(initialJsGzip / 1024).toFixed(1)} KiB initial JS gzip, ${(lazyJsGzip / 1024).toFixed(1)} KiB lazy app JS gzip (${(jsGzip / 1024).toFixed(1)} KiB aggregate), ${(cssGzip / 1024).toFixed(1)} KiB CSS gzip, ${(wallpaperTotal / 1024).toFixed(1)} KiB wallpapers.`,
 );

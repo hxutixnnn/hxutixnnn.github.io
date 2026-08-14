@@ -1,8 +1,8 @@
 # App-keyed single-window lifecycle ownership
 
-Each descriptor in the static app registry receives an independent single-window controller keyed by `AppId`.
+The shell lifecycle boundary is keyed by `AppId`, so every registered app receives an independent single-window controller.
 Each app lifecycle is owned by the pure single-window machine and `useDesktopAppController`; this does not introduce same-app window IDs or z-order.
-`App` composes projections for the menu, Dock, Spotlight, and registered window surfaces without deciding visibility transitions, keeping lifecycle counters, or owning effect transport.
+`App` composes projections for the active-app menu, Dock, Spotlight, and registered window surfaces without deciding visibility transitions, keeping lifecycle counters, or owning effect transport. Menu ownership follows the active frontmost app, and Navigator owns the menu when no registered window is active.
 `WindowFrame` projects state and executes typed effects through the narrow genie driver.
 The driver reports generation-tagged settlement and never chooses lifecycle destination truth.
 The `SystemSettingsApp` content boundary and pane ownership are documented in [`docs/system-settings.md`](system-settings.md).
@@ -39,7 +39,7 @@ A registered app can reuse `WindowFrame` by supplying grouped lifecycle and geom
 
 ## Extension boundary and non-goals
 
-Each registered app is intentionally a single-window owner. `src/desktop/apps.ts` owns static descriptors, and the shell projects those descriptors into Dock launchers, Spotlight results, and app-keyed controller state. This boundary does not define `WindowId`, same-app collections, z-order, event buses, lifecycle persistence, external-app execution, or a generalized window framework. Appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
+Each registered app is intentionally a single-window owner. `src/desktop/apps.ts` owns static descriptors, and the shell projects those descriptors into Dock launchers, Spotlight results, and app-keyed controller state. This phase does not define `WindowId`, same-app collections, z-order, event buses, lifecycle persistence, external-app execution, or a generalized window framework. Appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
 
 ## Phase 1 measurements
 
@@ -62,6 +62,6 @@ Lifecycle decision predicates count one `if` or conditional expression that sele
 | `singleWindowMachine`          |              0 |      18 |
 | **Total lifecycle predicates** |         **23** |  **18** |
 
-The audit baseline's coverage-enabled validation measured 6 files and 19 tests in 15.61s. The comparable Phase 1 `pnpm validate` run, recorded before the documentation-only exhaustive-table expansion, measured 8 files and 38 tests in 18.91s. The expanded current suite enumerates 8 files and 127 tests; its focused reducer/property measurement covers 99 tests in 2.66s and reports 98.5% branch coverage for `singleWindowMachine`. These current totals include all 90 parameterized reachable-state/event table cases.
+The audit baseline's coverage-enabled validation measured 6 files and 19 tests in 15.61s. The comparable Phase 1 `pnpm validate` run, recorded before the documentation-only exhaustive-table expansion, measured 8 files and 38 tests in 18.91s. At the end of Phase 1, the expanded suite enumerated 8 files and 127 tests; its focused reducer/property measurement covered 99 tests in 2.66s and reported 98.5% branch coverage for `singleWindowMachine`. Those totals included all 90 parameterized reachable-state/event table cases.
 
 The baseline output checker measured 147.7 KiB JavaScript gzip; this phase measures 148.6 KiB (+0.9 KiB, below the 2 KiB budget). The audit-baseline and Phase 1 exact-`dist/` browser runs each pass all 65 cases in 2.8m, with no screenshot baseline changes. `pnpm validate` and `pnpm build` pass for Phase 1.

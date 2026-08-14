@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- Relaunch the root as a Vite-powered tienOS desktop with a useful static fallback, appearance modes, macOS-style menus, and a single draggable System Settings window.
-- Split browser contracts by startup, menu, settings layout, appearance, and window lifecycle boundaries while retaining the established visual baselines.
+- Relaunch the root as a Vite-powered tienOS desktop with a useful static fallback, appearance modes, macOS-style active-app menus, and independent built-in app windows including Calculator.
+- Split browser contracts by focused startup, app, shell, appearance, and window lifecycle boundaries while retaining the established visual baselines.
 - Make standalone browser tests build the current checkout, parallelize independent PR browser and Lighthouse gates, and remove retired Astro catalogue tooling.
 
 ## 2026-08-01

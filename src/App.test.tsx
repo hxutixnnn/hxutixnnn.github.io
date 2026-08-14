@@ -1,8 +1,10 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { lazy } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 import type { DesktopAppDescriptor } from "./desktop/apps";
+import { WindowFrame } from "./windows/WindowFrame";
 
 afterEach(cleanup);
 
@@ -30,11 +32,14 @@ describe("tienOS main screen", () => {
 
     const dock = getByRole("navigation", { name: "Dock" });
     const app = getByRole("button", { name: "System Settings" });
-    expect(dock.querySelectorAll("button")).toHaveLength(3);
+    expect(dock.querySelectorAll("button")).toHaveLength(4);
     expect(getByRole("button", { name: "Notes" })).toBeInTheDocument();
+    expect(getByRole("button", { name: "Calculator" })).toBeInTheDocument();
+    expect(getByRole("button", { name: "Calendar" })).toBeInTheDocument();
     expect(app).not.toHaveAttribute("aria-pressed");
-    expect(getAllByRole("status")).toHaveLength(3);
-    expect(screen.getByText("System Settings is running")).toBeInTheDocument();
+    expect(document.querySelector("#system-settings-dock-status")).toHaveTextContent(
+      "System Settings is running",
+    );
 
     await user.click(getByRole("main", { name: "tienOS desktop" }));
     await user.click(app);
@@ -43,47 +48,25 @@ describe("tienOS main screen", () => {
 
     await user.click(getByRole("button", { name: "Close System Settings" }));
     expect(queryByRole("region", { name: "System Settings" })).not.toBeInTheDocument();
-    expect(screen.getByText("System Settings is not running")).toBeInTheDocument();
-    expect(getByRole("menuitem", { name: "Navigator" })).toBeVisible();
+    expect(document.querySelector("#system-settings-dock-status")).toHaveTextContent(
+      "System Settings is not running",
+    );
 
     app.focus();
     await user.keyboard("{Enter}");
     expect(getAllByRole("region", { name: "System Settings" })).toHaveLength(1);
-    expect(screen.getByText("System Settings is running")).toBeInTheDocument();
+    expect(document.querySelector("#system-settings-dock-status")).toHaveTextContent(
+      "System Settings is running",
+    );
   });
 
-  it("launches Calendar independently and transfers active-app menu ownership", async () => {
-    window.matchMedia = vi.fn().mockReturnValue({ matches: true });
-    const user = userEvent.setup();
-    render(<App />);
-
-    await user.click(screen.getByRole("button", { name: "Calendar" }));
-    const calendar = await screen.findByRole("region", { name: "Calendar" });
-    expect(calendar).toHaveAttribute("data-window-active", "true");
-    expect(screen.getByRole("region", { name: "System Settings" })).toHaveAttribute(
-      "data-window-active",
-      "false",
-    );
-    expect(screen.getByRole("menuitem", { name: "Calendar" })).toBeVisible();
-
-    await user.click(screen.getByRole("button", { name: "Minimize Calendar" }));
-    expect(screen.getByRole("region", { name: "System Settings" })).toHaveAttribute(
-      "data-window-active",
-      "true",
-    );
-    await user.click(screen.getByRole("button", { name: "Calendar" }));
-    await user.click(await screen.findByRole("button", { name: "Close Calendar" }));
-    expect(screen.queryByRole("region", { name: "Calendar" })).not.toBeInTheDocument();
-  });
-
-  it("returns menu ownership to Navigator while the desktop owns activity", async () => {
+  it("keeps an inactive app inactive while its menu owns pointer and keyboard activation", async () => {
     const user = userEvent.setup();
     render(<App />);
     const desktop = screen.getByRole("main", { name: "tienOS desktop" });
     await user.click(desktop);
     const window = screen.getByRole("region", { name: "System Settings" });
     expect(window).toHaveAttribute("data-window-active", "false");
-    expect(screen.getByRole("menuitem", { name: "Navigator" })).toBeVisible();
 
     await user.click(screen.getByRole("menuitem", { name: "Open tienOS menu" }));
     await user.click(await screen.findByText("About This OS"));
@@ -155,6 +138,22 @@ describe("tienOS main screen", () => {
     expect(window).toHaveAttribute("data-window-active", "false");
   });
 
+  it("gives the menu to only the active registry app", async () => {
+    const user = userEvent.setup();
+    const FutureWindow: DesktopAppDescriptor["Window"] = ({ appId }) => (
+      <section data-desktop-activity={appId} aria-label="Future App Window" />
+    );
+    const apps: readonly DesktopAppDescriptor[] = [
+      { id: "future", name: "Future App", icon: "sparkle", Window: FutureWindow },
+    ];
+
+    render(<App apps={apps} defaultApp={apps[0]} />);
+    expect(screen.getByRole("menuitem", { name: "Future App" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("main", { name: "tienOS desktop" }));
+    expect(screen.getByRole("menuitem", { name: "Navigator" })).toBeInTheDocument();
+  });
+
   it("launches and projects lifecycle for every registered app id", async () => {
     const user = userEvent.setup();
     const AuxiliaryWindow: DesktopAppDescriptor["Window"] = ({
@@ -188,6 +187,7 @@ describe("tienOS main screen", () => {
     ];
 
     render(<App apps={apps} defaultApp={apps[0]} />);
+    expect(screen.getByRole("menuitem", { name: "System Settings" })).toBeInTheDocument();
     expect(screen.getByText("Auxiliary is not running")).toBeInTheDocument();
     const auxiliaryLauncher = screen.getByRole("button", { name: "Auxiliary" });
     vi.spyOn(auxiliaryLauncher, "getBoundingClientRect").mockReturnValue({
@@ -204,6 +204,7 @@ describe("tienOS main screen", () => {
     await user.click(screen.getByRole("button", { name: "Open Spotlight" }));
     await user.type(screen.getByRole("combobox", { name: "Search apps" }), "aux{Enter}");
 
+    expect(screen.getByRole("menuitem", { name: "Auxiliary" })).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Auxiliary App" })).toHaveTextContent("active");
     expect(screen.getByRole("status", { name: "Auxiliary layer" })).toHaveTextContent("frontmost");
     expect(screen.getByRole("status", { name: "System Settings layer" })).toHaveTextContent("background");
@@ -226,10 +227,105 @@ describe("tienOS main screen", () => {
     expect(screen.getAllByRole("region", { name: "Auxiliary App" })).toHaveLength(1);
     await user.click(screen.getByRole("button", { name: "System Settings" }));
     await user.click(screen.getByRole("main", { name: "tienOS desktop" }));
+    expect(screen.getByRole("menuitem", { name: "Navigator" })).toBeInTheDocument();
     expect(screen.getByRole("status", { name: "System Settings layer" })).toHaveTextContent("frontmost");
     expect(screen.getByRole("status", { name: "Auxiliary layer" })).toHaveTextContent("background");
     await user.click(screen.getByRole("button", { name: "Close Auxiliary App" }));
     expect(screen.queryByRole("region", { name: "Auxiliary App" })).not.toBeInTheDocument();
     expect(screen.getByText("Auxiliary is not running")).toBeInTheDocument();
+  });
+
+  it("keeps loaded app windows mounted while another app suspends", async () => {
+    const user = userEvent.setup();
+    let release: (() => void) | undefined;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const LazyWindow = lazy(async () => {
+      await pending;
+      return { default: () => <section aria-label="Lazy App">Loaded</section> };
+    });
+    const apps: readonly DesktopAppDescriptor[] = [
+      {
+        id: "system-settings",
+        name: "System Settings",
+        icon: "gear",
+        Window: () => <section aria-label="System Settings Test Window">Settings content</section>,
+      },
+      { id: "lazy", name: "Lazy App", icon: "sparkle", Window: LazyWindow },
+    ];
+
+    render(<App apps={apps} defaultApp={apps[0]} />);
+    await user.click(screen.getByRole("button", { name: "Lazy App" }));
+
+    expect(screen.getByRole("region", { name: "System Settings Test Window" })).toBeVisible();
+    expect(screen.queryByRole("region", { name: "Lazy App" })).not.toBeInTheDocument();
+    release?.();
+    expect(await screen.findByRole("region", { name: "Lazy App" })).toBeVisible();
+  });
+
+  it("does not apply stale focus when a lazy app loads after losing activation", async () => {
+    const user = userEvent.setup();
+    let release: (() => void) | undefined;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const HostedWindow: DesktopAppDescriptor["Window"] = (props) => (
+      <WindowFrame
+        appId={props.appId}
+        frontmost={props.frontmost}
+        title={props.appId === "lazy" ? "Lazy App" : "Settings App"}
+        lifecycle={{
+          state: props.windowState,
+          effects: props.effects,
+          dispatch: props.onEvent,
+          effectsConsumed: props.onEffectsConsumed,
+        }}
+        geometry={{
+          frame: { x: 40, y: 40, width: 700, height: 560 },
+          workspace: props.workspace,
+          onFrameChange: vi.fn(),
+          transitionTargetRect: props.dockTargetRectProvider,
+        }}
+      >
+        App content
+      </WindowFrame>
+    );
+    const LazyWindow = lazy(async () => {
+      await pending;
+      return { default: HostedWindow };
+    });
+    const apps: readonly DesktopAppDescriptor[] = [
+      { id: "settings", name: "Settings", icon: "gear", Window: HostedWindow },
+      { id: "lazy", name: "Lazy App", icon: "sparkle", Window: LazyWindow },
+    ];
+
+    render(<App apps={apps} defaultApp={apps[0]} />);
+    await user.click(screen.getByRole("button", { name: "Lazy App" }));
+    await user.click(screen.getByRole("button", { name: "Settings" }));
+    release?.();
+
+    const lazyWindow = await screen.findByRole("region", { name: "Lazy App" });
+    expect(lazyWindow).toHaveAttribute("data-window-active", "false");
+    expect(screen.getByRole("region", { name: "Settings App" })).toHaveAttribute(
+      "data-window-active",
+      "true",
+    );
+  });
+
+  it("stops Calculator keyboard input after desktop deactivation", async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Calculator" }));
+    const calculator = await screen.findByRole("region", { name: "Calculator" });
+    await user.keyboard("4");
+    expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("4");
+
+    await user.click(screen.getByRole("main", { name: "tienOS desktop" }));
+    expect(calculator).toHaveAttribute("data-window-active", "false");
+    await user.keyboard("9");
+
+    expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("4");
   });
 });

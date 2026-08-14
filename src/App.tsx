@@ -19,8 +19,13 @@ export function App({
   apps = desktopApps,
   defaultApp = defaultDesktopApp,
 }: AppProps = {}) {
-  const { controllers, activeAppId, frontmostAppId, dispatch, desktopPointer, effectsConsumed } =
-    useDesktopAppController(apps, defaultApp.id);
+  const { controllers, frontmostAppId, dispatch, desktopPointer, effectsConsumed } = useDesktopAppController(
+    apps,
+    defaultApp.id,
+  );
+  const activeApp = controllers[frontmostAppId]?.window.active
+    ? apps.find((app) => app.id === frontmostAppId)
+    : undefined;
   const menuBarRef = useRef<HTMLElement>(null);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const spotlightOpenRef = useRef(false);
@@ -111,7 +116,7 @@ export function App({
       <MenuBar
         surfaceRef={menuBarRef}
         onOpenSpotlight={openSpotlight}
-        activeAppName={apps.find((app) => app.id === activeAppId)?.name}
+        activeAppName={activeApp?.name}
         onAction={(command) => {
           if (command.type === "activate-app" && controllers[command.appId])
             dispatch(command.appId, { type: "ACTIVATE_FROM_MENU" }, true);

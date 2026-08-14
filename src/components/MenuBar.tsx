@@ -6,10 +6,10 @@ import { FontAwesomeIcon } from "./FontAwesomeIcon";
 import type { DesktopCommand } from "../desktop/commands";
 
 type MenuBarProps = {
+  activeAppName?: string;
   onAction?: (command: DesktopCommand) => void;
   surfaceRef?: RefObject<HTMLElement | null>;
   onOpenSpotlight?: (trigger: HTMLElement) => void;
-  activeAppName?: string;
 };
 
 const triggerClassName =
@@ -40,10 +40,10 @@ function MenuPopup({ children }: { children: React.ReactNode }) {
 }
 
 export function MenuBar({
+  activeAppName = "Navigator",
   onAction,
   onOpenSpotlight,
   surfaceRef,
-  activeAppName = "Navigator",
 }: MenuBarProps) {
   const [systemMenuOpen, setSystemMenuOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
