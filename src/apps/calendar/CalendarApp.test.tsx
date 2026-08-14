@@ -40,6 +40,20 @@ describe("CalendarApp", () => {
     expect(screen.getByRole("gridcell", { selected: true })).toHaveTextContent(String(day + 1));
   });
 
+  it("exposes today independently from the selected day", () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 7, 14, 12));
+    render(<CalendarApp {...props} />);
+
+    const today = screen.getByRole("gridcell", { current: "date" });
+    const cells = screen.getAllByRole("gridcell");
+    expect(today).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(cells[cells.indexOf(today) + 1]);
+
+    expect(screen.getByRole("gridcell", { current: "date" })).toBe(today);
+    expect(today).toHaveAttribute("aria-selected", "false");
+  });
+
   it("preserves and clamps the selected day during keyboard month navigation", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2025, 0, 31, 12));

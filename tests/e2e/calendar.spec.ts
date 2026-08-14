@@ -85,3 +85,22 @@ test("Calendar event editing remains touch-usable in a short compact viewport", 
   expect(windowBounds!.x + windowBounds!.width).toBeLessThanOrEqual(320);
   await context.close();
 });
+
+test("Calendar keeps today visible in forced colors", async ({ page }) => {
+  await page.clock.setFixedTime(new Date("2026-08-14T12:00:00"));
+  await page.emulateMedia({ forcedColors: "active" });
+  await page.goto("/");
+  await page.getByRole("button", { name: "Calendar" }).click();
+
+  const calendar = page.getByRole("region", { name: "Calendar" });
+  const today = calendar.locator('[role="gridcell"][aria-current="date"]');
+  const anotherDay = today.locator("xpath=following-sibling::*[@role='gridcell'][1]");
+  await anotherDay.click();
+  await expect(today).toHaveAttribute("aria-selected", "false");
+  await expect(anotherDay).toBeFocused();
+
+  const indicator = today.locator(":scope > span");
+  await expect(indicator).toHaveCSS("outline-style", "solid");
+  await expect(indicator).toHaveCSS("outline-width", "2px");
+  await expect(indicator).toHaveCSS("outline-offset", "1px");
+});

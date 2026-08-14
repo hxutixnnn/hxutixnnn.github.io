@@ -266,6 +266,7 @@ export function CalendarApp({
               >
                 {cells.map((cell) => {
                   const active = cell.key === selectedKey;
+                  const isToday = cell.key === todayKey;
                   const count = events.filter((event) => event.date === cell.key).length;
                   return (
                     <button
@@ -274,12 +275,13 @@ export function CalendarApp({
                       role="gridcell"
                       tabIndex={active ? 0 : -1}
                       aria-selected={active}
+                      aria-current={isToday ? "date" : undefined}
                       aria-label={`${detailFormatter.format(cell.date)}${count ? `, ${count} events` : ""}`}
                       onClick={() => requestNavigation(cell.date)}
                       className={`relative min-h-10 touch-manipulation bg-[var(--tienos-color-content)] p-1 text-left hover:brightness-110 [@media(pointer:coarse)]:min-h-11 ${cell.inMonth ? "" : "text-[var(--tienos-color-text-tertiary)]"} ${active ? "ring-2 ring-inset ring-[var(--tienos-color-accent)]" : ""}`}
                     >
                       <span
-                        className={`inline-flex size-6 items-center justify-center rounded-full ${cell.key === todayKey ? "bg-[#ff3b30] font-semibold text-white" : ""}`}
+                        className={`inline-flex size-6 items-center justify-center rounded-full ${isToday ? "bg-[#ff3b30] font-semibold text-white [@media(forced-colors:active)]:[outline:2px_solid_CanvasText] [@media(forced-colors:active)]:outline-offset-1" : ""}`}
                       >
                         {cell.date.getDate()}
                       </span>
