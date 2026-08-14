@@ -101,8 +101,9 @@ export function calculatorReducer(state: CalculatorState, action: CalculatorActi
       const current = Number(state.display);
       const value =
         (state.pending === "add" || state.pending === "subtract") && state.accumulator !== null
-          ? (state.accumulator * current) / 100
+          ? calculate(state.accumulator, current / 100, "multiply")
           : current / 100;
+      if (value === null || !Number.isFinite(value)) return errorState();
       return { ...state, display: canonical(value), waitingForOperand: false, entryActive: true };
     }
     case "operator": {

@@ -102,4 +102,22 @@ describe("error recovery", () => {
     expect(calculatorReducer(errored, digit("7"))).toMatchObject({ display: "7", error: false });
     expect(calculatorReducer(errored, { type: "all-clear" })).toEqual(initialCalculatorState);
   });
+
+  it("reports contextual percent overflow and recovers with a digit", () => {
+    const operand = [..."999999999999999"].map(digit);
+    const repeatedEquals = Array.from({ length: 18 }, () => ({ type: "equals" }) as const);
+    const errored = run(
+      ...operand,
+      op("multiply"),
+      ...operand,
+      { type: "equals" },
+      ...repeatedEquals,
+      op("add"),
+      ...operand,
+      { type: "percent" },
+    );
+
+    expect(errored).toMatchObject({ display: "Error", error: true });
+    expect(calculatorReducer(errored, digit("7"))).toMatchObject({ display: "7", error: false });
+  });
 });
