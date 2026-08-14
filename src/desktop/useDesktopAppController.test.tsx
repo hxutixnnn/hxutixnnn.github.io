@@ -86,6 +86,7 @@ describe("useDesktopAppController", () => {
       true,
     );
     expect(result.current.frontmostAppId).toBe("second");
+    expect(result.current.activeAppId).toBeUndefined();
   });
 
   it("transfers frontmost activity when the frontmost app closes", () => {

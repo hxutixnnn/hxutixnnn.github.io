@@ -44,6 +44,7 @@ describe("tienOS main screen", () => {
     await user.click(getByRole("button", { name: "Close System Settings" }));
     expect(queryByRole("region", { name: "System Settings" })).not.toBeInTheDocument();
     expect(screen.getByText("System Settings is not running")).toBeInTheDocument();
+    expect(getByRole("menuitem", { name: "Navigator" })).toBeVisible();
 
     app.focus();
     await user.keyboard("{Enter}");
@@ -75,13 +76,14 @@ describe("tienOS main screen", () => {
     expect(screen.queryByRole("region", { name: "Calendar" })).not.toBeInTheDocument();
   });
 
-  it("keeps an inactive app inactive while its menu owns pointer and keyboard activation", async () => {
+  it("returns menu ownership to Navigator while the desktop owns activity", async () => {
     const user = userEvent.setup();
     render(<App />);
     const desktop = screen.getByRole("main", { name: "tienOS desktop" });
     await user.click(desktop);
     const window = screen.getByRole("region", { name: "System Settings" });
     expect(window).toHaveAttribute("data-window-active", "false");
+    expect(screen.getByRole("menuitem", { name: "Navigator" })).toBeVisible();
 
     await user.click(screen.getByRole("menuitem", { name: "Open tienOS menu" }));
     await user.click(await screen.findByText("About This OS"));

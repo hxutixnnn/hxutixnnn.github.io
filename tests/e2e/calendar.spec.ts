@@ -25,9 +25,28 @@ test("Calendar launches, coexists, navigates, persists events, and works compact
   await page.getByRole("region", { name: "Calendar" }).getByRole("button", { name: "Next month" }).click();
   await expect(page.getByText("Calendar e2e event")).toBeVisible();
 
-  await expect(page.getByRole("region", { name: "Calendar" })).toBeVisible();
-  const target = page.getByRole("region", { name: "Calendar" }).getByRole("gridcell", { selected: true });
-  await target.tap();
-  await expect(target).toBeVisible();
+  const compactCalendar = page.getByRole("region", { name: "Calendar" });
+  const selected = compactCalendar.getByRole("gridcell", { selected: true });
+  const touchTarget = compactCalendar.locator('[role="gridcell"][aria-selected="false"]').nth(10);
+  const originalSelection = await selected.getAttribute("aria-label");
+  const targetLabel = await touchTarget.getAttribute("aria-label");
+  await touchTarget.tap();
+  await expect(
+    compactCalendar.getByRole("gridcell", { name: targetLabel ?? "", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await expect(compactCalendar.getByRole("gridcell", { selected: true })).not.toHaveAttribute(
+    "aria-label",
+    originalSelection ?? "",
+  );
+
+  const [menuBounds, windowBounds, dockBounds] = await Promise.all([
+    page.locator("[data-menu-bar-surface]").boundingBox(),
+    compactCalendar.boundingBox(),
+    page.locator("[data-dock-surface]").boundingBox(),
+  ]);
+  expect(windowBounds!.y).toBeGreaterThanOrEqual(menuBounds!.y + menuBounds!.height);
+  expect(windowBounds!.y + windowBounds!.height).toBeLessThanOrEqual(dockBounds!.y);
+  expect(windowBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(windowBounds!.x + windowBounds!.width).toBeLessThanOrEqual(390);
   await context.close();
 });
