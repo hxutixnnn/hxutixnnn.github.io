@@ -45,9 +45,9 @@ function readStoredEvents(): readonly CalendarEvent[] {
 
 function persistEvents(events: readonly CalendarEvent[]) {
   try {
-    saveCalendarStore(globalThis.localStorage, events);
+    return saveCalendarStore(globalThis.localStorage, events);
   } catch {
-    return;
+    return false;
   }
 }
 
@@ -69,6 +69,7 @@ export function CalendarApp({
   const [draft, setDraft] = useState<CalendarEvent | null>(null);
   const [draftBaseline, setDraftBaseline] = useState<CalendarEvent | null>(null);
   const [pendingAction, setPendingAction] = useState<PendingCalendarAction | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [frame, setFrame] = useState<Frame>(() =>
     workspace.layout === "compact" ? defaultCompactFrame(workspace) : defaultDesktopFrame(workspace.viewport),
   );
@@ -81,8 +82,14 @@ export function CalendarApp({
     .filter((event) => event.date === selectedKey)
     .sort((a, b) => (a.time ?? "24:00").localeCompare(b.time ?? "24:00"));
   const commit = (next: readonly CalendarEvent[]) => {
+    if (!persistEvents(next)) {
+      setSaveError("Calendar couldn’t save your changes. Your draft is still here; try again.");
+      requestAnimationFrame(() => titleInputRef.current?.focus());
+      return false;
+    }
     setEvents(next);
-    persistEvents(next);
+    setSaveError(null);
+    return true;
   };
   const draftModified =
     draft !== null &&
@@ -108,6 +115,7 @@ export function CalendarApp({
     setDraft(null);
     setDraftBaseline(null);
     setPendingAction(null);
+    setSaveError(null);
   };
   const focusSelectedDay = () =>
     requestAnimationFrame(() => gridRef.current?.querySelector<HTMLElement>("[tabindex='0']")?.focus());
@@ -115,6 +123,7 @@ export function CalendarApp({
     setDraft(event);
     setDraftBaseline(event);
     setPendingAction(null);
+    setSaveError(null);
     if (focus) requestAnimationFrame(() => titleInputRef.current?.focus());
   };
   const applyNavigation = (date: Date) => {
@@ -125,7 +134,7 @@ export function CalendarApp({
     if (!draft) return false;
     const title = draft.title.trim();
     if (!title) return false;
-    commit(
+    const saved = commit(
       upsertEvent(events, {
         ...draft,
         id: draft.id || crypto.randomUUID(),
@@ -133,6 +142,7 @@ export function CalendarApp({
         time: draft.time || undefined,
       }),
     );
+    if (!saved) return false;
     closeEditor();
     return true;
   };
@@ -235,7 +245,7 @@ export function CalendarApp({
           </header>
           <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_260px] max-[700px]:block max-[700px]:overflow-y-auto">
             <section
-              className="flex min-h-0 flex-col p-4 max-[700px]:h-[65%] max-[700px]:min-h-[300px] max-[430px]:p-2"
+              className="flex min-h-0 flex-col p-4 max-[700px]:h-[65%] max-[700px]:min-h-[360px] max-[430px]:p-2"
               aria-label={monthFormatter.format(month)}
             >
               <h1 className="mb-3 text-[25px] font-semibold tracking-tight">
@@ -266,7 +276,7 @@ export function CalendarApp({
                       aria-selected={active}
                       aria-label={`${detailFormatter.format(cell.date)}${count ? `, ${count} events` : ""}`}
                       onClick={() => requestNavigation(cell.date)}
-                      className={`relative min-h-10 touch-manipulation bg-[var(--tienos-color-content)] p-1 text-left hover:brightness-110 ${cell.inMonth ? "" : "text-[var(--tienos-color-text-tertiary)]"} ${active ? "ring-2 ring-inset ring-[var(--tienos-color-accent)]" : ""}`}
+                      className={`relative min-h-10 touch-manipulation bg-[var(--tienos-color-content)] p-1 text-left hover:brightness-110 [@media(pointer:coarse)]:min-h-11 ${cell.inMonth ? "" : "text-[var(--tienos-color-text-tertiary)]"} ${active ? "ring-2 ring-inset ring-[var(--tienos-color-accent)]" : ""}`}
                     >
                       <span
                         className={`inline-flex size-6 items-center justify-center rounded-full ${cell.key === todayKey ? "bg-[#ff3b30] font-semibold text-white" : ""}`}
@@ -320,6 +330,14 @@ export function CalendarApp({
                   </li>
                 ))}
               </ul>
+              {saveError && (
+                <p
+                  role="alert"
+                  className="mt-4 rounded-[var(--tienos-radius-control)] border border-[#ff453a] bg-[var(--tienos-color-content)] p-3 text-sm"
+                >
+                  {saveError}
+                </p>
+              )}
               {pendingAction && draft && (
                 <div
                   role="alertdialog"
@@ -358,14 +376,16 @@ export function CalendarApp({
                 <EventEditor
                   event={draft}
                   titleInputRef={titleInputRef}
-                  onChange={setDraft}
+                  onChange={(event) => {
+                    setDraft(event);
+                    setSaveError(null);
+                  }}
                   onCancel={closeEditor}
                   onSave={saveDraft}
                   onDelete={
                     draft.id
                       ? () => {
-                          commit(deleteEvent(events, draft.id));
-                          closeEditor();
+                          if (commit(deleteEvent(events, draft.id))) closeEditor();
                         }
                       : undefined
                   }

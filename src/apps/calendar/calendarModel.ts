@@ -92,8 +92,9 @@ export function parseCalendarStore(raw: string | null): CalendarStore {
 export function saveCalendarStore(storage: Pick<Storage, "setItem">, events: readonly CalendarEvent[]) {
   try {
     storage.setItem(CALENDAR_STORAGE_KEY, JSON.stringify({ version: 1, events } satisfies CalendarStore));
+    return true;
   } catch {
-    // Calendar remains useful when storage is unavailable or full.
+    return false;
   }
 }
 

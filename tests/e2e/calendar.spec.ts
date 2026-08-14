@@ -58,6 +58,17 @@ test("Calendar event editing remains touch-usable in a short compact viewport", 
   await page.getByRole("button", { name: "Calendar" }).tap();
 
   const calendar = page.getByRole("region", { name: "Calendar" });
+  const sixthWeekDay = calendar.getByRole("gridcell").nth(35);
+  await sixthWeekDay.scrollIntoViewIfNeeded();
+  await expect(sixthWeekDay).toBeInViewport();
+  expect((await sixthWeekDay.boundingBox())!.height).toBeGreaterThanOrEqual(40);
+  const sixthWeekLabel = await sixthWeekDay.getAttribute("aria-label");
+  await sixthWeekDay.tap();
+  await expect(calendar.getByRole("gridcell", { name: sixthWeekLabel ?? "", exact: true })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+
   await calendar.getByRole("button", { name: "Create event" }).tap();
   await calendar.getByLabel("Title").fill("Short viewport event");
   await calendar.getByRole("button", { name: "Save" }).tap();

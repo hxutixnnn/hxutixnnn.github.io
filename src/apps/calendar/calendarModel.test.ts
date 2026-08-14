@@ -73,6 +73,7 @@ describe("calendar model", () => {
         throw new Error("full");
       }),
     };
-    expect(() => saveCalendarStore(storage, parsed.events)).not.toThrow();
+    expect(saveCalendarStore(storage, parsed.events)).toBe(false);
+    expect(saveCalendarStore({ setItem: vi.fn() }, parsed.events)).toBe(true);
   });
 });

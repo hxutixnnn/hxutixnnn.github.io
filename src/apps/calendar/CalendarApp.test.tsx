@@ -227,6 +227,33 @@ describe("CalendarApp", () => {
     },
   );
 
+  it.each([
+    { exit: "save", trigger: "Save", decision: null },
+    { exit: "navigation", trigger: "Next month", decision: "Save and Navigate" },
+    { exit: "close", trigger: "Close Calendar", decision: "Save and Close" },
+  ])("retains the dirty editor when $exit persistence fails", async ({ trigger, decision }) => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("full", "QuotaExceededError");
+    });
+    const onEvent = vi.fn();
+    const user = userEvent.setup();
+    render(<CalendarApp {...props} onEvent={onEvent} />);
+    const originalMonth = screen.getByRole("heading", { level: 1 }).textContent;
+    await user.click(screen.getByRole("button", { name: "Create event" }));
+    await user.type(screen.getByLabelText("Title"), "Unsaved after failure");
+
+    await user.click(screen.getByRole("button", { name: trigger }));
+    if (decision) await user.click(screen.getByRole("button", { name: decision }));
+
+    expect(screen.getByRole("alert")).toHaveTextContent("couldn’t save your changes");
+    expect(screen.getByLabelText("Title")).toHaveValue("Unsaved after failure");
+    await waitFor(() => expect(screen.getByLabelText("Title")).toHaveFocus());
+    expect(screen.getByRole("region", { name: "Calendar" })).toBeVisible();
+    expect(onEvent).not.toHaveBeenCalledWith({ type: "CLOSE" });
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(originalMonth ?? "");
+    expect(parseCalendarStore(localStorage.getItem(CALENDAR_STORAGE_KEY)).events).toEqual([]);
+  });
+
   it("guards editor switching and restores focus for every decision", async () => {
     const currentDate = new Date();
     const eventDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
