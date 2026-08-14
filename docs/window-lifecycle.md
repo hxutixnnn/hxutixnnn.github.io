@@ -65,5 +65,3 @@ Lifecycle decision predicates count one `if` or conditional expression that sele
 The audit baseline's coverage-enabled validation measured 6 files and 19 tests in 15.61s. The comparable Phase 1 `pnpm validate` run, recorded before the documentation-only exhaustive-table expansion, measured 8 files and 38 tests in 18.91s. The expanded current suite enumerates 8 files and 127 tests; its focused reducer/property measurement covers 99 tests in 2.66s and reports 98.5% branch coverage for `singleWindowMachine`. These current totals include all 90 parameterized reachable-state/event table cases.
 
 The baseline output checker measured 147.7 KiB JavaScript gzip; this phase measures 148.6 KiB (+0.9 KiB, below the 2 KiB budget). The audit-baseline and Phase 1 exact-`dist/` browser runs each pass all 65 cases in 2.8m, with no screenshot baseline changes. `pnpm validate` and `pnpm build` pass for Phase 1.
-
-Calendar, Notes, and System Settings are registered through the shared app descriptor and lifecycle contracts; Spotlight launches registry entries without app-specific shell policy.

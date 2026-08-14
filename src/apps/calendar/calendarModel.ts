@@ -40,11 +40,11 @@ type LocaleWithWeekInfo = Readonly<{
   getWeekInfo?: () => WeekInfo;
   weekInfo?: WeekInfo;
 }>;
-type LocaleConstructor = new (tag: string) => LocaleWithWeekInfo;
+type LocaleConstructor = new (tag: string) => object;
 
 export function weekStartForLocale(locale: string, Locale: LocaleConstructor = Intl.Locale): number {
   try {
-    const localeInfo = new Locale(locale);
+    const localeInfo = new Locale(locale) as LocaleWithWeekInfo;
     const weekInfo =
       typeof localeInfo.getWeekInfo === "function" ? localeInfo.getWeekInfo() : localeInfo.weekInfo;
     const firstDay = weekInfo?.firstDay;

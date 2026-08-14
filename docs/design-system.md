@@ -127,5 +127,3 @@ Any new component must be reviewed in its default state and under these preferen
 The desktop canvas follows the resolved Light, Dark, or Auto appearance and is scroll-locked because it models a bounded operating-system workspace.
 Desktop labels remain non-selectable by the captain's product decision; content that users may need to copy must explicitly restore selection.
 The sparkle system mark is the tienOS identity and replaces platform-vendor marks.
-
-Calendar and Notes reuse the shared Liquid Glass semantic tokens and accessibility fallbacks.
