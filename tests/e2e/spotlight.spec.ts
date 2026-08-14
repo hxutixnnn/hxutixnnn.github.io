@@ -101,8 +101,9 @@ test("ranks, navigates, and launches apps from a multi-app registry", async ({ p
   const options = page.getByRole("option");
   await expect(options.nth(0)).toContainText("Auxiliary");
   await expect(options.nth(1)).toContainText("Calculator");
-  await expect(options.nth(2)).toContainText("Notes");
-  await expect(options.nth(3)).toContainText("System Settings");
+  await expect(options.nth(2)).toContainText("Calendar");
+  await expect(options.nth(3)).toContainText("Notes");
+  await expect(options.nth(4)).toContainText("System Settings");
   await expect(options.nth(0)).toHaveAttribute("aria-selected", "true");
   await spotlight.press("ArrowDown");
   await expect(options.nth(1)).toHaveAttribute("aria-selected", "true");
@@ -111,6 +112,8 @@ test("ranks, navigates, and launches apps from a multi-app registry", async ({ p
   await expect(options.nth(2)).toHaveAttribute("aria-selected", "true");
   await spotlight.press("ArrowDown");
   await expect(options.nth(3)).toHaveAttribute("aria-selected", "true");
+  await spotlight.press("ArrowDown");
+  await expect(options.nth(4)).toHaveAttribute("aria-selected", "true");
   await spotlight.press("Enter");
   await expect(settings).toHaveAttribute("data-window-active", "true");
   await expect(auxiliary).toHaveCount(0);

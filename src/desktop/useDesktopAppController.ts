@@ -158,6 +158,9 @@ export function useDesktopAppController(apps: readonly DesktopAppDescriptor[], d
   const [state, dispatchController] = useReducer(reduceControllers, undefined, () =>
     initializeControllers(apps, defaultAppId),
   );
+  const activeAppId = Object.entries(state.controllers).find(
+    ([, controller]) => controller.window.active,
+  )?.[0];
   const dispatch = useCallback((appId: AppId, event: WindowEvent, exclusive = false) => {
     dispatchController({ type: "EVENT", appId, event, exclusive });
   }, []);
@@ -166,5 +169,5 @@ export function useDesktopAppController(apps: readonly DesktopAppDescriptor[], d
     dispatchController({ type: "CONSUME_EFFECTS", appId, count });
   }, []);
 
-  return { ...state, dispatch, desktopPointer, effectsConsumed };
+  return { ...state, activeAppId, dispatch, desktopPointer, effectsConsumed };
 }

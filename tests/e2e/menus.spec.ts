@@ -50,14 +50,14 @@ test("supports menu popup keyboard navigation, activation, focus return, and dis
   await page.getByRole("heading", { name: "General" }).click();
   await expect(systemPopup).toBeHidden();
 
-  const navigatorTrigger = page.getByRole("menuitem", { name: "Navigator" });
+  const navigatorTrigger = page.getByRole("menuitem", { name: "System Settings", exact: true });
   await navigatorTrigger.focus();
   await navigatorTrigger.press("ArrowDown");
   const navigatorPopup = page.locator(".tienos-menu-popup:visible");
   await expect(navigatorPopup).toHaveCount(1);
   await expect(navigatorPopup).toHaveCSS("background-image", /linear-gradient/);
   await expect(navigatorPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
-  await expect(page.getByRole("menuitem", { name: "About Navigator" })).toHaveAttribute(
+  await expect(page.getByRole("menuitem", { name: "About System Settings" })).toHaveAttribute(
     "data-highlighted",
     "",
   );
@@ -108,10 +108,10 @@ test("supports compact touch menu popups, submenu collision, activation, and dis
   await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
   await expect(systemTrigger).toBeFocused();
 
-  const navigatorTrigger = page.getByRole("menuitem", { name: "Navigator" });
+  const navigatorTrigger = page.getByRole("menuitem", { name: "System Settings", exact: true });
   await navigatorTrigger.tap();
   await expectCompactGlass(page.locator(".tienos-menu-popup:visible"));
-  await page.getByRole("menuitem", { name: "About Navigator" }).tap();
+  await page.getByRole("menuitem", { name: "About System Settings" }).tap();
   await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
   await expect(navigatorTrigger).toBeFocused();
 

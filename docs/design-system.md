@@ -81,7 +81,7 @@ Preserve a meaningful accessible window name.
 
 ### Dock
 
-The bottom-centered Dock projects every registered app, including System Settings, Notes, and Calculator, and exposes each app's running and minimized state separately from its launcher button. Activating an item opens that app's single window when closed, restores it when minimized, raises it when open but inactive, and minimizes it when already frontmost. Repeated activation must preserve exactly one window per app and settle in the state requested by the latest activation.
+The bottom-centered Dock projects every registered app, including System Settings, Notes, Calendar, and Calculator, and exposes each app's running and minimized state separately from its launcher button. Activating an item opens that app's single window when closed, restores it when minimized, raises it when open but inactive, and minimizes it when already frontmost. Repeated activation must preserve exactly one window per app and settle in the state requested by the latest activation.
 Keep the Dock inside horizontal viewport and bottom safe-area bounds, above windows and below portaled menus. Each app item retains a visible focus indicator, an explicit accessible name and tooltip, and a 56px mouse and touch target.
 The Dock uses wallpaper-dependent layered glass with conventional radii, restrained transform feedback, opaque reduced-transparency and increased-contrast fallbacks, and native forced-color mappings. The static pre-JavaScript desktop mirrors its running appearance without exposing a deceptive launcher control.
 

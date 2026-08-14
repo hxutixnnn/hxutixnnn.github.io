@@ -32,9 +32,10 @@ describe("tienOS main screen", () => {
 
     const dock = getByRole("navigation", { name: "Dock" });
     const app = getByRole("button", { name: "System Settings" });
-    expect(dock.querySelectorAll("button")).toHaveLength(3);
+    expect(dock.querySelectorAll("button")).toHaveLength(4);
     expect(getByRole("button", { name: "Notes" })).toBeInTheDocument();
     expect(getByRole("button", { name: "Calculator" })).toBeInTheDocument();
+    expect(getByRole("button", { name: "Calendar" })).toBeInTheDocument();
     expect(app).not.toHaveAttribute("aria-pressed");
     expect(document.querySelector("#system-settings-dock-status")).toHaveTextContent(
       "System Settings is running",

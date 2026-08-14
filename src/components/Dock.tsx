@@ -36,7 +36,7 @@ export function Dock({ apps, windowStates, onActivate, surfaceRef, targetRef }: 
               aria-describedby={statusId}
               title={app.name}
               onClick={() => onActivate(app)}
-              className="group relative flex size-[56px] touch-manipulation items-center justify-center rounded-[14px] border border-white/30 bg-[linear-gradient(145deg,#f4f5f7,#aeb4bd)] text-[#30343a] shadow-[0_5px_12px_rgb(0_0_0/0.3),inset_0_1px_1px_white] transition-transform duration-[var(--tienos-motion-fast)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)] active:translate-y-0 motion-reduce:transition-none [@media(forced-colors:active)]:border-[ButtonText] [@media(forced-colors:active)]:bg-[ButtonFace] [@media(forced-colors:active)]:text-[ButtonText]"
+              className={`group relative flex size-[56px] touch-manipulation items-center justify-center rounded-[14px] border border-white/30 bg-[linear-gradient(145deg,#f4f5f7,#aeb4bd)] text-[#30343a] shadow-[0_5px_12px_rgb(0_0_0/0.3),inset_0_1px_1px_white] transition-transform duration-[var(--tienos-motion-fast)] hover:-translate-y-0.5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)] active:translate-y-0 motion-reduce:transition-none [@media(forced-colors:active)]:border-[ButtonText] [@media(forced-colors:active)]:bg-[ButtonFace] [@media(forced-colors:active)]:text-[ButtonText] ${app.iconClassName ?? ""}`}
             >
               {app.iconText ? (
                 <span

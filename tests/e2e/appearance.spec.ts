@@ -937,9 +937,11 @@ test("Dock renders registered apps, reports, focuses, and layers the Settings wi
   const dock = page.getByRole("navigation", { name: "Dock" });
   const app = dock.getByRole("button", { name: "System Settings" });
   const calculatorApp = dock.getByRole("button", { name: "Calculator" });
+  const calendarApp = dock.getByRole("button", { name: "Calendar" });
   const settingsWindow = page.getByRole("region", { name: "System Settings" });
-  await expect(dock.getByRole("button")).toHaveCount(3);
+  await expect(dock.getByRole("button")).toHaveCount(4);
   await expect(calculatorApp).toBeVisible();
+  await expect(calendarApp).toBeVisible();
   await expect(dock.getByRole("button", { name: "Notes" })).toBeVisible();
   await expect(page.getByRole("complementary", { name: "Dock preview (non-interactive)" })).toHaveCount(0);
   await expect(app).not.toHaveAttribute("aria-pressed");
@@ -1155,7 +1157,7 @@ test("Dock supports touch and compact viewport boundaries", async ({ browser }, 
   expect(Math.round(afterResize!.x)).toBe(Math.round(beforeResize!.x));
   expect(Math.round(afterResize!.y)).toBe(Math.round(beforeResize!.y));
   await expectCompactBounds(21);
-  await expect(dock.getByRole("button")).toHaveCount(3);
+  await expect(dock.getByRole("button")).toHaveCount(4);
   await expect(app).toHaveAccessibleName("System Settings");
   await expect(app).toHaveAttribute("title", "System Settings");
   await expect(calculatorApp).toHaveAccessibleName("Calculator");

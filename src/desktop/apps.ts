@@ -1,5 +1,4 @@
 import { lazy, type ComponentType } from "react";
-import { NotesApp } from "../apps/notes/NotesApp";
 import { SystemSettingsApp } from "../apps/system-settings/SystemSettingsApp";
 import type { FontAwesomeIconName } from "../components/FontAwesomeIcon";
 import type { Rect, Workspace } from "../windows/geometry";
@@ -25,6 +24,7 @@ export type DesktopAppDescriptor = Readonly<{
   menuName?: string;
   icon: FontAwesomeIconName;
   iconText?: string;
+  iconClassName?: string;
   ownsDockStatus?: boolean;
   Window: ComponentType<DesktopAppWindowProps>;
 }>;
@@ -47,7 +47,7 @@ export const desktopApps = [
     id: "notes",
     name: "Notes",
     icon: "bars",
-    Window: NotesApp,
+    Window: lazy(() => import("../apps/notes/NotesApp").then(({ NotesApp }) => ({ default: NotesApp }))),
   },
   {
     id: "calculator",
@@ -55,6 +55,15 @@ export const desktopApps = [
     icon: "display",
     iconText: "123",
     Window: CalculatorApp,
+  },
+  {
+    id: "calendar",
+    name: "Calendar",
+    icon: "calendar-days",
+    iconClassName: "text-[#ec3b35]",
+    Window: lazy(() =>
+      import("../apps/calendar/CalendarApp").then(({ CalendarApp }) => ({ default: CalendarApp })),
+    ),
   },
 ] as const satisfies readonly DesktopAppDescriptor[];
 
