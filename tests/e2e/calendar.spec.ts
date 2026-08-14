@@ -50,3 +50,27 @@ test("Calendar launches, coexists, navigates, persists events, and works compact
   expect(windowBounds!.x + windowBounds!.width).toBeLessThanOrEqual(390);
   await context.close();
 });
+
+test("Calendar event editing remains touch-usable in a short compact viewport", async ({ browser }) => {
+  const context = await browser.newContext({ hasTouch: true, viewport: { width: 320, height: 568 } });
+  const page = await context.newPage();
+  await page.goto("/");
+  await page.getByRole("button", { name: "Calendar" }).tap();
+
+  const calendar = page.getByRole("region", { name: "Calendar" });
+  await calendar.getByRole("button", { name: "Create event" }).tap();
+  await calendar.getByLabel("Title").fill("Short viewport event");
+  await calendar.getByRole("button", { name: "Save" }).tap();
+  await expect(calendar.getByText("Short viewport event")).toBeVisible();
+
+  const [menuBounds, windowBounds, dockBounds] = await Promise.all([
+    page.locator("[data-menu-bar-surface]").boundingBox(),
+    calendar.boundingBox(),
+    page.locator("[data-dock-surface]").boundingBox(),
+  ]);
+  expect(windowBounds!.y).toBeGreaterThanOrEqual(menuBounds!.y + menuBounds!.height);
+  expect(windowBounds!.y + windowBounds!.height).toBeLessThanOrEqual(dockBounds!.y);
+  expect(windowBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(windowBounds!.x + windowBounds!.width).toBeLessThanOrEqual(320);
+  await context.close();
+});

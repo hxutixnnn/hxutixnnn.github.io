@@ -140,9 +140,9 @@ export function CalendarApp({
               </button>
             </div>
           </header>
-          <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_260px] max-[700px]:grid-cols-1 max-[700px]:grid-rows-[minmax(300px,1fr)_minmax(150px,.55fr)]">
+          <div className="grid min-h-0 grid-cols-[minmax(0,1fr)_260px] max-[700px]:block max-[700px]:overflow-y-auto">
             <section
-              className="flex min-h-0 flex-col p-4 max-[430px]:p-2"
+              className="flex min-h-0 flex-col p-4 max-[700px]:h-[65%] max-[700px]:min-h-[300px] max-[430px]:p-2"
               aria-label={monthFormatter.format(month)}
             >
               <h1 className="mb-3 text-[25px] font-semibold tracking-tight">
@@ -192,7 +192,7 @@ export function CalendarApp({
               </div>
             </section>
             <aside
-              className="min-h-0 overflow-auto border-l border-[var(--tienos-color-separator)] bg-[var(--tienos-color-sidebar)] p-4 max-[700px]:border-t max-[700px]:border-l-0"
+              className="min-h-0 overflow-auto border-l border-[var(--tienos-color-separator)] bg-[var(--tienos-color-sidebar)] p-4 max-[700px]:min-h-[150px] max-[700px]:overflow-visible max-[700px]:border-t max-[700px]:border-l-0"
               aria-label="Selected day events"
             >
               <div className="flex items-center gap-2">
