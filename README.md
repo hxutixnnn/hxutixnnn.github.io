@@ -8,7 +8,7 @@ Open Spotlight with Command-Space or the menu-bar search button, then search the
 
 Notes is a built-in, single-window app for creating, searching, editing, and deleting notes. Changes save automatically in local browser storage, deleted notes can be undone, and Command+N or Control+N creates a note while Notes is frontmost.
 
-Launch Calculator from the Dock or Spotlight for decimal arithmetic, percent and sign operations, chained calculations, and repeated equals. Its keypad also accepts digits, `+`, `-`, `*`, `/`, `%`, Enter or `=`, Escape, and Backspace or Delete.
+Launch Calculator from the Dock or Spotlight for decimal arithmetic, percent and sign operations, chained calculations, and repeated equals. While Calculator is frontmost, its keypad also accepts digits, `+`, `-`, `*`, `/`, `%`, Enter or `=`, Escape, and Backspace or Delete.
 
 Calendar provides a locale-aware month view with keyboard and touch navigation, including previous, next, and Today controls. You can create, edit, and delete events with a title and optional time; events are stored only in this browser, with no account, backend, or network connection.
 
@@ -50,7 +50,7 @@ Future paint-critical assets must participate in this readiness gate, while non-
 
 ## Output budgets
 
-`scripts/check-static-output.mjs` keeps the boot-critical JavaScript ceiling at 160 KiB gzip and separately caps deferred built-in app chunks at 10 KiB gzip. After composing Notes, Calendar, and Calculator, a local Node 22.22.0 build measured 154.2 KiB initial JavaScript and 9.4 KiB lazy-app JavaScript (163.6 KiB aggregate); release output from CI on the required Node 22.23.1 runtime is authoritative. The former aggregate-only 160 KiB check could not distinguish startup work from chunks absent from the initial HTML; the split preserves that startup ceiling while keeping deferred apps beneath their separate limit. CSS, assets, wallpapers, local references, and static fallback checks are unchanged.
+`scripts/check-static-output.mjs` keeps the boot-critical JavaScript ceiling at 160 KiB gzip and separately caps deferred built-in app chunks at 10 KiB gzip. The reviewed Calculator build measured 154.2 KiB initial JavaScript and 9.2 KiB lazy-app JavaScript (163.4 KiB aggregate) on the required Node 22.23.1 runtime. The former aggregate-only 160 KiB check could not distinguish startup work from chunks absent from the initial HTML; the split preserves that startup ceiling while keeping deferred apps beneath their separate limit. CSS, assets, wallpapers, local references, and static fallback checks are unchanged.
 
 ## Browser contract tests
 
