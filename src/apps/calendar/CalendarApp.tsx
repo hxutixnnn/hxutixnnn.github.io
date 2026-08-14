@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type RefObject } from "react";
 import type { DesktopAppWindowProps } from "../../desktop/apps";
 import { defaultCompactFrame, defaultDesktopFrame, type Frame } from "../../windows/geometry";
 import { WindowFrame } from "../../windows/WindowFrame";
@@ -29,6 +29,9 @@ const iconButtonClass =
   "inline-flex min-h-9 w-9 touch-manipulation items-center justify-center rounded-full border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] text-xl text-inherit [@media(pointer:coarse)]:min-h-11 [@media(forced-colors:active)]:border-[ButtonText] [@media(forced-colors:active)]:bg-[ButtonFace] [@media(forced-colors:active)]:text-[ButtonText]";
 const inputClass =
   "mt-1 block min-h-9 w-full select-text rounded-[var(--tienos-radius-control)] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-[9px] py-[7px] text-inherit [@media(forced-colors:active)]:border-[ButtonText] [@media(forced-colors:active)]:bg-[ButtonFace] [@media(forced-colors:active)]:text-[ButtonText]";
+
+type PendingCalendarAction =
+  Readonly<{ type: "navigate"; date: Date }> | Readonly<{ type: "open-editor"; event: CalendarEvent }>;
 
 function readStoredEvents(): readonly CalendarEvent[] {
   try {
@@ -63,12 +66,13 @@ export function CalendarApp({
   const [events, setEvents] = useState<readonly CalendarEvent[]>(readStoredEvents);
   const [draft, setDraft] = useState<CalendarEvent | null>(null);
   const [draftBaseline, setDraftBaseline] = useState<CalendarEvent | null>(null);
-  const [pendingNavigation, setPendingNavigation] = useState<Date | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingCalendarAction | null>(null);
   const [frame, setFrame] = useState<Frame>(() =>
     workspace.layout === "compact" ? defaultCompactFrame(workspace) : defaultDesktopFrame(workspace.viewport),
   );
   const gridRef = useRef<HTMLDivElement>(null);
   const keepEditingRef = useRef<HTMLButtonElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const cells = useMemo(() => monthGrid(month, weekStartsOn), [month]);
   const selectedKey = dateKey(selected);
   const selectedEvents = events
@@ -95,17 +99,20 @@ export function CalendarApp({
     return () => clearTimeout(timer);
   }, []);
   useEffect(() => {
-    if (pendingNavigation) keepEditingRef.current?.focus();
-  }, [pendingNavigation]);
+    if (pendingAction) keepEditingRef.current?.focus();
+  }, [pendingAction]);
   const closeEditor = () => {
     setDraft(null);
     setDraftBaseline(null);
-    setPendingNavigation(null);
+    setPendingAction(null);
   };
-  const openEditor = (event: CalendarEvent) => {
+  const focusSelectedDay = () =>
+    requestAnimationFrame(() => gridRef.current?.querySelector<HTMLElement>("[tabindex='0']")?.focus());
+  const openEditor = (event: CalendarEvent, focus = false) => {
     setDraft(event);
     setDraftBaseline(event);
-    setPendingNavigation(null);
+    setPendingAction(null);
+    if (focus) requestAnimationFrame(() => titleInputRef.current?.focus());
   };
   const applyNavigation = (date: Date) => {
     setSelected(date);
@@ -113,12 +120,19 @@ export function CalendarApp({
   };
   const requestNavigation = (date: Date) => {
     if (draftModified) {
-      setPendingNavigation(date);
+      setPendingAction({ type: "navigate", date });
       return false;
     }
     closeEditor();
     applyNavigation(date);
     return true;
+  };
+  const requestEditor = (event: CalendarEvent) => {
+    if (draftModified) {
+      setPendingAction({ type: "open-editor", event });
+      return;
+    }
+    openEditor(event, true);
   };
   const saveDraft = () => {
     if (!draft) return false;
@@ -135,6 +149,29 @@ export function CalendarApp({
     closeEditor();
     return true;
   };
+  const continuePendingAction = (action: PendingCalendarAction) => {
+    if (action.type === "navigate") {
+      applyNavigation(action.date);
+      focusSelectedDay();
+    } else {
+      openEditor(action.event, true);
+    }
+  };
+  const discardAndContinue = () => {
+    if (!pendingAction) return;
+    const action = pendingAction;
+    closeEditor();
+    continuePendingAction(action);
+  };
+  const saveAndContinue = () => {
+    if (!pendingAction) return;
+    const action = pendingAction;
+    if (saveDraft()) continuePendingAction(action);
+  };
+  const keepEditing = () => {
+    setPendingAction(null);
+    titleInputRef.current?.focus();
+  };
   const keyboardNavigate = (event: KeyboardEvent<HTMLDivElement>) => {
     const offsets: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
     let next: Date | undefined;
@@ -145,8 +182,7 @@ export function CalendarApp({
     else if (event.key === "PageDown") next = addMonthsClamped(selected, 1);
     if (!next) return;
     event.preventDefault();
-    if (requestNavigation(next))
-      requestAnimationFrame(() => gridRef.current?.querySelector<HTMLElement>("[tabindex='0']")?.focus());
+    if (requestNavigation(next)) focusSelectedDay();
   };
 
   return (
@@ -249,7 +285,7 @@ export function CalendarApp({
                   type="button"
                   className={`${iconButtonClass} ml-auto`}
                   aria-label="Create event"
-                  onClick={() => openEditor({ id: "", date: selectedKey, title: "", time: undefined })}
+                  onClick={() => requestEditor({ id: "", date: selectedKey, title: "", time: undefined })}
                 >
                   ＋
                 </button>
@@ -260,7 +296,7 @@ export function CalendarApp({
                     <button
                       type="button"
                       className="w-full rounded-[var(--tienos-radius-control)] border-l-4 border-[var(--tienos-color-accent)] bg-[var(--tienos-color-content)] p-2 text-left"
-                      onClick={() => openEditor(event)}
+                      onClick={() => requestEditor(event)}
                     >
                       <strong className="block truncate">{event.title}</strong>
                       <span className="text-[11px] text-[var(--tienos-color-text-secondary)]">
@@ -270,7 +306,7 @@ export function CalendarApp({
                   </li>
                 ))}
               </ul>
-              {pendingNavigation && draft && (
+              {pendingAction && draft && (
                 <div
                   role="alertdialog"
                   aria-labelledby="calendar-navigation-prompt-title"
@@ -287,33 +323,17 @@ export function CalendarApp({
                     This event stays on {detailFormatter.format(fromDateKey(draft.date) ?? selected)}.
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    <button
-                      ref={keepEditingRef}
-                      className={controlClass}
-                      type="button"
-                      onClick={() => setPendingNavigation(null)}
-                    >
+                    <button ref={keepEditingRef} className={controlClass} type="button" onClick={keepEditing}>
                       Keep Editing
                     </button>
-                    <button
-                      className={controlClass}
-                      type="button"
-                      onClick={() => {
-                        const destination = pendingNavigation;
-                        closeEditor();
-                        applyNavigation(destination);
-                      }}
-                    >
+                    <button className={controlClass} type="button" onClick={discardAndContinue}>
                       Discard and Navigate
                     </button>
                     <button
                       className={`${controlClass} bg-[var(--tienos-color-accent)] text-white`}
                       type="button"
                       disabled={!draft.title.trim()}
-                      onClick={() => {
-                        const destination = pendingNavigation;
-                        if (saveDraft()) applyNavigation(destination);
-                      }}
+                      onClick={saveAndContinue}
                     >
                       Save and Navigate
                     </button>
@@ -323,6 +343,7 @@ export function CalendarApp({
               {draft && (
                 <EventEditor
                   event={draft}
+                  titleInputRef={titleInputRef}
                   onChange={setDraft}
                   onCancel={closeEditor}
                   onSave={saveDraft}
@@ -346,12 +367,14 @@ export function CalendarApp({
 
 function EventEditor({
   event,
+  titleInputRef,
   onChange,
   onSave,
   onCancel,
   onDelete,
 }: {
   event: CalendarEvent;
+  titleInputRef: RefObject<HTMLInputElement | null>;
   onChange: (event: CalendarEvent) => void;
   onSave: () => void;
   onCancel: () => void;
@@ -368,6 +391,7 @@ function EventEditor({
       <label className="block text-[11px] font-medium">
         Title
         <input
+          ref={titleInputRef}
           required
           value={event.title}
           onChange={(e) => onChange({ ...event, title: e.target.value })}

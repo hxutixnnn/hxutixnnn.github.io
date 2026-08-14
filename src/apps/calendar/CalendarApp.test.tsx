@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { initialSingleWindowState } from "../../windows/singleWindowMachine";
@@ -64,6 +64,7 @@ describe("CalendarApp", () => {
 
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     expect(screen.getByLabelText("Title")).toHaveValue("Keyboard draft");
+    expect(screen.getByLabelText("Title")).toHaveFocus();
     expect(screen.getByRole("gridcell", { selected: true })).toHaveAttribute("aria-label", originalSelection);
   });
 
@@ -81,6 +82,7 @@ describe("CalendarApp", () => {
 
     expect(screen.getByRole("heading", { level: 1 })).not.toHaveTextContent(originalMonth ?? "");
     expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("gridcell", { selected: true })).toHaveFocus());
     expect(parseCalendarStore(localStorage.getItem(CALENDAR_STORAGE_KEY)).events).toEqual([]);
   });
 
@@ -103,6 +105,7 @@ describe("CalendarApp", () => {
     await user.click(screen.getByRole("button", { name: "Save and Navigate" }));
 
     expect(screen.getByRole("heading", { level: 1 })).not.toHaveTextContent(originalMonth ?? "");
+    await waitFor(() => expect(screen.getByRole("gridcell", { selected: true })).toHaveFocus());
     expect(parseCalendarStore(localStorage.getItem(CALENDAR_STORAGE_KEY)).events).toMatchObject([
       { id: "existing", date: eventDate, title: "Updated title" },
     ]);
@@ -142,7 +145,7 @@ describe("CalendarApp", () => {
     expect(screen.queryByText("Roadmap")).not.toBeInTheDocument();
   });
 
-  it("resets the editor draft when switching events and create mode", async () => {
+  it("guards editor switching and restores focus for every decision", async () => {
     const currentDate = new Date();
     const eventDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
     localStorage.setItem(
@@ -161,9 +164,27 @@ describe("CalendarApp", () => {
     await user.clear(screen.getByLabelText("Title"));
     await user.type(screen.getByLabelText("Title"), "Unsaved");
     await user.click(screen.getByText("Second"));
+    expect(screen.getByRole("alertdialog")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Keep Editing" }));
+    expect(screen.getByLabelText("Title")).toHaveValue("Unsaved");
+    await waitFor(() => expect(screen.getByLabelText("Title")).toHaveFocus());
+
+    await user.click(screen.getByText("Second"));
+    await user.click(screen.getByRole("button", { name: "Discard and Navigate" }));
     expect(screen.getByLabelText("Title")).toHaveValue("Second");
+    await waitFor(() => expect(screen.getByLabelText("Title")).toHaveFocus());
+
+    await user.clear(screen.getByLabelText("Title"));
+    await user.type(screen.getByLabelText("Title"), "Saved Second");
     await user.click(screen.getByRole("button", { name: "Create event" }));
+    expect(screen.getByRole("alertdialog")).toBeVisible();
+    await user.click(screen.getByRole("button", { name: "Save and Navigate" }));
     expect(screen.getByLabelText("Title")).toHaveValue("");
+    await waitFor(() => expect(screen.getByLabelText("Title")).toHaveFocus());
+    expect(parseCalendarStore(localStorage.getItem(CALENDAR_STORAGE_KEY)).events).toMatchObject([
+      { id: "one", title: "First" },
+      { id: "two", title: "Saved Second" },
+    ]);
   });
 
   it("remains usable when local storage access is denied", () => {
