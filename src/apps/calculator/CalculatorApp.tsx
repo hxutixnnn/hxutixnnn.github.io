@@ -46,6 +46,20 @@ const operatorByKey: Record<string, Operator> = {
   "/": "divide",
 };
 
+function calculatorOwnsKeyboardEvent(event: KeyboardEvent, appId: string) {
+  const target = event.target instanceof Element ? event.target : document.activeElement;
+  if (!(target instanceof Element)) return false;
+  if (
+    target.closest(
+      '[data-shell-overlay],[data-menu-bar-surface],[data-menu-activity],[role="dialog"],input,textarea,select,[contenteditable]:not([contenteditable="false"])',
+    )
+  )
+    return false;
+
+  const owner = target.closest("[data-desktop-activity]");
+  return owner?.getAttribute("data-desktop-activity") === appId;
+}
+
 export function CalculatorApp({
   appId,
   frontmost,
@@ -83,7 +97,14 @@ export function CalculatorApp({
   useEffect(() => {
     if (!frontmost || !windowState.active || windowState.visibility !== "visible") return;
     const handleKey = (event: KeyboardEvent) => {
-      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      if (
+        event.defaultPrevented ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        !calculatorOwnsKeyboardEvent(event, appId)
+      )
+        return;
       let action: CalculatorAction | undefined;
       if (/^\d$/.test(event.key)) action = { type: "digit", digit: event.key };
       else if (event.key === "." || event.key === ",") action = { type: "decimal" };
@@ -99,7 +120,7 @@ export function CalculatorApp({
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [frontmost, windowState.active, windowState.visibility]);
+  }, [appId, frontmost, windowState.active, windowState.visibility]);
 
   const shown = formatCalculatorDisplay(state.display);
   const clearEntry = state.entryActive;

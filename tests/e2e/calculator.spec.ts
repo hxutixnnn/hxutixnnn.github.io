@@ -29,6 +29,29 @@ test("Calculator launches, coexists, calculates, and owns the active menu", asyn
   await expect(calculator).toBeVisible();
 });
 
+test("Calculator yields keyboard control to Spotlight and menus", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Calculator" }).click();
+  const calculator = page.getByRole("region", { name: "Calculator" });
+  const display = calculator.getByRole("status", { name: "Calculator display" });
+
+  await calculator.focus();
+  await page.keyboard.type("7");
+  await expect(display).toHaveText("7");
+
+  await page.getByRole("button", { name: "Open Spotlight" }).click();
+  const search = page.getByRole("combobox", { name: "Search apps" });
+  await search.fill("123");
+  await expect(search).toHaveValue("123");
+  await expect(display).toHaveText("7");
+  await page.keyboard.press("Escape");
+
+  await page.getByRole("menuitem", { name: "Calculator", exact: true }).click();
+  await expect(page.getByRole("menuitem", { name: "About Calculator" })).toBeVisible();
+  await page.keyboard.type("9");
+  await expect(display).toHaveText("7");
+});
+
 test("Calculator remains usable in a compact viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 700 });
   await page.goto("/");

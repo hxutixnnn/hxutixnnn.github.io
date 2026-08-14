@@ -39,10 +39,12 @@ describe("CalculatorApp", () => {
 
   it("accepts keyboard arithmetic only while frontmost", () => {
     const view = renderCalculator();
-    fireEvent.keyDown(window, { key: "4" });
-    fireEvent.keyDown(window, { key: "*" });
-    fireEvent.keyDown(window, { key: "5" });
-    fireEvent.keyDown(window, { key: "Enter" });
+    const calculator = screen.getByRole("region", { name: "Calculator" });
+    calculator.focus();
+    fireEvent.keyDown(calculator, { key: "4" });
+    fireEvent.keyDown(calculator, { key: "*" });
+    fireEvent.keyDown(calculator, { key: "5" });
+    fireEvent.keyDown(calculator, { key: "Enter" });
     expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("20");
     view.rerender(
       <CalculatorApp
@@ -56,8 +58,37 @@ describe("CalculatorApp", () => {
         dockTargetRectProvider={() => null}
       />,
     );
-    fireEvent.keyDown(window, { key: "9" });
+    fireEvent.keyDown(calculator, { key: "9" });
     expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("20");
+  });
+
+  it("ignores keyboard input owned by shell and other interactive surfaces", () => {
+    renderCalculator();
+    const display = screen.getByRole("status", { name: "Calculator display" });
+    const calculator = screen.getByRole("region", { name: "Calculator" });
+    calculator.focus();
+    fireEvent.keyDown(calculator, { key: "7" });
+    expect(display).toHaveTextContent("7");
+
+    const input = document.createElement("input");
+    const menu = document.createElement("button");
+    const dialog = document.createElement("div");
+    const otherApp = document.createElement("button");
+    menu.dataset.menuActivity = "";
+    dialog.setAttribute("role", "dialog");
+    otherApp.dataset.desktopActivity = "notes";
+    document.body.append(input, menu, dialog, otherApp);
+
+    for (const surface of [input, menu, dialog, otherApp]) {
+      surface.focus();
+      fireEvent.keyDown(surface, { key: "9" });
+    }
+
+    expect(display).toHaveTextContent("7");
+    input.remove();
+    menu.remove();
+    dialog.remove();
+    otherApp.remove();
   });
 
   it("switches the touch clear key between entry clear and all-clear", () => {
