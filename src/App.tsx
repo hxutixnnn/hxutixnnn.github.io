@@ -23,8 +23,9 @@ export function App({
     apps,
     defaultApp.id,
   );
-  const activeApp =
-    apps.find((app) => app.id === frontmostAppId && controllers[app.id]?.window.active) ?? defaultApp;
+  const activeApp = controllers[frontmostAppId]?.window.active
+    ? apps.find((app) => app.id === frontmostAppId)
+    : undefined;
   const menuBarRef = useRef<HTMLElement>(null);
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const spotlightOpenRef = useRef(false);
@@ -115,7 +116,7 @@ export function App({
       <MenuBar
         surfaceRef={menuBarRef}
         onOpenSpotlight={openSpotlight}
-        activeAppName={activeApp.menuName ?? activeApp.name}
+        activeAppName={activeApp?.name}
         onAction={(command) => {
           if (command.type === "activate-app" && controllers[command.appId])
             dispatch(command.appId, { type: "ACTIVATE_FROM_MENU" }, true);

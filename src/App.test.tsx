@@ -138,6 +138,22 @@ describe("tienOS main screen", () => {
     expect(window).toHaveAttribute("data-window-active", "false");
   });
 
+  it("gives the menu to only the active registry app", async () => {
+    const user = userEvent.setup();
+    const FutureWindow: DesktopAppDescriptor["Window"] = ({ appId }) => (
+      <section data-desktop-activity={appId} aria-label="Future App Window" />
+    );
+    const apps: readonly DesktopAppDescriptor[] = [
+      { id: "future", name: "Future App", icon: "sparkle", Window: FutureWindow },
+    ];
+
+    render(<App apps={apps} defaultApp={apps[0]} />);
+    expect(screen.getByRole("menuitem", { name: "Future App" })).toBeInTheDocument();
+
+    await user.click(screen.getByRole("main", { name: "tienOS desktop" }));
+    expect(screen.getByRole("menuitem", { name: "Navigator" })).toBeInTheDocument();
+  });
+
   it("launches and projects lifecycle for every registered app id", async () => {
     const user = userEvent.setup();
     const AuxiliaryWindow: DesktopAppDescriptor["Window"] = ({
@@ -159,7 +175,6 @@ describe("tienOS main screen", () => {
       {
         id: "system-settings",
         name: "System Settings",
-        menuName: "Navigator",
         icon: "gear",
         Window: (props) => (
           <div aria-label="System Settings Test Window">
@@ -172,6 +187,7 @@ describe("tienOS main screen", () => {
     ];
 
     render(<App apps={apps} defaultApp={apps[0]} />);
+    expect(screen.getByRole("menuitem", { name: "System Settings" })).toBeInTheDocument();
     expect(screen.getByText("Auxiliary is not running")).toBeInTheDocument();
     const auxiliaryLauncher = screen.getByRole("button", { name: "Auxiliary" });
     vi.spyOn(auxiliaryLauncher, "getBoundingClientRect").mockReturnValue({
@@ -233,7 +249,6 @@ describe("tienOS main screen", () => {
       {
         id: "system-settings",
         name: "System Settings",
-        menuName: "Navigator",
         icon: "gear",
         Window: () => <section aria-label="System Settings Test Window">Settings content</section>,
       },

@@ -21,7 +21,6 @@ export type DesktopAppWindowProps = Readonly<{
 export type DesktopAppDescriptor = Readonly<{
   id: AppId;
   name: string;
-  menuName?: string;
   icon: FontAwesomeIconName;
   iconText?: string;
   iconClassName?: string;
@@ -37,7 +36,6 @@ export const desktopApps = [
   {
     id: "system-settings",
     name: "System Settings",
-    menuName: "Navigator",
     icon: "gear",
     Window: SystemSettingsApp,
   },
