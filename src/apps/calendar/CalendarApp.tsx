@@ -128,6 +128,10 @@ export function CalendarApp({
     return true;
   };
   const requestEditor = (event: CalendarEvent) => {
+    if (draft?.id && draft.id === event.id) {
+      titleInputRef.current?.focus();
+      return;
+    }
     if (draftModified) {
       setPendingAction({ type: "open-editor", event });
       return;

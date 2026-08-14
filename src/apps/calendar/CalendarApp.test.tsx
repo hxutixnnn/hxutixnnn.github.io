@@ -145,6 +145,39 @@ describe("CalendarApp", () => {
     expect(screen.queryByText("Roadmap")).not.toBeInTheDocument();
   });
 
+  it("treats pointer and keyboard reselection of the open event as a focus no-op", async () => {
+    const eventDate = dateKey(new Date());
+    localStorage.setItem(
+      CALENDAR_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        events: [{ id: "same", date: eventDate, title: "Original" }],
+      }),
+    );
+    const user = userEvent.setup();
+    render(<CalendarApp {...props} />);
+    const eventCard = screen.getByRole("button", { name: /Original/ });
+    await user.click(eventCard);
+    await user.clear(screen.getByLabelText("Title"));
+    await user.type(screen.getByLabelText("Title"), "Preserved draft");
+
+    await user.click(eventCard);
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Title")).toHaveValue("Preserved draft");
+    expect(screen.getByLabelText("Title")).toHaveFocus();
+
+    eventCard.focus();
+    await user.keyboard("{Enter}");
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Title")).toHaveValue("Preserved draft");
+    expect(screen.getByLabelText("Title")).toHaveFocus();
+
+    await user.click(screen.getByRole("button", { name: "Save" }));
+    expect(parseCalendarStore(localStorage.getItem(CALENDAR_STORAGE_KEY)).events).toMatchObject([
+      { id: "same", title: "Preserved draft" },
+    ]);
+  });
+
   it("guards editor switching and restores focus for every decision", async () => {
     const currentDate = new Date();
     const eventDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, "0")}-${String(currentDate.getDate()).padStart(2, "0")}`;
