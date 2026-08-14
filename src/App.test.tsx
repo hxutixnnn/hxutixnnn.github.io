@@ -24,16 +24,17 @@ describe("tienOS main screen", () => {
     await waitFor(() => expect(onDesktopReady).toHaveBeenCalledOnce());
   });
 
-  it("opens, raises, and reports the Settings window from the multi-app Dock", async () => {
+  it("opens, raises, and reports the single Settings window from the Dock", async () => {
     const user = userEvent.setup();
-    const { getByRole, getAllByRole, getByText, queryByRole } = render(<App />);
+    const { getByRole, getAllByRole, queryByRole } = render(<App />);
 
     const dock = getByRole("navigation", { name: "Dock" });
     const app = getByRole("button", { name: "System Settings" });
-    expect(dock.querySelectorAll("button")).toHaveLength(2);
+    expect(dock.querySelectorAll("button")).toHaveLength(3);
     expect(getByRole("button", { name: "Notes" })).toBeInTheDocument();
     expect(app).not.toHaveAttribute("aria-pressed");
-    expect(getByText("System Settings is running")).toBeInTheDocument();
+    expect(getAllByRole("status")).toHaveLength(3);
+    expect(screen.getByText("System Settings is running")).toBeInTheDocument();
 
     await user.click(getByRole("main", { name: "tienOS desktop" }));
     await user.click(app);
@@ -42,21 +43,47 @@ describe("tienOS main screen", () => {
 
     await user.click(getByRole("button", { name: "Close System Settings" }));
     expect(queryByRole("region", { name: "System Settings" })).not.toBeInTheDocument();
-    expect(getByText("System Settings is not running")).toBeInTheDocument();
+    expect(screen.getByText("System Settings is not running")).toBeInTheDocument();
+    expect(getByRole("menuitem", { name: "Navigator" })).toBeVisible();
 
     app.focus();
     await user.keyboard("{Enter}");
     expect(getAllByRole("region", { name: "System Settings" })).toHaveLength(1);
-    expect(getByText("System Settings is running")).toBeInTheDocument();
+    expect(screen.getByText("System Settings is running")).toBeInTheDocument();
   });
 
-  it("keeps an inactive app inactive while its menu owns pointer and keyboard activation", async () => {
+  it("launches Calendar independently and transfers active-app menu ownership", async () => {
+    window.matchMedia = vi.fn().mockReturnValue({ matches: true });
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByRole("button", { name: "Calendar" }));
+    const calendar = await screen.findByRole("region", { name: "Calendar" });
+    expect(calendar).toHaveAttribute("data-window-active", "true");
+    expect(screen.getByRole("region", { name: "System Settings" })).toHaveAttribute(
+      "data-window-active",
+      "false",
+    );
+    expect(screen.getByRole("menuitem", { name: "Calendar" })).toBeVisible();
+
+    await user.click(screen.getByRole("button", { name: "Minimize Calendar" }));
+    expect(screen.getByRole("region", { name: "System Settings" })).toHaveAttribute(
+      "data-window-active",
+      "true",
+    );
+    await user.click(screen.getByRole("button", { name: "Calendar" }));
+    await user.click(await screen.findByRole("button", { name: "Close Calendar" }));
+    expect(screen.queryByRole("region", { name: "Calendar" })).not.toBeInTheDocument();
+  });
+
+  it("returns menu ownership to Navigator while the desktop owns activity", async () => {
     const user = userEvent.setup();
     render(<App />);
     const desktop = screen.getByRole("main", { name: "tienOS desktop" });
     await user.click(desktop);
     const window = screen.getByRole("region", { name: "System Settings" });
     expect(window).toHaveAttribute("data-window-active", "false");
+    expect(screen.getByRole("menuitem", { name: "Navigator" })).toBeVisible();
 
     await user.click(screen.getByRole("menuitem", { name: "Open tienOS menu" }));
     await user.click(await screen.findByText("About This OS"));

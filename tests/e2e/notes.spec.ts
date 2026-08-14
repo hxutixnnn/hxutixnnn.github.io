@@ -7,7 +7,7 @@ test("Notes launches beside Settings and persists keyboard-created content", asy
   const dock = page.getByRole("navigation", { name: "Dock" });
   const settingsLauncher = dock.getByRole("button", { name: "System Settings" });
   const notesLauncher = dock.getByRole("button", { name: "Notes" });
-  await expect(dock.getByRole("button")).toHaveCount(2);
+  await expect(dock.getByRole("button")).toHaveCount(3);
   await notesLauncher.click();
 
   const notesWindow = page.getByRole("region", { name: "Notes" });

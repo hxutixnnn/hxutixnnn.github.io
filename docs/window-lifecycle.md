@@ -1,6 +1,6 @@
 # App-keyed single-window lifecycle ownership
 
-The shell lifecycle boundary is keyed by `AppId` so every entry in the static registry at `src/desktop/apps.ts` receives an independent single-window controller.
+Each descriptor in the static app registry receives an independent single-window controller keyed by `AppId`.
 Each app lifecycle is owned by the pure single-window machine and `useDesktopAppController`; this does not introduce same-app window IDs or z-order.
 `App` composes projections for the menu, Dock, Spotlight, and registered window surfaces without deciding visibility transitions, keeping lifecycle counters, or owning effect transport.
 `WindowFrame` projects state and executes typed effects through the narrow genie driver.
@@ -39,7 +39,7 @@ A registered app can reuse `WindowFrame` by supplying grouped lifecycle and geom
 
 ## Extension boundary and non-goals
 
-Each registered app is intentionally a single-window owner. `src/desktop/apps.ts` owns static descriptors, and the shell projects those descriptors into Dock launchers, Spotlight results, and app-keyed controller state. This phase does not define `WindowId`, same-app collections, z-order, event buses, persistence, external-app execution, or a generalized window framework. Appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
+Each registered app is intentionally a single-window owner. `src/desktop/apps.ts` owns static descriptors, and the shell projects those descriptors into Dock launchers, Spotlight results, and app-keyed controller state. This boundary does not define `WindowId`, same-app collections, z-order, event buses, lifecycle persistence, external-app execution, or a generalized window framework. Appearance services, styling changes, and multi-window behavior remain separate roadmap phases.
 
 ## Phase 1 measurements
 

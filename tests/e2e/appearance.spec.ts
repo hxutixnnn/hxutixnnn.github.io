@@ -380,7 +380,7 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
       await page.keyboard.press("Escape");
       await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
 
-      await page.getByRole("menuitem", { name: "Navigator" }).click();
+      await page.getByRole("menuitem", { name: "System Settings", exact: true }).click();
       const navigatorPopup = page.locator(".tienos-menu-popup:visible");
       await expect(navigatorPopup).toHaveCount(1);
       const navigatorBackground = parseColor(
@@ -388,7 +388,7 @@ test("accessibility modes keep every popup family opaque and legible", async ({ 
       );
       expect(navigatorBackground.alpha, `${theme} ${mode.name} navigator should be opaque`).toBe(1);
       await expectColorContrast(
-        page.getByRole("menuitem", { name: "About Navigator" }),
+        page.getByRole("menuitem", { name: "About System Settings" }),
         "color",
         navigatorBackground,
         4.5,
@@ -928,19 +928,17 @@ test("uses a visible high-contrast scrollbar palette in Light mode", async ({ pa
   await expect(thumb).toHaveCSS("background-color", "rgba(15, 23, 42, 0.82)");
 });
 
-test("Dock renders, reports, focuses, and layers the Settings window", async ({ page }, testInfo) => {
+test("Dock renders, reports, focuses, and layers the single Settings window", async ({ page }, testInfo) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/");
   await expect(page.getByRole("status", { name: "Starting tienOS" })).toBeHidden();
   const dock = page.getByRole("navigation", { name: "Dock" });
   const app = dock.getByRole("button", { name: "System Settings" });
-  const appStatus = dock.locator("#system-settings-dock-status");
   const settingsWindow = page.getByRole("region", { name: "System Settings" });
-  await expect(dock.getByRole("button")).toHaveCount(2);
-  await expect(dock.getByRole("button", { name: "Notes" })).toBeVisible();
+  await expect(dock.getByRole("button")).toHaveCount(3);
   await expect(page.getByRole("complementary", { name: "Dock preview (non-interactive)" })).toHaveCount(0);
   await expect(app).not.toHaveAttribute("aria-pressed");
-  await expect(appStatus).toHaveText("System Settings is running");
+  await expect(dock.locator("#system-settings-dock-status")).toHaveText("System Settings is running");
   await expectFontAwesomeIconToPaint(app.locator('[data-fa-icon="gear"]'), "gear");
   await app.focus();
   await expect(app).toBeFocused();
@@ -951,12 +949,12 @@ test("Dock renders, reports, focuses, and layers the Settings window", async ({ 
   await expect(settingsWindow).toHaveCount(1);
   await expect(settingsWindow).toBeFocused();
   await page.getByRole("button", { name: "Close System Settings" }).click();
-  await expect(appStatus).toHaveText("System Settings is not running");
+  await expect(dock.locator("#system-settings-dock-status")).toHaveText("System Settings is not running");
   await app.focus();
   await app.press("Enter");
   await expect(settingsWindow).toHaveCount(1);
   await expect(settingsWindow).toBeFocused();
-  await expect(appStatus).toHaveText("System Settings is running");
+  await expect(dock.locator("#system-settings-dock-status")).toHaveText("System Settings is running");
 
   const settingsZIndex = Number(
     await page.locator(".settings-rnd").evaluate((node) => getComputedStyle(node).zIndex),
@@ -1151,8 +1149,7 @@ test("Dock supports touch and compact viewport boundaries", async ({ browser }, 
   expect(Math.round(afterResize!.x)).toBe(Math.round(beforeResize!.x));
   expect(Math.round(afterResize!.y)).toBe(Math.round(beforeResize!.y));
   await expectCompactBounds(21);
-  await expect(dock.getByRole("button")).toHaveCount(2);
-  await expect(dock.getByRole("button", { name: "Notes" })).toBeVisible();
+  await expect(dock.getByRole("button")).toHaveCount(3);
   await expect(app).toHaveAccessibleName("System Settings");
   await expect(app).toHaveAttribute("title", "System Settings");
   await expect(page.getByRole("button", { name: "Close System Settings" })).toBeVisible();
@@ -1261,9 +1258,6 @@ test.describe("appearance modes", () => {
     );
     const details = page.locator('.settings-scroll-viewport[aria-label="Settings details"]');
     await page.setViewportSize({ width: 700, height: 520 });
-    await details.evaluate((node) => {
-      node.scrollTop = 80;
-    });
     await page.getByPlaceholder("Search").fill("appearance");
     await page.getByPlaceholder("Search").evaluate((input: HTMLInputElement) => {
       input.setSelectionRange(2, 7);
@@ -1271,6 +1265,10 @@ test.describe("appearance modes", () => {
     const highlight = page.getByRole("combobox", { name: "Text highlight color" });
     await highlight.click();
     await expect(page.getByRole("listbox")).toBeVisible();
+    await details.evaluate((node) => {
+      node.scrollTop = 80;
+    });
+    await expect.poll(() => details.evaluate((node) => node.scrollTop)).toBe(80);
     const preservedState = await page.evaluate(() => ({
       activeLabel: document.activeElement?.getAttribute("aria-label"),
       scrollTop: document.querySelector<HTMLElement>(

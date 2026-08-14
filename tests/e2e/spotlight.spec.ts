@@ -63,9 +63,9 @@ test("launches the registry app from closed, minimized, background, and frontmos
   await launch();
 
   await page.getByRole("button", { name: "Minimize System Settings" }).click();
-  await expect(
-    page.getByRole("navigation", { name: "Dock" }).locator("#system-settings-dock-status"),
-  ).toHaveText("System Settings is running and minimized");
+  await expect(page.locator("#system-settings-dock-status")).toHaveText(
+    "System Settings is running and minimized",
+  );
   await launch();
 
   await page.getByRole("main", { name: "tienOS desktop" }).click({ position: { x: 4, y: 80 } });
@@ -99,13 +99,20 @@ test("ranks, navigates, and launches apps from a multi-app registry", async ({ p
   await page.getByRole("button", { name: "Close System Settings" }).click();
   await page.keyboard.press("Meta+Space");
   const auxiliaryOption = page.getByRole("option", { name: /Auxiliary/ });
+  const calendarOption = page.getByRole("option", { name: /Calendar/ });
   const notesOption = page.getByRole("option", { name: /Notes/ });
   const settingsOption = page.getByRole("option", { name: /System Settings/ });
   await expect(auxiliaryOption).toHaveAttribute("aria-selected", "true");
-  await spotlight.press("ArrowDown");
-  await expect(notesOption).toHaveAttribute("aria-selected", "true");
+  await expect(calendarOption).toHaveAttribute("aria-selected", "false");
+  await expect(settingsOption).toHaveAttribute("aria-selected", "false");
   await spotlight.press("ArrowDown");
   await expect(auxiliaryOption).toHaveAttribute("aria-selected", "false");
+  await expect(calendarOption).toHaveAttribute("aria-selected", "true");
+  await spotlight.press("ArrowDown");
+  await expect(calendarOption).toHaveAttribute("aria-selected", "false");
+  await expect(notesOption).toHaveAttribute("aria-selected", "true");
+  await spotlight.press("ArrowDown");
+  await expect(notesOption).toHaveAttribute("aria-selected", "false");
   await expect(settingsOption).toHaveAttribute("aria-selected", "true");
   await spotlight.press("Enter");
   await expect(settings).toHaveAttribute("data-window-active", "true");

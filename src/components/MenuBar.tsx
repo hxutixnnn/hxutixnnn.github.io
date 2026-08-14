@@ -9,6 +9,7 @@ type MenuBarProps = {
   onAction?: (command: DesktopCommand) => void;
   surfaceRef?: RefObject<HTMLElement | null>;
   onOpenSpotlight?: (trigger: HTMLElement) => void;
+  activeAppName?: string;
 };
 
 const triggerClassName =
@@ -38,7 +39,12 @@ function MenuPopup({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function MenuBar({ onAction, onOpenSpotlight, surfaceRef }: MenuBarProps) {
+export function MenuBar({
+  onAction,
+  onOpenSpotlight,
+  surfaceRef,
+  activeAppName = "Navigator",
+}: MenuBarProps) {
   const [systemMenuOpen, setSystemMenuOpen] = useState(false);
   const [now, setNow] = useState(() => new Date());
   const systemMenuTriggerId = "tienos-system-menu-trigger";
@@ -145,10 +151,10 @@ export function MenuBar({ onAction, onOpenSpotlight, surfaceRef }: MenuBarProps)
         </Menu.Root>
 
         <Menu.Root>
-          <Menu.Trigger className={triggerClassName}>Navigator</Menu.Trigger>
+          <Menu.Trigger className={triggerClassName}>{activeAppName}</Menu.Trigger>
           <MenuPopup>
             <Menu.Item className={itemClassName} onClick={() => announce({ type: "about-navigator" })}>
-              <span>About Navigator</span>
+              <span>About {activeAppName}</span>
             </Menu.Item>
             <Menu.Separator className={separatorClassName} />
             <Menu.Item className={itemClassName} onClick={() => announce({ type: "navigator-preferences" })}>
@@ -156,7 +162,7 @@ export function MenuBar({ onAction, onOpenSpotlight, surfaceRef }: MenuBarProps)
               <Shortcut>⌘,</Shortcut>
             </Menu.Item>
             <Menu.Item className={itemClassName} onClick={() => announce({ type: "hide-navigator" })}>
-              <span>Hide Navigator</span>
+              <span>Hide {activeAppName}</span>
               <Shortcut>⌘H</Shortcut>
             </Menu.Item>
           </MenuPopup>
