@@ -57,7 +57,9 @@ function calculatorOwnsKeyboardEvent(event: KeyboardEvent, appId: string) {
     return false;
 
   const owner = target.closest("[data-desktop-activity]");
-  return owner?.getAttribute("data-desktop-activity") === appId;
+  if (owner?.getAttribute("data-desktop-activity") !== appId) return false;
+  if (event.key === "Enter" && target.closest('button,a[href],[role="button"]')) return false;
+  return true;
 }
 
 export function CalculatorApp({

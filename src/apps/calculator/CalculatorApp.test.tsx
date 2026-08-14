@@ -1,4 +1,5 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { initialSingleWindowState } from "../../windows/singleWindowMachine";
 import { CalculatorApp } from "./CalculatorApp";
@@ -12,7 +13,7 @@ const workspace = {
   safeAreaBottom: 0,
   layout: "desktop" as const,
 };
-function renderCalculator() {
+function renderCalculator(onEvent = vi.fn()) {
   return render(
     <CalculatorApp
       appId="calculator"
@@ -20,7 +21,7 @@ function renderCalculator() {
       windowState={initialSingleWindowState}
       effects={[]}
       onEffectsConsumed={vi.fn()}
-      onEvent={vi.fn()}
+      onEvent={onEvent}
       workspace={workspace}
       dockTargetRectProvider={() => null}
     />,
@@ -89,6 +90,23 @@ describe("CalculatorApp", () => {
     menu.remove();
     dialog.remove();
     otherApp.remove();
+  });
+
+  it("yields Enter to keypad and window control buttons", async () => {
+    const user = userEvent.setup();
+    const onEvent = vi.fn();
+    renderCalculator(onEvent);
+
+    const seven = screen.getByRole("button", { name: "7" });
+    seven.focus();
+    await user.keyboard("{Enter}");
+    expect(screen.getByRole("status", { name: "Calculator display" })).toHaveTextContent("7");
+
+    const close = screen.getByRole("button", { name: "Close Calculator" });
+    close.focus();
+    onEvent.mockClear();
+    await user.keyboard("{Enter}");
+    expect(onEvent).toHaveBeenCalledWith({ type: "CLOSE" });
   });
 
   it("switches the touch clear key between entry clear and all-clear", () => {

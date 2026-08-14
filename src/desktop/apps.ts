@@ -60,7 +60,7 @@ export const desktopApps = [
     id: "calendar",
     name: "Calendar",
     icon: "calendar-days",
-    iconClassName: "text-[#ec3b35]",
+    iconClassName: "bg-[linear-gradient(#fff_0_28%,#ff3b30_28%)] text-white",
     Window: lazy(() =>
       import("../apps/calendar/CalendarApp").then(({ CalendarApp }) => ({ default: CalendarApp })),
     ),
