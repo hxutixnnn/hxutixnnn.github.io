@@ -195,7 +195,7 @@ export function WindowFrame({
     rndRef.current?.updatePosition({ x: restored.x, y: restored.y });
     onFrameChange(restored);
     normalFrameRef.current = null;
-  }, [detailViewportRef, frame, fullscreen, onFrameChange, workspace]);
+  }, [detailViewportRef, frame, fullscreen, minimumSize, onFrameChange, workspace]);
 
   useLayoutEffect(() => {
     if (!fullscreen || normalScrollTopRef.current === null) return;
