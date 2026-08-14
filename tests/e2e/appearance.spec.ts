@@ -284,7 +284,7 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
     await page.keyboard.press("Escape");
     await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(0);
 
-    await page.getByRole("menuitem", { name: "System Settings" }).click();
+    await page.getByRole("menuitem", { name: "Navigator" }).click();
     const navigatorPopup = page.locator(".tienos-menu-popup:visible");
     await expect(navigatorPopup).toHaveCSS("background-color", expectedBackground);
     await sampleAgainstWallpapers(navigatorPopup, "navigator", 1);
