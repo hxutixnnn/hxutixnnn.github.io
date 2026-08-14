@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import type { DesktopAppWindowProps } from "../../desktop/apps";
 import { defaultCompactFrame, defaultDesktopFrame, type Frame } from "../../windows/geometry";
 import { WindowFrame } from "../../windows/WindowFrame";
@@ -9,6 +9,7 @@ import {
   addMonthsClamped,
   dateKey,
   deleteEvent,
+  fromDateKey,
   monthGrid,
   parseCalendarStore,
   saveCalendarStore,
@@ -60,12 +61,14 @@ export function CalendarApp({
   const [selected, setSelected] = useState(today);
   const [month, setMonth] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1, 12));
   const [events, setEvents] = useState<readonly CalendarEvent[]>(readStoredEvents);
-  const [editing, setEditing] = useState<CalendarEvent | null>(null);
-  const [creating, setCreating] = useState(false);
+  const [draft, setDraft] = useState<CalendarEvent | null>(null);
+  const [draftBaseline, setDraftBaseline] = useState<CalendarEvent | null>(null);
+  const [pendingNavigation, setPendingNavigation] = useState<Date | null>(null);
   const [frame, setFrame] = useState<Frame>(() =>
     workspace.layout === "compact" ? defaultCompactFrame(workspace) : defaultDesktopFrame(workspace.viewport),
   );
   const gridRef = useRef<HTMLDivElement>(null);
+  const keepEditingRef = useRef<HTMLButtonElement>(null);
   const cells = useMemo(() => monthGrid(month, weekStartsOn), [month]);
   const selectedKey = dateKey(selected);
   const selectedEvents = events
@@ -75,6 +78,10 @@ export function CalendarApp({
     setEvents(next);
     persistEvents(next);
   };
+  const draftModified =
+    draft !== null &&
+    draftBaseline !== null &&
+    (draft.title !== draftBaseline.title || (draft.time ?? "") !== (draftBaseline.time ?? ""));
 
   useEffect(() => {
     let timer: ReturnType<typeof setTimeout>;
@@ -87,10 +94,47 @@ export function CalendarApp({
     refreshAtMidnight();
     return () => clearTimeout(timer);
   }, []);
-  const choose = useCallback((date: Date) => {
+  useEffect(() => {
+    if (pendingNavigation) keepEditingRef.current?.focus();
+  }, [pendingNavigation]);
+  const closeEditor = () => {
+    setDraft(null);
+    setDraftBaseline(null);
+    setPendingNavigation(null);
+  };
+  const openEditor = (event: CalendarEvent) => {
+    setDraft(event);
+    setDraftBaseline(event);
+    setPendingNavigation(null);
+  };
+  const applyNavigation = (date: Date) => {
     setSelected(date);
     setMonth(new Date(date.getFullYear(), date.getMonth(), 1, 12));
-  }, []);
+  };
+  const requestNavigation = (date: Date) => {
+    if (draftModified) {
+      setPendingNavigation(date);
+      return false;
+    }
+    closeEditor();
+    applyNavigation(date);
+    return true;
+  };
+  const saveDraft = () => {
+    if (!draft) return false;
+    const title = draft.title.trim();
+    if (!title) return false;
+    commit(
+      upsertEvent(events, {
+        ...draft,
+        id: draft.id || crypto.randomUUID(),
+        title,
+        time: draft.time || undefined,
+      }),
+    );
+    closeEditor();
+    return true;
+  };
   const keyboardNavigate = (event: KeyboardEvent<HTMLDivElement>) => {
     const offsets: Record<string, number> = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 };
     let next: Date | undefined;
@@ -101,10 +145,9 @@ export function CalendarApp({
     else if (event.key === "PageDown") next = addMonthsClamped(selected, 1);
     if (!next) return;
     event.preventDefault();
-    choose(next);
-    requestAnimationFrame(() => gridRef.current?.querySelector<HTMLElement>("[tabindex='0']")?.focus());
+    if (requestNavigation(next))
+      requestAnimationFrame(() => gridRef.current?.querySelector<HTMLElement>("[tabindex='0']")?.focus());
   };
-  const formEvent = editing ?? (creating ? { id: "", date: selectedKey, title: "", time: undefined } : null);
 
   return (
     <WindowFrame
@@ -118,7 +161,7 @@ export function CalendarApp({
         <div className="calendar-shell grid h-full min-h-0 grid-rows-[auto_1fr] bg-[var(--tienos-color-detail)]">
           <header className="flex min-h-[70px] items-center gap-2 border-b border-[var(--tienos-color-separator)] px-5 pt-4 max-[700px]:px-3">
             {chrome}
-            <button className={controlClass} type="button" onClick={() => choose(today)}>
+            <button className={controlClass} type="button" onClick={() => requestNavigation(today)}>
               Today
             </button>
             <div className="ml-auto flex gap-1">
@@ -126,7 +169,7 @@ export function CalendarApp({
                 className={iconButtonClass}
                 type="button"
                 aria-label="Previous month"
-                onClick={() => choose(addMonths(month, -1))}
+                onClick={() => requestNavigation(addMonths(month, -1))}
               >
                 ‹
               </button>
@@ -134,7 +177,7 @@ export function CalendarApp({
                 className={iconButtonClass}
                 type="button"
                 aria-label="Next month"
-                onClick={() => choose(addMonths(month, 1))}
+                onClick={() => requestNavigation(addMonths(month, 1))}
               >
                 ›
               </button>
@@ -172,7 +215,7 @@ export function CalendarApp({
                       tabIndex={active ? 0 : -1}
                       aria-selected={active}
                       aria-label={`${detailFormatter.format(cell.date)}${count ? `, ${count} events` : ""}`}
-                      onClick={() => choose(cell.date)}
+                      onClick={() => requestNavigation(cell.date)}
                       className={`relative min-h-10 touch-manipulation bg-[var(--tienos-color-content)] p-1 text-left hover:brightness-110 ${cell.inMonth ? "" : "text-[var(--tienos-color-text-tertiary)]"} ${active ? "ring-2 ring-inset ring-[var(--tienos-color-accent)]" : ""}`}
                     >
                       <span
@@ -206,10 +249,7 @@ export function CalendarApp({
                   type="button"
                   className={`${iconButtonClass} ml-auto`}
                   aria-label="Create event"
-                  onClick={() => {
-                    setEditing(null);
-                    setCreating(true);
-                  }}
+                  onClick={() => openEditor({ id: "", date: selectedKey, title: "", time: undefined })}
                 >
                   ＋
                 </button>
@@ -220,10 +260,7 @@ export function CalendarApp({
                     <button
                       type="button"
                       className="w-full rounded-[var(--tienos-radius-control)] border-l-4 border-[var(--tienos-color-accent)] bg-[var(--tienos-color-content)] p-2 text-left"
-                      onClick={() => {
-                        setCreating(false);
-                        setEditing(event);
-                      }}
+                      onClick={() => openEditor(event)}
                     >
                       <strong className="block truncate">{event.title}</strong>
                       <span className="text-[11px] text-[var(--tienos-color-text-secondary)]">
@@ -233,24 +270,67 @@ export function CalendarApp({
                   </li>
                 ))}
               </ul>
-              {formEvent && (
+              {pendingNavigation && draft && (
+                <div
+                  role="alertdialog"
+                  aria-labelledby="calendar-navigation-prompt-title"
+                  aria-describedby="calendar-navigation-prompt-description"
+                  className="mt-4 space-y-3 rounded-[var(--tienos-radius-content)] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-content)] p-3 shadow-[var(--tienos-shadow-window)]"
+                >
+                  <h3 id="calendar-navigation-prompt-title" className="font-semibold">
+                    Save changes before navigating?
+                  </h3>
+                  <p
+                    id="calendar-navigation-prompt-description"
+                    className="text-[11px] text-[var(--tienos-color-text-secondary)]"
+                  >
+                    This event stays on {detailFormatter.format(fromDateKey(draft.date) ?? selected)}.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      ref={keepEditingRef}
+                      className={controlClass}
+                      type="button"
+                      onClick={() => setPendingNavigation(null)}
+                    >
+                      Keep Editing
+                    </button>
+                    <button
+                      className={controlClass}
+                      type="button"
+                      onClick={() => {
+                        const destination = pendingNavigation;
+                        closeEditor();
+                        applyNavigation(destination);
+                      }}
+                    >
+                      Discard and Navigate
+                    </button>
+                    <button
+                      className={`${controlClass} bg-[var(--tienos-color-accent)] text-white`}
+                      type="button"
+                      disabled={!draft.title.trim()}
+                      onClick={() => {
+                        const destination = pendingNavigation;
+                        if (saveDraft()) applyNavigation(destination);
+                      }}
+                    >
+                      Save and Navigate
+                    </button>
+                  </div>
+                </div>
+              )}
+              {draft && (
                 <EventEditor
-                  key={editing?.id ?? "create"}
-                  event={formEvent}
-                  onCancel={() => {
-                    setEditing(null);
-                    setCreating(false);
-                  }}
-                  onSave={(event) => {
-                    commit(upsertEvent(events, event));
-                    setEditing(null);
-                    setCreating(false);
-                  }}
+                  event={draft}
+                  onChange={setDraft}
+                  onCancel={closeEditor}
+                  onSave={saveDraft}
                   onDelete={
-                    editing
+                    draft.id
                       ? () => {
-                          commit(deleteEvent(events, editing.id));
-                          setEditing(null);
+                          commit(deleteEvent(events, draft.id));
+                          closeEditor();
                         }
                       : undefined
                   }
@@ -266,34 +346,42 @@ export function CalendarApp({
 
 function EventEditor({
   event,
+  onChange,
   onSave,
   onCancel,
   onDelete,
 }: {
   event: CalendarEvent;
-  onSave: (event: CalendarEvent) => void;
+  onChange: (event: CalendarEvent) => void;
+  onSave: () => void;
   onCancel: () => void;
   onDelete?: () => void;
 }) {
-  const [title, setTitle] = useState(event.title);
-  const [time, setTime] = useState(event.time ?? "");
   return (
     <form
       className="mt-4 space-y-2 rounded-[var(--tienos-radius-content)] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-content)] p-3"
       onSubmit={(e) => {
         e.preventDefault();
-        const clean = title.trim();
-        if (clean)
-          onSave({ ...event, id: event.id || crypto.randomUUID(), title: clean, time: time || undefined });
+        onSave();
       }}
     >
       <label className="block text-[11px] font-medium">
         Title
-        <input required value={title} onChange={(e) => setTitle(e.target.value)} className={inputClass} />
+        <input
+          required
+          value={event.title}
+          onChange={(e) => onChange({ ...event, title: e.target.value })}
+          className={inputClass}
+        />
       </label>
       <label className="block text-[11px] font-medium">
         Time (optional)
-        <input type="time" value={time} onChange={(e) => setTime(e.target.value)} className={inputClass} />
+        <input
+          type="time"
+          value={event.time ?? ""}
+          onChange={(e) => onChange({ ...event, time: e.target.value || undefined })}
+          className={inputClass}
+        />
       </label>
       <div className="flex flex-wrap gap-2">
         <button className={`${controlClass} bg-[var(--tienos-color-accent)] text-white`} type="submit">

@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { initialSingleWindowState } from "../../windows/singleWindowMachine";
 import { CalendarApp } from "./CalendarApp";
-import { CALENDAR_STORAGE_KEY, parseCalendarStore } from "./calendarModel";
+import { CALENDAR_STORAGE_KEY, dateKey, parseCalendarStore } from "./calendarModel";
 
 const workspace = {
   viewport: { width: 900, height: 700 },
@@ -47,6 +47,77 @@ describe("CalendarApp", () => {
     fireEvent.keyDown(screen.getByRole("gridcell", { selected: true }), { key: "PageDown" });
     expect(screen.getByRole("gridcell", { selected: true })).toHaveTextContent("28");
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("February 2025");
+  });
+
+  it("preserves a modified draft when keyboard navigation is cancelled", async () => {
+    const user = userEvent.setup();
+    render(<CalendarApp {...props} />);
+    await user.click(screen.getByRole("button", { name: "Create event" }));
+    await user.type(screen.getByLabelText("Title"), "Keyboard draft");
+
+    const originalSelection = screen.getByRole("gridcell", { selected: true }).getAttribute("aria-label");
+    fireEvent.keyDown(screen.getByRole("gridcell", { selected: true }), { key: "ArrowRight" });
+    expect(screen.getByRole("alertdialog")).toBeVisible();
+    expect(screen.getByRole("button", { name: "Keep Editing" })).toHaveFocus();
+    expect(screen.getByRole("gridcell", { selected: true })).toHaveAttribute("aria-label", originalSelection);
+    await user.keyboard("{Enter}");
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Title")).toHaveValue("Keyboard draft");
+    expect(screen.getByRole("gridcell", { selected: true })).toHaveAttribute("aria-label", originalSelection);
+  });
+
+  it("discards an edited draft only after pointer navigation confirmation", async () => {
+    const user = userEvent.setup();
+    render(<CalendarApp {...props} />);
+    const originalMonth = screen.getByRole("heading", { level: 1 }).textContent;
+    await user.click(screen.getByRole("button", { name: "Create event" }));
+    await user.type(screen.getByLabelText("Title"), "Discard me");
+    await user.click(screen.getByRole("button", { name: "Next month" }));
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(originalMonth ?? "");
+    expect(screen.getByLabelText("Title")).toHaveValue("Discard me");
+    await user.click(screen.getByRole("button", { name: "Discard and Navigate" }));
+
+    expect(screen.getByRole("heading", { level: 1 })).not.toHaveTextContent(originalMonth ?? "");
+    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+    expect(parseCalendarStore(localStorage.getItem(CALENDAR_STORAGE_KEY)).events).toEqual([]);
+  });
+
+  it("saves an edited event on its original date before pointer navigation", async () => {
+    const eventDate = dateKey(new Date());
+    localStorage.setItem(
+      CALENDAR_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        events: [{ id: "existing", date: eventDate, title: "Original title" }],
+      }),
+    );
+    const user = userEvent.setup();
+    render(<CalendarApp {...props} />);
+    const originalMonth = screen.getByRole("heading", { level: 1 }).textContent;
+    await user.click(screen.getByText("Original title"));
+    await user.clear(screen.getByLabelText("Title"));
+    await user.type(screen.getByLabelText("Title"), "Updated title");
+    await user.click(screen.getByRole("button", { name: "Next month" }));
+    await user.click(screen.getByRole("button", { name: "Save and Navigate" }));
+
+    expect(screen.getByRole("heading", { level: 1 })).not.toHaveTextContent(originalMonth ?? "");
+    expect(parseCalendarStore(localStorage.getItem(CALENDAR_STORAGE_KEY)).events).toMatchObject([
+      { id: "existing", date: eventDate, title: "Updated title" },
+    ]);
+  });
+
+  it("closes an untouched editor during navigation without prompting", async () => {
+    const user = userEvent.setup();
+    render(<CalendarApp {...props} />);
+    const originalMonth = screen.getByRole("heading", { level: 1 }).textContent;
+    await user.click(screen.getByRole("button", { name: "Create event" }));
+    await user.click(screen.getByRole("button", { name: "Next month" }));
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1 })).not.toHaveTextContent(originalMonth ?? "");
   });
 
   it("creates, edits, deletes, and restores a persisted event", async () => {
