@@ -76,117 +76,117 @@ assets:
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
     sha256: 68cf66bb3a1579d59263b96e054e571b9097a2e235036d3cf0e2c31993dd9107
   - path: tests/e2e/main-screen.spec.ts-snapshots/auto-live-dark-to-light-with-portal-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
     sha256: c78646919caee5db22b10a7ed9c087f438a123fc668bf9176c7f3c24161fa1d6
   - path: tests/e2e/main-screen.spec.ts-snapshots/delayed-wallpaper-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
     sha256: 6c7f011e58ab64757b04472aa13c21906476349fd112733729554d3b59629825
   - path: tests/e2e/main-screen.spec.ts-snapshots/delayed-wallpaper-held-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the Calculator Dock addition.
     sha256: 2ec167463be86d9f1f4aa588ecad03e8bd275f1f77bbf25ea2f9c1207a41a966
   - path: tests/e2e/main-screen.spec.ts-snapshots/delayed-wallpaper-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
     sha256: 5f12125ecf04bbdce417aae94f26ae24f0ece1118f65a4c9123f66f0cdf25c67
   - path: tests/e2e/main-screen.spec.ts-snapshots/explicit-dark-to-light-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
     sha256: 1aa252c85cbc34173ddf9888ac32f4fb45f6c3f2831b754c0fd18349142886ad
   - path: tests/e2e/main-screen.spec.ts-snapshots/explicit-dark-to-light-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
     sha256: e5b229d256e0af069f6b749bb3f170662a93a8896bcb789a75becff297c1033f
   - path: tests/e2e/main-screen.spec.ts-snapshots/explicit-light-to-dark-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
     sha256: 6c7f011e58ab64757b04472aa13c21906476349fd112733729554d3b59629825
   - path: tests/e2e/main-screen.spec.ts-snapshots/explicit-light-to-dark-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
     sha256: 5f12125ecf04bbdce417aae94f26ae24f0ece1118f65a4c9123f66f0cdf25c67
   - path: tests/e2e/main-screen.spec.ts-snapshots/fallback-wallpaper-failure-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the Calculator Dock addition.
     sha256: c21512ecb9e71b960be4bd68dbecf8babc5e5b4081367452898a94c776b22396
   - path: tests/e2e/main-screen.spec.ts-snapshots/fallback-wallpaper-failure-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the Calculator Dock addition.
     sha256: 63373d318f7ab2b16be4a5b4d7a6933b132976870ec2f712736b14c4bc4bd22e
   - path: tests/e2e/main-screen.spec.ts-snapshots/iphone-auto-dark-to-light-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the Calculator Dock addition.
     sha256: 7eb2d091552cc8162fd319fbc7067c34a2db144cfd538276a784a9f0a1f9945c
   - path: tests/e2e/main-screen.spec.ts-snapshots/iphone-auto-dark-to-light-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the Calculator Dock addition.
     sha256: 9e7c04ad00f5a584507b4f01460a47abccbfb6ca76d8bc54f1ad39ba89031dd5
   - path: tests/e2e/main-screen.spec.ts-snapshots/rapid-light-dark-light-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
     sha256: 1aa252c85cbc34173ddf9888ac32f4fb45f6c3f2831b754c0fd18349142886ad
   - path: tests/e2e/main-screen.spec.ts-snapshots/rapid-light-dark-light-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
     sha256: e5b229d256e0af069f6b749bb3f170662a93a8896bcb789a75becff297c1033f
   - path: tests/e2e/main-screen.spec.ts-snapshots/light-wallpaper-desktop-chromium-linux.png
     author: tienOS contributors; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpaper; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpaper Copyright Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline captured at 1440x900 for backdrop-free Light wallpaper review, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline captured at 1440x900 for backdrop-free Light wallpaper review, updated for the Calculator Dock addition.
     sha256: e18aa4490372d0c708b6c35a618984c0bcd462bb24382c135e0f6bb4ef404185
   - path: tests/e2e/main-screen.spec.ts-snapshots/light-wallpaper-mobile-chromium-linux.png
     author: tienOS contributors; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpaper; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpaper Copyright Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
-    modified: Deterministic Playwright visual baseline captured at 320x568 for backdrop-free Light wallpaper review, updated for the cumulative Notes and Calendar Dock items.
+    modified: Deterministic Playwright visual baseline captured at 320x568 for backdrop-free Light wallpaper review, updated for the Calculator Dock addition.
     sha256: e637f59f4f1531dfa4c2943780f772adbff2aad8fc4a526391aa5b49658cffd0
