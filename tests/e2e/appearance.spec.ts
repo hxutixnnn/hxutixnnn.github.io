@@ -935,7 +935,7 @@ test("Dock renders, reports, focuses, and layers the single Settings window", as
   const dock = page.getByRole("navigation", { name: "Dock" });
   const app = dock.getByRole("button", { name: "System Settings" });
   const settingsWindow = page.getByRole("region", { name: "System Settings" });
-  await expect(dock.getByRole("button")).toHaveCount(2);
+  await expect(dock.getByRole("button")).toHaveCount(3);
   await expect(page.getByRole("complementary", { name: "Dock preview (non-interactive)" })).toHaveCount(0);
   await expect(app).not.toHaveAttribute("aria-pressed");
   await expect(dock.locator("#system-settings-dock-status")).toHaveText("System Settings is running");
@@ -1149,7 +1149,7 @@ test("Dock supports touch and compact viewport boundaries", async ({ browser }, 
   expect(Math.round(afterResize!.x)).toBe(Math.round(beforeResize!.x));
   expect(Math.round(afterResize!.y)).toBe(Math.round(beforeResize!.y));
   await expectCompactBounds(21);
-  await expect(dock.getByRole("button")).toHaveCount(2);
+  await expect(dock.getByRole("button")).toHaveCount(3);
   await expect(app).toHaveAccessibleName("System Settings");
   await expect(app).toHaveAttribute("title", "System Settings");
   await expect(page.getByRole("button", { name: "Close System Settings" })).toBeVisible();

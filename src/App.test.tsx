@@ -30,7 +30,8 @@ describe("tienOS main screen", () => {
 
     const dock = getByRole("navigation", { name: "Dock" });
     const app = getByRole("button", { name: "System Settings" });
-    expect(dock.querySelectorAll("button")).toHaveLength(2);
+    expect(dock.querySelectorAll("button")).toHaveLength(3);
+    expect(getByRole("button", { name: "Notes" })).toBeInTheDocument();
     expect(app).not.toHaveAttribute("aria-pressed");
     expect(screen.getByText("System Settings is running")).toBeInTheDocument();
 
@@ -69,7 +70,7 @@ describe("tienOS main screen", () => {
       "true",
     );
     await user.click(screen.getByRole("button", { name: "Calendar" }));
-    await user.click(screen.getByRole("button", { name: "Close Calendar" }));
+    await user.click(await screen.findByRole("button", { name: "Close Calendar" }));
     expect(screen.queryByRole("region", { name: "Calendar" })).not.toBeInTheDocument();
   });
 

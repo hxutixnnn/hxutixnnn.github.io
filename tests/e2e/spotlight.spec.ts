@@ -100,6 +100,7 @@ test("ranks, navigates, and launches apps from a multi-app registry", async ({ p
   await page.keyboard.press("Meta+Space");
   const auxiliaryOption = page.getByRole("option", { name: /Auxiliary/ });
   const calendarOption = page.getByRole("option", { name: /Calendar/ });
+  const notesOption = page.getByRole("option", { name: /Notes/ });
   const settingsOption = page.getByRole("option", { name: /System Settings/ });
   await expect(auxiliaryOption).toHaveAttribute("aria-selected", "true");
   await expect(calendarOption).toHaveAttribute("aria-selected", "false");
@@ -109,6 +110,9 @@ test("ranks, navigates, and launches apps from a multi-app registry", async ({ p
   await expect(calendarOption).toHaveAttribute("aria-selected", "true");
   await spotlight.press("ArrowDown");
   await expect(calendarOption).toHaveAttribute("aria-selected", "false");
+  await expect(notesOption).toHaveAttribute("aria-selected", "true");
+  await spotlight.press("ArrowDown");
+  await expect(notesOption).toHaveAttribute("aria-selected", "false");
   await expect(settingsOption).toHaveAttribute("aria-selected", "true");
   await spotlight.press("Enter");
   await expect(settings).toHaveAttribute("data-window-active", "true");
