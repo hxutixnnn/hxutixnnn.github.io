@@ -8,7 +8,7 @@ export const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(({ cla
   <div
     ref={ref}
     className={cn(
-      "relative rounded-2xl border [border-color:var(--glass-border)] [border-top-color:var(--glass-refraction-top)] bg-[var(--glass-3-surface)] shadow-[var(--glass-3-shadow)] [backdrop-filter:saturate(var(--glass-saturate))_blur(var(--glass-3-blur))] [-webkit-backdrop-filter:saturate(var(--glass-saturate))_blur(var(--glass-3-blur))]",
+      "relative rounded-2xl border [border-color:var(--glass-border)] [border-top-color:var(--glass-refraction-top)] bg-[var(--glass-3-surface)] shadow-[var(--glass-3-shadow)] [backdrop-filter:saturate(var(--glass-saturate))_blur(var(--glass-3-blur))] [-webkit-backdrop-filter:saturate(var(--glass-saturate))_blur(var(--glass-3-blur))] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(prefers-reduced-transparency:reduce)]:[-webkit-backdrop-filter:none]",
       className,
     )}
     {...props}
