@@ -91,7 +91,7 @@ export function Spotlight({ apps, open, onDismiss, onLaunch }: SpotlightProps) {
         aria-modal="true"
         tabIndex={-1}
         aria-label="Spotlight"
-        className="tienos-spotlight relative w-full max-w-[42rem] overflow-hidden rounded-[var(--tienos-radius-window)] border border-white/30 bg-[var(--tienos-color-menu)] shadow-[0_28px_80px_rgb(0_0_0/.42),inset_0_1px_rgb(255_255_255/.35)] backdrop-blur-[28px] backdrop-saturate-[1.6] contrast-more:border-[var(--tienos-color-border)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:bg-[Canvas] [@media(forced-colors:active)]:shadow-none motion-safe:animate-[spotlight-in_var(--tienos-motion-standard)_ease-out]"
+        className="tienos-spotlight relative w-full max-w-[42rem] overflow-hidden rounded-[var(--tienos-radius-window)] border border-white/30 bg-[var(--tienos-color-menu)] shadow-[0_28px_80px_rgb(0_0_0/.42),inset_0_1px_rgb(255_255_255/.35)] backdrop-blur-[var(--tienos-blur-spotlight)] backdrop-saturate-[var(--tienos-saturate-spotlight)] contrast-more:border-[var(--tienos-color-border)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:bg-[Canvas] [@media(forced-colors:active)]:shadow-none motion-safe:animate-[spotlight-in_var(--tienos-motion-standard)_ease-out]"
       >
         <div className="flex min-h-16 items-center gap-4 border-b border-white/15 px-5">
           <FontAwesomeIcon

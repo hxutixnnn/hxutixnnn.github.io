@@ -24,6 +24,8 @@ Glin `@glinui/tokens@0.1.1` is the visual foundation for shared surfaces and con
 | Fast and standard motion | `--motion-fast` and `--motion-normal`       |
 | Accent                   | Glin-compatible OKLCH `--color-accent`      |
 
+Blur and saturation are also role-mapped in `src/design-system.css`: Menu uses `--glass-blur-md` and `--glass-saturate`, Window uses `--glass-5-blur` and `--glass-saturate`, Sidebar uses `--glass-blur-lg` and `--glass-saturate-subtle`, and Dock and Spotlight use `--glass-4-blur` and `--glass-saturate`. Product surfaces consume the `--tienos-*` aliases rather than product-specific filter values.
+
 The appearance service continues to own `data-theme`; [`src/design-system.css`](../src/design-system.css) projects Glin's official dark values onto tienOS's dark default and restores the official light values under `data-theme="light"`. Increased contrast, reduced transparency, reduced motion, and forced colors intentionally override visual tokens rather than creating a parallel surface system. Glin 0.1.1 publishes no typography tokens, so tienOS retains its semantic type sizes and system-font identity.
 
 ### Spacing

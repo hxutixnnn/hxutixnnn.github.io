@@ -29,6 +29,16 @@
   --tienos-color-separator: rgb(255 255 255 / 0.1);
   --tienos-color-border: rgb(255 255 255 / 0.2);
   --tienos-color-menu: var(--glass-4-surface);
+  --tienos-blur-menu: var(--glass-blur-md);
+  --tienos-saturate-menu: var(--glass-saturate);
+  --tienos-blur-window: var(--glass-5-blur);
+  --tienos-saturate-window: var(--glass-saturate);
+  --tienos-blur-sidebar: var(--glass-blur-lg);
+  --tienos-saturate-sidebar: var(--glass-saturate-subtle);
+  --tienos-blur-dock: var(--glass-4-blur);
+  --tienos-saturate-dock: var(--glass-saturate);
+  --tienos-blur-spotlight: var(--glass-4-blur);
+  --tienos-saturate-spotlight: var(--glass-saturate);
   --tienos-color-menu-highlight: rgb(255 255 255 / 0.08);
   --tienos-color-menu-text-primary: #fff;
   --tienos-color-menu-text-secondary: rgb(255 255 255 / 0.92);

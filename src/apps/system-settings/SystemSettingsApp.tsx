@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useId,
   useMemo,
   useRef,
   useState,
@@ -9,7 +10,6 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
-import { Field } from "@base-ui/react/field";
 import { ScrollArea } from "@base-ui/react/scroll-area";
 import { GlassCard } from "../../components/ui/glass-card";
 import { Input } from "../../components/ui/input";
@@ -114,6 +114,7 @@ export function SystemSettingsApp({
   const [fallbackWorkspace] = useState(createFallbackWorkspace);
   const workspace = workspaceProp ?? fallbackWorkspace;
   const [query, setQuery] = useState("");
+  const searchInputId = useId();
   const [appearanceDemoSettings, setAppearanceDemoSettings] = useState<AppearanceDemoSettings>(
     initialAppearanceDemoSettings,
   );
@@ -210,24 +211,26 @@ export function SystemSettingsApp({
           >
             <GlassCard
               data-sidebar-panel=""
-              className="settings-sidebar-panel settings-drag-handle flex h-full min-h-0 flex-col overflow-visible rounded-[calc(var(--tienos-radius-window)_-_8px)] border border-white/20 [background:linear-gradient(145deg,rgb(255_255_255/0.13),transparent_46%),var(--tienos-color-sidebar)] p-[10px_9px_8px] shadow-[var(--glass-3-shadow)] backdrop-blur-[var(--glass-blur-lg)] backdrop-saturate-[var(--glass-saturate-subtle)] contrast-more:border-[var(--tienos-color-border)] contrast-more:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
+              className="settings-sidebar-panel settings-drag-handle flex h-full min-h-0 flex-col overflow-visible rounded-[calc(var(--tienos-radius-window)_-_8px)] border border-white/20 [background:linear-gradient(145deg,rgb(255_255_255/0.13),transparent_46%),var(--tienos-color-sidebar)] p-[10px_9px_8px] shadow-[var(--glass-3-shadow)] backdrop-blur-[var(--tienos-blur-sidebar)] backdrop-saturate-[var(--tienos-saturate-sidebar)] contrast-more:border-[var(--tienos-color-border)] contrast-more:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
             >
               {chrome}
 
-              <Field.Root
+              <div
                 data-settings-search=""
-                className="settings-search flex h-7 items-center gap-[7px] rounded-[11px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-[10px] text-[var(--tienos-color-text-secondary)] data-[focused]:outline data-[focused]:outline-2 data-[focused]:outline-[var(--tienos-color-focus)] [&_input]:min-w-0 [&_input]:w-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:text-[var(--tienos-color-text-primary)] [&_input]:outline-none [&_input::placeholder]:text-[var(--tienos-color-text-secondary)] max-[700px]:px-[8px]"
+                className="settings-search flex h-7 items-center gap-[7px] rounded-[11px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-control)] px-[10px] text-[var(--tienos-color-text-secondary)] focus-within:outline focus-within:outline-2 focus-within:outline-[var(--tienos-color-focus)] [&_input]:min-w-0 [&_input]:w-full [&_input]:border-0 [&_input]:bg-transparent [&_input]:text-[var(--tienos-color-text-primary)] [&_input]:outline-none [&_input::placeholder]:text-[var(--tienos-color-text-secondary)] max-[700px]:px-[8px]"
               >
                 <FontAwesomeIcon name="magnifying-glass" className="text-xs" />
-                <Field.Label className="sr-only">Search settings</Field.Label>
+                <label htmlFor={searchInputId} className="sr-only">
+                  Search settings
+                </label>
                 <Input
+                  id={searchInputId}
                   variant="ghost"
-                  aria-label="Search settings"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search"
                 />
-              </Field.Root>
+              </div>
 
               <div className="flex items-center gap-[11px] p-[13px_7px_10px] max-[700px]:hidden [&_strong]:block [&_span]:mt-[2px] [&_span]:block [&_span]:text-xs [&_span]:text-[var(--tienos-color-text-secondary)]">
                 <div className="settings-avatar grid size-[34px] place-items-center rounded-[50%] bg-[linear-gradient(145deg,#59677c,#192334)] text-[17px] font-bold">

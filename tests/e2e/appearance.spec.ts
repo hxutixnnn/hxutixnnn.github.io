@@ -486,7 +486,7 @@ test("keeps Settings seamless across themes, accessibility modes, and layouts", 
       await expect(shell).toHaveCSS("backdrop-filter", "none");
       await expect(sidebar).toHaveCSS("backdrop-filter", "none");
     } else {
-      await expect(shell).toHaveCSS("backdrop-filter", "blur(32px) saturate(1.4)");
+      await expect(shell).toHaveCSS("backdrop-filter", "blur(40px) saturate(1.8)");
       await expect(sidebar).toHaveCSS("backdrop-filter", "saturate(1.8) blur(16px)");
     }
     if (fallback) {

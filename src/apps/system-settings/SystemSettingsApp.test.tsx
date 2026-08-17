@@ -57,6 +57,11 @@ describe("SystemSettings", () => {
     render(<SystemSettingsApp onEvent={vi.fn()} />);
 
     const search = screen.getByRole("textbox", { name: "Search settings" });
+    expect(search).toHaveAttribute("id");
+    expect(screen.getByText("Search settings", { selector: "label" })).toHaveAttribute(
+      "for",
+      search.getAttribute("id"),
+    );
     await user.type(search, "display");
     expect(screen.getByRole("button", { name: "Displays" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "General" })).not.toBeInTheDocument();
