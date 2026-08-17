@@ -1,6 +1,6 @@
 import { Radio } from "@base-ui/react/radio";
 import { RadioGroup } from "@base-ui/react/radio-group";
-import { Switch } from "@base-ui/react/switch";
+import { Switch } from "../../../components/ui/switch";
 import type { Dispatch, SetStateAction } from "react";
 import { SettingsSelect } from "../../../components/SettingsControls";
 import { useAppearanceStore, type AppearanceMode } from "../../../stores/appearance";
@@ -181,14 +181,13 @@ export function AppearancePane({ appId, demoSettings, onDemoSettingsChange }: Ap
         </div>
         <div className="flex min-h-12 items-center justify-between gap-3 border-[var(--tienos-color-separator)] max-[520px]:flex-col max-[520px]:items-start [&+&]:border-t">
           <label htmlFor="wallpaper-tint">Tint window background with wallpaper color</label>
-          <Switch.Root
+          <Switch
             id="wallpaper-tint"
             checked={demoSettings.wallpaperTint}
             onCheckedChange={(value) => updateDemoSetting("wallpaperTint", value)}
-            className="relative h-6 w-10 rounded-full bg-[var(--tienos-color-control)] shadow-inner transition-colors data-[checked]:bg-[var(--tienos-color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)]"
-          >
-            <Switch.Thumb className="block size-5 translate-x-0.5 rounded-full bg-white shadow transition-transform data-[checked]:translate-x-[18px] motion-reduce:transition-none" />
-          </Switch.Root>
+            variant="liquid"
+            className="h-6 w-10 bg-[var(--tienos-color-control)] shadow-inner data-[state=checked]:bg-[var(--tienos-color-accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--tienos-color-focus)]"
+          />
         </div>
       </section>
     </div>

@@ -1,10 +1,10 @@
 :root {
-  --tienos-space-1: 4px;
-  --tienos-space-2: 8px;
-  --tienos-space-3: 12px;
-  --tienos-space-4: 16px;
-  --tienos-space-5: 24px;
-  --tienos-space-6: 32px;
+  --tienos-space-1: var(--space-xs);
+  --tienos-space-2: var(--space-sm);
+  --tienos-space-3: var(--space-md);
+  --tienos-space-4: var(--space-lg);
+  --tienos-space-5: var(--space-xl);
+  --tienos-space-6: var(--space-2xl);
   --tienos-space-7: 48px;
 
   --tienos-safe-area-bottom: env(safe-area-inset-bottom);
@@ -16,8 +16,8 @@
   --tienos-leading-tight: 1;
   --tienos-leading-body: 1.35;
 
-  --tienos-color-accent: #2863d7;
-  --tienos-color-accent-hover: #326edc;
+  --tienos-color-accent: var(--color-accent);
+  --tienos-color-accent-hover: oklch(0.67 0.19 254);
   --tienos-color-focus: #0a84ff;
   --tienos-color-focus-on-accent: #fff;
   --tienos-color-text-on-accent: #fff;
@@ -28,7 +28,7 @@
   --tienos-color-text-on-wallpaper: rgb(255 255 255 / 0.9);
   --tienos-color-separator: rgb(255 255 255 / 0.1);
   --tienos-color-border: rgb(255 255 255 / 0.2);
-  --tienos-color-menu: rgb(20 27 36 / 0.62);
+  --tienos-color-menu: var(--glass-4-surface);
   --tienos-color-menu-highlight: rgb(255 255 255 / 0.08);
   --tienos-color-menu-text-primary: #fff;
   --tienos-color-menu-text-secondary: rgb(255 255 255 / 0.92);
@@ -36,12 +36,12 @@
   --tienos-color-menu-text-shortcut: #fff;
   --tienos-color-menu-separator: rgb(255 255 255 / 0.18);
   --tienos-menu-separator-inset: 8px;
-  --tienos-color-window: rgb(17 22 30 / 0.66);
-  --tienos-color-sidebar: rgb(20 25 33 / 0.64);
-  --tienos-color-detail: rgb(13 18 25 / 0.42);
-  --tienos-color-content: rgb(255 255 255 / 0.075);
-  --tienos-color-control: rgb(255 255 255 / 0.11);
-  --tienos-color-dock: rgb(18 27 39 / 0.58);
+  --tienos-color-window: var(--glass-5-surface);
+  --tienos-color-sidebar: var(--glass-4-surface);
+  --tienos-color-detail: var(--glass-2-surface);
+  --tienos-color-content: var(--glass-2-surface);
+  --tienos-color-control: var(--glass-3-surface);
+  --tienos-color-dock: var(--glass-4-surface);
   --tienos-color-dock-indicator: rgb(255 255 255 / 0.94);
   --tienos-color-scrollbar-track: transparent;
   --tienos-color-scrollbar-thumb: rgb(255 255 255 / 0.5);
@@ -52,40 +52,67 @@
   --tienos-radius-content: 14px;
   --tienos-radius-control: 10px;
 
-  --tienos-motion-fast: 120ms;
-  --tienos-motion-standard: 200ms;
+  --tienos-motion-fast: var(--motion-fast);
+  --tienos-motion-standard: var(--motion-normal);
   --tienos-motion-theme: 280ms;
   --tienos-ease-theme: cubic-bezier(0.22, 1, 0.36, 1);
-  --tienos-shadow-window: 0 42px 120px rgb(0 0 0 / 0.58);
+  --tienos-shadow-window: var(--shadow-glass-lg);
   --tienos-focus-ring: 0 0 0 2px var(--tienos-color-focus), 0 0 0 4px rgb(10 132 255 / 0.3);
+
+  /* Glin primitives consume these aliases while tienOS retains semantic ownership. */
+  --color-background: var(--tienos-color-window);
+  --color-foreground: var(--tienos-color-text-primary);
+  --color-surface: var(--tienos-color-content);
+  --color-border: var(--tienos-color-border);
+  --color-accent: oklch(0.63 0.19 254);
+  --color-accent-foreground: var(--tienos-color-text-on-accent);
+  /* tienOS defaults dark, so mirror Glin's `.dark` values onto data-theme ownership. */
+  --glass-base-rgb: 0 0 0;
+  --glass-border-alpha: 0.1;
+  --glass-border-strong-alpha: 0.18;
+  --glass-refraction-top-alpha: 0.15;
+  --glass-opacity-2: 0.2;
+  --glass-opacity-4: 0.3;
+  --glass-opacity-6: 0.4;
+  --glass-opacity-8: 0.55;
+  --glass-opacity-10: 0.7;
 }
 
 :root[data-theme="light"] {
-  --tienos-color-accent: #1769d2;
-  --tienos-color-accent-hover: #0f5fc5;
+  --color-accent: oklch(0.58 0.19 254);
+  --tienos-color-accent-hover: oklch(0.54 0.19 254);
   --tienos-color-hover: rgb(15 23 42 / 0.07);
   --tienos-color-text-primary: rgb(15 23 42 / 0.92);
   --tienos-color-text-secondary: rgb(15 23 42 / 0.65);
   --tienos-color-text-tertiary: rgb(15 23 42 / 0.48);
   --tienos-color-separator: rgb(15 23 42 / 0.12);
   --tienos-color-border: rgb(15 23 42 / 0.2);
-  --tienos-color-menu: rgb(245 248 252 / 0.62);
+  --tienos-color-menu: var(--glass-4-surface);
   --tienos-color-menu-highlight: rgb(255 255 255 / 0.22);
   --tienos-color-menu-text-primary: #0f172a;
   --tienos-color-menu-text-secondary: rgb(15 23 42 / 0.84);
   --tienos-color-menu-text-disabled: rgb(15 23 42 / 0.7);
   --tienos-color-menu-text-shortcut: rgb(15 23 42 / 0.84);
   --tienos-color-menu-separator: rgb(15 23 42 / 0.16);
-  --tienos-color-window: rgb(241 246 252 / 0.62);
-  --tienos-color-sidebar: rgb(239 244 250 / 0.58);
-  --tienos-color-detail: rgb(255 255 255 / 0.38);
-  --tienos-color-content: rgb(255 255 255 / 0.56);
-  --tienos-color-control: rgb(15 23 42 / 0.08);
-  --tienos-color-dock: rgb(238 244 251 / 0.6);
+  --tienos-color-window: var(--glass-5-surface);
+  --tienos-color-sidebar: var(--glass-4-surface);
+  --tienos-color-detail: var(--glass-2-surface);
+  --tienos-color-content: var(--glass-2-surface);
+  --tienos-color-control: var(--glass-3-surface);
+  --tienos-color-dock: var(--glass-4-surface);
   --tienos-color-dock-indicator: rgb(15 23 42 / 0.86);
   --tienos-color-scrollbar-track: transparent;
   --tienos-color-scrollbar-thumb: rgb(15 23 42 / 0.58);
-  --tienos-shadow-window: 0 42px 120px rgb(15 23 42 / 0.35);
+  --tienos-shadow-window: var(--shadow-glass-lg);
+  --glass-base-rgb: 255 255 255;
+  --glass-border-alpha: 0.2;
+  --glass-border-strong-alpha: 0.35;
+  --glass-refraction-top-alpha: 0.4;
+  --glass-opacity-2: 0.08;
+  --glass-opacity-4: 0.12;
+  --glass-opacity-6: 0.18;
+  --glass-opacity-8: 0.25;
+  --glass-opacity-10: 0.35;
 }
 
 @media (prefers-contrast: more) {

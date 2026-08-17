@@ -5,21 +5,38 @@ When this document and a one-off visual choice conflict, prefer platform convent
 
 ## Foundations
 
-The source of truth for executable tokens is [`src/design-system.css`](../src/design-system.css).
+The source of truth for executable tienOS tokens is [`src/design-system.css`](../src/design-system.css). Glin's pinned Liquid Glass primitives enter through `@glinui/tokens/theme.css`; tienOS maps their generic semantic aliases back to its Light/Dark/Auto tokens and keeps accessibility overrides authoritative. Adopted Glin React sources are committed under [`src/components/ui`](../src/components/ui), so builds never fetch the registry.
 Use semantic tokens for shared color, spacing, radius, typography, motion, and shadow foundations; keep component-specific values local until they are promoted to a shared token.
 Author component presentation as complete Tailwind utility strings in JSX or TSX. Reserve [`src/styles.css`](../src/styles.css) for global tokens, resets, keyframes, accessibility overrides, and static pre-JavaScript contracts that utilities cannot reasonably own; `pnpm validate:css` enforces that boundary.
 
+### Glin token ownership
+
+Glin `@glinui/tokens@0.1.1` is the visual foundation for shared surfaces and controls. Its OKLCH accent pair, five glass elevations, blur and saturation tiers, refraction borders, glass shadows, spacing scale, and motion durations are authoritative. tienOS semantic names remain only as product-role aliases so application code can distinguish Menu, window, sidebar, content, control, and Dock intent:
+
+| tienOS role              | Glin foundation                             |
+| ------------------------ | ------------------------------------------- |
+| Menu and Dock            | `--glass-4-surface`                         |
+| Window                   | `--glass-5-surface` and `--shadow-glass-lg` |
+| Sidebar                  | `--glass-4-surface`                         |
+| Detail and content       | `--glass-2-surface`                         |
+| Controls                 | `--glass-3-surface`                         |
+| Spacing 1–6              | `--space-xs` through `--space-2xl`          |
+| Fast and standard motion | `--motion-fast` and `--motion-normal`       |
+| Accent                   | Glin-compatible OKLCH `--color-accent`      |
+
+The appearance service continues to own `data-theme`; [`src/design-system.css`](../src/design-system.css) projects Glin's official dark values onto tienOS's dark default and restores the official light values under `data-theme="light"`. Increased contrast, reduced transparency, reduced motion, and forced colors intentionally override visual tokens rather than creating a parallel surface system. Glin 0.1.1 publishes no typography tokens, so tienOS retains its semantic type sizes and system-font identity.
+
 ### Spacing
 
-| Token              | Value | Use                             |
-| ------------------ | ----: | ------------------------------- |
-| `--tienos-space-1` |   4px | Micro gaps and compact insets   |
-| `--tienos-space-2` |   8px | Control internals               |
-| `--tienos-space-3` |  12px | Compact rows and related groups |
-| `--tienos-space-4` |  16px | Pane padding                    |
-| `--tienos-space-5` |  24px | Section separation              |
-| `--tienos-space-6` |  32px | Major groups                    |
-| `--tienos-space-7` |  48px | Heroes and empty states         |
+| Token              |         Value | Use                             |
+| ------------------ | ------------: | ------------------------------- |
+| `--tienos-space-1` |  `--space-xs` | Micro gaps and compact insets   |
+| `--tienos-space-2` |  `--space-sm` | Control internals               |
+| `--tienos-space-3` |  `--space-md` | Compact rows and related groups |
+| `--tienos-space-4` |  `--space-lg` | Pane padding                    |
+| `--tienos-space-5` |  `--space-xl` | Section separation              |
+| `--tienos-space-6` | `--space-2xl` | Major groups                    |
+| `--tienos-space-7` |          48px | Heroes and empty states         |
 
 ### Surfaces and color
 
@@ -48,18 +65,18 @@ Nested radii must preserve concentric spacing.
 
 ### Motion
 
-Use 120ms for immediate control feedback and 200ms for ordinary state transitions.
+Use Glin's 150ms `--motion-fast` for immediate control feedback and 250ms `--motion-normal` for ordinary state transitions.
 Spatial motion must communicate state or direct manipulation.
 The wallpaper remains static regardless of motion preference. Light mode uses the bright Paweł Czerwiński ink-cloud wallpaper while Dark mode retains the original blurred wallpaper; Auto follows the live system theme. The resolved image is the only startup wallpaper preloaded and decoded before splash dismissal. Runtime changes settle the destination decode before applying the theme and use its color fallback if decoding fails.
 After startup, a changed resolved theme uses the 280ms theme-motion token to crossfade the complete old document composition into the transactionally applied new one. Use the native View Transition API when available and an inert, aria-hidden old-frame layer otherwise; unchanged resolved themes and startup paint directly. Disable the crossfade for reduced motion, reduced transparency, increased contrast, forced colors, and hidden documents.
 
 ## Component contracts
 
-The version-pinned audit and adoption decisions for every installed Base UI export live in [`docs/base-ui-inventory.md`](base-ui-inventory.md). Revisit that inventory whenever `@base-ui/react` changes version or a new interaction is added.
+The intentional hybrid boundary is behavioral: Base UI remains only for Menu/Menubar, ScrollArea, portaled Select, and custom-preview Radio controls because Glin 0.1.1 has no behavior-preserving counterpart. All of those controls consume the Glin/tienOS visual token layer rather than a separate Base UI theme. The version-pinned retained-interaction decisions live in [`docs/base-ui-inventory.md`](base-ui-inventory.md). Glin Input, Switch, and GlassCard are source-scaffolded at `glinui@0.1.1`; [`glinui.json`](../glinui.json) records the official source layout and [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) records its source commit and license. Revisit both inventories whenever either source changes.
 
 ### Menu bar and menus
 
-Use Base UI menu semantics, complete keyboard operation, familiar shortcuts, and semantic labels.
+Use Base UI Menu and Menubar semantics, complete keyboard operation, familiar shortcuts, and semantic labels. Glin has no desktop Menubar, so this behavior-critical path intentionally remains Base UI while consuming Glin glass tokens for popup material.
 Keep menu presentation compact. The menu bar is an edge-to-edge, non-glass transparent overlay with safe-area top padding, wallpaper-colored text, and a restrained text shadow; the static HTML mirrors those utilities to prevent startup style jumps. Popup menus share the Settings layered glass language: wallpaper-dependent translucent fills, blur and saturation, edge highlights, inner and outer shadows, and conventional radii. Their normal-theme separators are subtle one-pixel inset hairlines; increased contrast, reduced transparency, and forced colors restore stronger full-width rules. Resolved themes and those accessibility modes must retain legible opaque fallbacks.
 Selection uses the accent token plus text and positional state, never color alone.
 

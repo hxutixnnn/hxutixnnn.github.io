@@ -10,8 +10,9 @@ import {
   type RefObject,
 } from "react";
 import { Field } from "@base-ui/react/field";
-import { Input } from "@base-ui/react/input";
 import { ScrollArea } from "@base-ui/react/scroll-area";
+import { GlassCard } from "../../components/ui/glass-card";
+import { Input } from "../../components/ui/input";
 import { FontAwesomeIcon } from "../../components/FontAwesomeIcon";
 import {
   clamp,
@@ -207,9 +208,9 @@ export function SystemSettingsApp({
             className="settings-sidebar relative z-20 min-h-0 min-w-0 p-[8px_4px_8px_8px] max-[700px]:p-[7px_3px_7px_7px]"
             data-floating-panel=""
           >
-            <div
+            <GlassCard
               data-sidebar-panel=""
-              className="settings-sidebar-panel settings-drag-handle flex h-full min-h-0 flex-col overflow-visible rounded-[calc(var(--tienos-radius-window)_-_8px)] border border-white/20 [background:linear-gradient(145deg,rgb(255_255_255/0.13),transparent_46%),var(--tienos-color-sidebar)] p-[10px_9px_8px] shadow-[0_12px_30px_rgb(0_0_0/0.2),inset_0_1px_0_rgb(255_255_255/0.25),inset_0_-1px_0_rgb(0_0_0/0.1)] backdrop-blur-[24px] backdrop-saturate-[1.35] contrast-more:border-[var(--tienos-color-border)] contrast-more:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
+              className="settings-sidebar-panel settings-drag-handle flex h-full min-h-0 flex-col overflow-visible rounded-[calc(var(--tienos-radius-window)_-_8px)] border border-white/20 [background:linear-gradient(145deg,rgb(255_255_255/0.13),transparent_46%),var(--tienos-color-sidebar)] p-[10px_9px_8px] shadow-[var(--glass-3-shadow)] backdrop-blur-[var(--glass-blur-lg)] backdrop-saturate-[var(--glass-saturate-subtle)] contrast-more:border-[var(--tienos-color-border)] contrast-more:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:[background:var(--tienos-color-sidebar)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none [@media(forced-colors:active)]:border-[CanvasText] [@media(forced-colors:active)]:[background:Canvas] [@media(forced-colors:active)]:shadow-none [@media(forced-colors:active)]:backdrop-filter-none max-[700px]:rounded-[11px] max-[700px]:p-[7px_6px]"
             >
               {chrome}
 
@@ -220,6 +221,8 @@ export function SystemSettingsApp({
                 <FontAwesomeIcon name="magnifying-glass" className="text-xs" />
                 <Field.Label className="sr-only">Search settings</Field.Label>
                 <Input
+                  variant="ghost"
+                  aria-label="Search settings"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   placeholder="Search"
@@ -282,7 +285,7 @@ export function SystemSettingsApp({
                   )}
                 </nav>
               </SettingsScrollArea>
-            </div>
+            </GlassCard>
           </aside>
 
           {/* The ARIA separator pattern is keyboard interactive despite having no native HTML element. */}
