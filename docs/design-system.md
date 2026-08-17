@@ -5,7 +5,7 @@ When this document and a one-off visual choice conflict, prefer platform convent
 
 ## Foundations
 
-The source of truth for executable tienOS tokens is [`src/design-system.css`](../src/design-system.css). Glin's pinned Liquid Glass primitives enter through `@glinui/tokens/theme.css`; tienOS maps their generic semantic aliases back to its Light/Dark/Auto tokens and keeps accessibility overrides authoritative. Adopted Glin React sources are committed under [`src/components/ui`](../src/components/ui), so builds never fetch the registry.
+The source of truth for executable tienOS tokens is [`src/design-system.css`](../src/design-system.css). Glin's pinned Liquid Glass primitives enter through `@glinui/tokens/theme.css`; tienOS maps their generic semantic aliases back to its Light/Dark/Auto tokens and keeps accessibility overrides authoritative. Adopted Glin React sources are committed under [`src/components/ui`](../src/components/ui), so the build consumes repository-local component sources.
 Use semantic tokens for shared color, spacing, radius, typography, motion, and shadow foundations; keep component-specific values local until they are promoted to a shared token.
 Author component presentation as complete Tailwind utility strings in JSX or TSX. Reserve [`src/styles.css`](../src/styles.css) for global tokens, resets, keyframes, accessibility overrides, and static pre-JavaScript contracts that utilities cannot reasonably own; `pnpm validate:css` enforces that boundary.
 
@@ -26,7 +26,7 @@ Glin `@glinui/tokens@0.1.1` is the visual foundation for shared surfaces and con
 
 Blur and saturation are also role-mapped in `src/design-system.css`: Menu uses `--glass-blur-md` and `--glass-saturate`, Window uses `--glass-5-blur` and `--glass-saturate`, Sidebar uses `--glass-blur-lg` and `--glass-saturate-subtle`, and Dock and Spotlight use `--glass-4-blur` and `--glass-saturate`. Product surfaces consume the `--tienos-*` aliases rather than product-specific filter values.
 
-The appearance service continues to own `data-theme`; [`src/design-system.css`](../src/design-system.css) projects Glin's official dark values onto tienOS's dark default and restores the official light values under `data-theme="light"`. Increased contrast, reduced transparency, reduced motion, and forced colors intentionally override visual tokens rather than creating a parallel surface system. Glin 0.1.1 publishes no typography tokens, so tienOS retains its semantic type sizes and system-font identity.
+The appearance service continues to own `data-theme`; [`src/design-system.css`](../src/design-system.css) maps Glin's shared glass and OKLCH foundation onto tienOS's dark default and supplies the Light overrides under `data-theme="light"`. Increased contrast, reduced transparency, reduced motion, and forced colors intentionally override visual tokens rather than creating a parallel surface system. Glin 0.1.1 publishes no typography tokens, so tienOS retains its semantic type sizes and system-font identity.
 
 ### Spacing
 
@@ -74,7 +74,7 @@ After startup, a changed resolved theme uses the 280ms theme-motion token to cro
 
 ## Component contracts
 
-The intentional hybrid boundary is behavioral: Base UI remains only for Menu/Menubar, ScrollArea, portaled Select, and custom-preview Radio controls because Glin 0.1.1 has no behavior-preserving counterpart. All of those controls consume the Glin/tienOS visual token layer rather than a separate Base UI theme. The version-pinned retained-interaction decisions live in [`docs/base-ui-inventory.md`](base-ui-inventory.md). Glin Input, Switch, and GlassCard are source-scaffolded at `glinui@0.1.1`; [`glinui.json`](../glinui.json) records the official source layout and [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) records its source commit and license. Revisit both inventories whenever either source changes.
+The intentional hybrid boundary is behavioral: Base UI remains only for Menu/Menubar, ScrollArea, portaled Select, and custom-preview Radio controls because Glin 0.1.1 has no behavior-preserving counterpart. All of those controls consume the Glin/tienOS visual token layer rather than a separate Base UI theme. The version-pinned retained-interaction decisions live in [`docs/base-ui-inventory.md`](base-ui-inventory.md). Glin Input, Switch, and GlassCard are source-scaffolded at `glinui@0.1.1`; [`glinui.json`](../glinui.json) records the official source layout and [`THIRD_PARTY_NOTICES.md`](../THIRD_PARTY_NOTICES.md) records its source commit and license. Revisit these records whenever either source changes.
 
 ### Menu bar and menus
 

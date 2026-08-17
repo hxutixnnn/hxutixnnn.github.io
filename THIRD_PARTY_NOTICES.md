@@ -12,7 +12,7 @@ The original repository was based on the LekoArts Gatsby Minimal Blog starter. I
 
 ## Liquid Glass components and tokens
 
-tienOS uses the pinned MIT-licensed `@glinui/tokens@0.1.1` package and source-scaffolded Glin UI Input, Switch, and GlassCard components from `glinui@0.1.1` (upstream commit [`62134ef`](https://github.com/GLINCKER/glinui/tree/62134ef0dafc2fc1c85d221a23c562ba0519669d), Copyright © 2026 Glincker LLC). The committed sources are locally adapted only for repository aliases and tienOS-owned interaction/semantic styling. No registry request occurs during install, test, or build.
+tienOS uses the pinned MIT-licensed `@glinui/tokens@0.1.1` package and source-scaffolded Glin UI Input, Switch, and GlassCard components from `glinui@0.1.1` (upstream commit [`62134ef`](https://github.com/GLINCKER/glinui/tree/62134ef0dafc2fc1c85d221a23c562ba0519669d), Copyright © 2026 Glincker LLC). The committed sources are locally adapted only for repository aliases and tienOS-owned interaction/semantic styling. Dependency installation is governed by the frozen lockfile; runtime, tests, and builds use the committed sources and make no CDN or unpinned registry request.
 
 Glin UI is provided under the MIT License:
 

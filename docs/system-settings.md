@@ -4,7 +4,7 @@
 
 `settingsPanes.ts` is a compile-time descriptor list. A descriptor combines `SettingsPaneMetadata` (`id`, `icon`, `label`, `colorClass`, `group`, and optional `hideHero`) with a directly imported `Component` that receives the pane metadata and Appearance demo-state bindings. The literal IDs form `SettingsPaneId`; they are behavioral identifiers independent of displayed labels and should not be renamed when copy changes.
 
-Focused pane JSX lives under `panes/`. `SystemSettingsApp` owns session-local Appearance demo state so it survives pane navigation, while `AppearancePane` remains the bespoke Base UI renderer. Persisted Light/Dark/Auto state is observed through the appearance store; the [`appearance architecture`](appearance-architecture.md) owns transaction responsibilities. `GeneralPane` retains direct row composition, and `PlaceholderPane` renders the existing category-specific empty state.
+Focused pane JSX lives under `panes/`. `SystemSettingsApp` owns session-local Appearance demo state so it survives pane navigation, composes the source-scaffolded Glin Input and GlassCard with the retained Base UI ScrollArea, and delegates the control boundary to the [design-system contract](design-system.md) and [Base UI inventory](base-ui-inventory.md). Persisted Light/Dark/Auto state is observed through the appearance store; the [`appearance architecture`](appearance-architecture.md) owns transaction responsibilities. `GeneralPane` retains direct row composition, and `PlaceholderPane` renders the existing category-specific empty state.
 
 ## Adding a pane
 
