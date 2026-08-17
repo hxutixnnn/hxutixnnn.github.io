@@ -162,6 +162,11 @@
     --tienos-color-detail: #202023;
     --tienos-color-content: #28282a;
     --tienos-color-control: #363638;
+    --glass-1-surface: rgb(0 0 0 / 0.88);
+    --glass-2-surface: rgb(0 0 0 / 0.9);
+    --glass-3-surface: rgb(0 0 0 / 0.92);
+    --glass-4-surface: rgb(0 0 0 / 0.94);
+    --glass-5-surface: rgb(0 0 0 / 0.96);
   }
 
   :root[data-theme="light"] {
@@ -174,6 +179,11 @@
     --tienos-color-detail: #f7f9fc;
     --tienos-color-content: #fff;
     --tienos-color-control: #dfe4eb;
+    --glass-1-surface: rgb(255 255 255 / 0.92);
+    --glass-2-surface: rgb(255 255 255 / 0.94);
+    --glass-3-surface: rgb(255 255 255 / 0.95);
+    --glass-4-surface: rgb(255 255 255 / 0.96);
+    --glass-5-surface: rgb(255 255 255 / 0.98);
   }
 }
 
