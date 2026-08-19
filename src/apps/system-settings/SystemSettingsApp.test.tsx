@@ -8,7 +8,7 @@ const legacyPlaceholderGlyphs = /[⌁ᛒ◎◉⚙◌◐✦▣☀☷⌕❉◖⌨�
 afterEach(cleanup);
 
 describe("SystemSettings", () => {
-  it("uses Base UI scroll areas inside a distinct floating sidebar", () => {
+  it("combines Base UI scroll behavior with a Glin glass sidebar", () => {
     render(<SystemSettingsApp onEvent={vi.fn()} />);
 
     const sidebar = document.querySelector("[data-floating-panel]");
@@ -57,6 +57,11 @@ describe("SystemSettings", () => {
     render(<SystemSettingsApp onEvent={vi.fn()} />);
 
     const search = screen.getByRole("textbox", { name: "Search settings" });
+    expect(search).toHaveAttribute("id");
+    expect(screen.getByText("Search settings", { selector: "label" })).toHaveAttribute(
+      "for",
+      search.getAttribute("id"),
+    );
     await user.type(search, "display");
     expect(screen.getByRole("button", { name: "Displays" })).toBeVisible();
     expect(screen.queryByRole("button", { name: "General" })).not.toBeInTheDocument();
@@ -110,8 +115,10 @@ describe("SystemSettings", () => {
       name: "Tint window background with wallpaper color",
     });
     expect(wallpaperTint).toBeChecked();
+    expect(wallpaperTint).toHaveAttribute("data-state", "checked");
     await user.click(wallpaperTint);
     expect(wallpaperTint).not.toBeChecked();
+    expect(wallpaperTint).toHaveAttribute("data-state", "unchecked");
   });
 
   it("assigns app-owned control portals to the hosting app", async () => {

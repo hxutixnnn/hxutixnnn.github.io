@@ -77,14 +77,14 @@ assets:
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
-    sha256: 68cf66bb3a1579d59263b96e054e571b9097a2e235036d3cf0e2c31993dd9107
+    sha256: 75f0b2be096b2db36d36af8791b65f8d4d2b851573d4df3d2207d184b402184a
   - path: tests/e2e/main-screen.spec.ts-snapshots/auto-live-dark-to-light-with-portal-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
-    sha256: c78646919caee5db22b10a7ed9c087f438a123fc668bf9176c7f3c24161fa1d6
+    sha256: 6504cbeb5c3782064358d373d6656266715353b7c2586730f53eace801b50699
   - path: tests/e2e/main-screen.spec.ts-snapshots/delayed-wallpaper-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
@@ -98,7 +98,7 @@ assets:
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the Calculator Dock addition.
-    sha256: 2ec167463be86d9f1f4aa588ecad03e8bd275f1f77bbf25ea2f9c1207a41a966
+    sha256: 2947b8595569a6fed4214fb5b1cadc12f3ec1e882c87d65fd26889952fdf7956
   - path: tests/e2e/main-screen.spec.ts-snapshots/delayed-wallpaper-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
@@ -112,14 +112,14 @@ assets:
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
-    sha256: 1aa252c85cbc34173ddf9888ac32f4fb45f6c3f2831b754c0fd18349142886ad
+    sha256: 7875418db67dcc7b9971c00f6e0462721d1df333d64397696a99291b66f6ceee
   - path: tests/e2e/main-screen.spec.ts-snapshots/explicit-dark-to-light-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
-    sha256: e5b229d256e0af069f6b749bb3f170662a93a8896bcb789a75becff297c1033f
+    sha256: 7dba4b2b5bdbe4e77e0fdd3d84f61fef2144215ce2c5891d50ea76be7516bd99
   - path: tests/e2e/main-screen.spec.ts-snapshots/explicit-light-to-dark-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
@@ -154,39 +154,39 @@ assets:
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the Calculator Dock addition.
-    sha256: 7eb2d091552cc8162fd319fbc7067c34a2db144cfd538276a784a9f0a1f9945c
+    sha256: 003e6448f78320725212ba3660d9fb72f9d5be9989642a7f1c6574786734bf42
   - path: tests/e2e/main-screen.spec.ts-snapshots/iphone-auto-dark-to-light-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering without a window backdrop, updated for the Calculator Dock addition.
-    sha256: 9e7c04ad00f5a584507b4f01460a47abccbfb6ca76d8bc54f1ad39ba89031dd5
+    sha256: 13418a4edfaa9992c60e84e85e0be372505ae198858de401c71fef37986be997
   - path: tests/e2e/main-screen.spec.ts-snapshots/rapid-light-dark-light-final-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
-    sha256: 1aa252c85cbc34173ddf9888ac32f4fb45f6c3f2831b754c0fd18349142886ad
+    sha256: 7875418db67dcc7b9971c00f6e0462721d1df333d64397696a99291b66f6ceee
   - path: tests/e2e/main-screen.spec.ts-snapshots/rapid-light-dark-light-midpoint-chromium-linux.png
     author: tienOS contributors; Kunal Patil; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/a-blurry-image-of-a-multicolored-background-8ZKlgI_G-mw; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpapers; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpapers Copyright Kunal Patil and Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline for global resolved-theme transition rendering, updated for the Calculator Dock addition.
-    sha256: e5b229d256e0af069f6b749bb3f170662a93a8896bcb789a75becff297c1033f
+    sha256: 7dba4b2b5bdbe4e77e0fdd3d84f61fef2144215ce2c5891d50ea76be7516bd99
   - path: tests/e2e/main-screen.spec.ts-snapshots/light-wallpaper-desktop-chromium-linux.png
     author: tienOS contributors; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpaper; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpaper Copyright Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline captured at 1440x900 for backdrop-free Light wallpaper review, updated for the Calculator Dock addition.
-    sha256: e18aa4490372d0c708b6c35a618984c0bcd462bb24382c135e0f6bb4ef404185
+    sha256: 739829115863ec20b5380961c5e6fff1b3fdff72784e945059394e4f528bc8f1
   - path: tests/e2e/main-screen.spec.ts-snapshots/light-wallpaper-mobile-chromium-linux.png
     author: tienOS contributors; Paweł Czerwiński; Fonticons, Inc.
     source: tests/e2e/main-screen.spec.ts; https://unsplash.com/photos/assorted-color-smoke-3k9PGKWt7ik; https://fontawesome.com
     license: MIT for original interface; Unsplash License for wallpaper; Font Awesome Pro Commercial License for icons
     copyright: Interface Copyright tienOS contributors; wallpaper Copyright Paweł Czerwiński; icons Copyright 2026 Fonticons, Inc.
     modified: Deterministic Playwright visual baseline captured at 320x568 for backdrop-free Light wallpaper review, updated for the Calculator Dock addition.
-    sha256: e637f59f4f1531dfa4c2943780f772adbff2aad8fc4a526391aa5b49658cffd0
+    sha256: eddcdb3f5f85648b672a008535045e285dcd01f251b03c2296d84f3956439b1a

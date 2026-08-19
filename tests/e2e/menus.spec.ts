@@ -12,7 +12,7 @@ test("supports menu popup keyboard navigation, activation, focus return, and dis
   const systemPopup = page.locator(".tienos-menu-popup:visible");
   await expect(systemPopup).toHaveCount(1);
   await expect(systemPopup).toHaveCSS("background-image", /linear-gradient/);
-  await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
+  await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(16px) saturate(1.8)");
   await expect(page.getByRole("menuitem", { name: "About This OS" })).toHaveAttribute("data-highlighted", "");
   await page.keyboard.press("Enter");
   await expect(systemPopup).toBeHidden();
@@ -34,7 +34,7 @@ test("supports menu popup keyboard navigation, activation, focus return, and dis
   const submenuPopup = page.locator(".tienos-menu-popup:visible").last();
   await expect(page.locator(".tienos-menu-popup:visible")).toHaveCount(2);
   await expect(submenuPopup).toHaveCSS("background-image", /linear-gradient/);
-  await expect(submenuPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
+  await expect(submenuPopup).toHaveCSS("backdrop-filter", "blur(16px) saturate(1.8)");
   await expect(page.getByRole("menuitem", { name: "No Recent Items" })).toHaveAttribute(
     "aria-disabled",
     "true",
@@ -56,7 +56,7 @@ test("supports menu popup keyboard navigation, activation, focus return, and dis
   const navigatorPopup = page.locator(".tienos-menu-popup:visible");
   await expect(navigatorPopup).toHaveCount(1);
   await expect(navigatorPopup).toHaveCSS("background-image", /linear-gradient/);
-  await expect(navigatorPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
+  await expect(navigatorPopup).toHaveCSS("backdrop-filter", "blur(16px) saturate(1.8)");
   await expect(page.getByRole("menuitem", { name: "About System Settings" })).toHaveAttribute(
     "data-highlighted",
     "",
@@ -86,7 +86,7 @@ test("supports compact touch menu popups, submenu collision, activation, and dis
     await expect(popup).toBeVisible();
     await expect(popup).toHaveCSS("border-radius", "14px");
     await expect(popup).toHaveCSS("background-image", /linear-gradient/);
-    await expect(popup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
+    await expect(popup).toHaveCSS("backdrop-filter", "blur(16px) saturate(1.8)");
     const bounds = await popup.boundingBox();
     expect(bounds!.x).toBeGreaterThanOrEqual(7);
     expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(313);

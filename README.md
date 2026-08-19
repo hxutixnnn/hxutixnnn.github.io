@@ -16,7 +16,8 @@ Calendar provides a locale-aware month view with keyboard and touch navigation, 
 
 - React 19 with Vite
 - Tailwind CSS 4
-- Base UI for accessible headless interactions
+- Glin UI Liquid Glass tokens and source-scaffolded React components
+- Base UI for behavior-critical accessible headless interactions
 - `react-hotkeys-hook` for keyboard shortcuts
 - `react-rnd` for bounded desktop window movement and resizing
 - Zustand as the observable appearance adapter

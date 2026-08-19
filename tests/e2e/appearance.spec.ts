@@ -44,9 +44,9 @@ test("applies design-system tokens to component styles", async ({ page }) => {
   });
 
   expect(tokens).toEqual({
-    space1: "4px",
-    accent: "#2863d7",
-    accentHover: "#326edc",
+    space1: ".25rem",
+    accent: "oklch(63% .19 254)",
+    accentHover: "oklch(67% .19 254)",
     focusOnAccent: "#fff",
     menuRadius: "14px",
     windowRadius: "24px",
@@ -244,9 +244,9 @@ test("menu popup families are translucent and wallpaper-responsive", async ({ pa
 
     await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
     const systemPopup = page.locator(".tienos-menu-popup:visible").first();
-    const expectedBackground = theme === "dark" ? "rgba(20, 27, 36, 0.62)" : "rgba(245, 248, 252, 0.62)";
+    const expectedBackground = theme === "dark" ? "rgba(0, 0, 0, 0.55)" : "rgba(255, 255, 255, 0.25)";
     await expect(systemPopup).toHaveCSS("background-color", expectedBackground);
-    await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(18px) saturate(1.5)");
+    await expect(systemPopup).toHaveCSS("backdrop-filter", "blur(16px) saturate(1.8)");
     await sampleAgainstWallpapers(systemPopup, "system", 5);
     const systemLabels = await systemPopup.locator(".tienos-menu-item > span").all();
     const systemShortcuts = await systemPopup.locator("kbd").all();
@@ -486,8 +486,8 @@ test("keeps Settings seamless across themes, accessibility modes, and layouts", 
       await expect(shell).toHaveCSS("backdrop-filter", "none");
       await expect(sidebar).toHaveCSS("backdrop-filter", "none");
     } else {
-      await expect(shell).toHaveCSS("backdrop-filter", "blur(32px) saturate(1.4)");
-      await expect(sidebar).toHaveCSS("backdrop-filter", "blur(24px) saturate(1.35)");
+      await expect(shell).toHaveCSS("backdrop-filter", "blur(40px) saturate(1.8)");
+      await expect(sidebar).toHaveCSS("backdrop-filter", "saturate(1.8) blur(16px)");
     }
     if (fallback) {
       await expect(shell).toHaveCSS("background-image", "none");
@@ -652,7 +652,7 @@ test("preserves migrated System Settings selection and separators", async ({ pag
   await darkWidget.click();
   await expect(darkWidget).toHaveCSS("font-weight", "700");
   await expect(darkWidget).toHaveCSS("color", "rgba(255, 255, 255, 0.9)");
-  await expect(darkWidget.locator("span")).toHaveCSS("border-color", "rgb(40, 99, 215)");
+  await expect(darkWidget.locator("span")).toHaveCSS("border-color", "oklch(0.63 0.19 254)");
   await expect(darkWidget.locator("span")).not.toHaveCSS("box-shadow", "none");
 
   await page.getByRole("button", { name: "General" }).click();
@@ -683,7 +683,7 @@ test("renders the tienOS main screen and system menu", async ({ page }) => {
   await page.getByRole("menuitem", { name: "Open tienOS menu" }).click();
   const popup = page.locator(".tienos-menu-popup").first();
   await expect(popup).toHaveCSS("border-radius", "14px");
-  await expect(popup).toHaveCSS("padding", "4px");
+  await expect(popup).toHaveCSS("padding", "3.25px");
   const reducedMotionState = await popup.evaluate((element) => {
     element.setAttribute("data-ending-style", "");
     const styles = getComputedStyle(element);

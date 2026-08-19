@@ -31,7 +31,7 @@ export function SettingsSelect({
           sideOffset={5}
           className="z-[60] outline-none"
         >
-          <Select.Popup className="min-w-[var(--anchor-width)] rounded-[10px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-menu)] p-1 text-[var(--tienos-color-text-primary)] shadow-[0_16px_36px_rgb(0_0_0/.3)] backdrop-blur-xl [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none">
+          <Select.Popup className="min-w-[var(--anchor-width)] rounded-[10px] border border-[var(--tienos-color-border)] bg-[var(--tienos-color-menu)] p-1 text-[var(--tienos-color-text-primary)] shadow-[0_16px_36px_rgb(0_0_0/.3)] backdrop-blur-[var(--tienos-blur-menu)] backdrop-saturate-[var(--tienos-saturate-menu)] [@media(prefers-reduced-transparency:reduce)]:backdrop-filter-none">
             <Select.List>
               {options.map((option) => (
                 <Select.Item key={option} value={option} className={itemClass}>

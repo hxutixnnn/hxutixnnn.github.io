@@ -1,4 +1,4 @@
-# Base UI 1.6.0 adoption inventory
+# Base UI 1.6.0 retained-interaction inventory
 
 The catalog below is authoritative for the installed `@base-ui/react` **1.6.0** root exports (verified against the package export map and the version-matched official component pages). Status describes real tienOS product use, not demo coverage.
 
@@ -6,9 +6,8 @@ The catalog below is authoritative for the installed `@base-ui/react` **1.6.0** 
 | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Menu, Menubar                                       | Already used correctly in `MenuBar`: portal positioning, submenu, keyboard navigation, dismissal and focus return. Popup glass is themed; the bar intentionally stays non-glass.        |
 | ScrollArea                                          | Already used correctly for independent Settings navigation/details scrolling.                                                                                                           |
-| Field, Input                                        | Adopted in Settings search for labeling and focus-state composition.                                                                                                                    |
 | Select                                              | Adopted in the three real Appearance choice fields through the small repeated `SettingsSelect`. Its portal clears the window stacking context.                                          |
-| Switch                                              | Adopted for wallpaper tint, preserving a labelled binary setting and touch target.                                                                                                      |
+| Switch                                              | Replaced by the source-scaffolded Glin Switch, whose Radix-backed checked, keyboard, and focus behavior preserves the contract.                                                         |
 | Button                                              | Native buttons retained: every current button is already semantically native and Base UI Button would add no interaction behavior.                                                      |
 | Separator                                           | Native CSS borders retained for visual row boundaries; the interactive sidebar divider correctly uses the ARIA separator pattern, which this visual primitive does not implement.       |
 | Radio, RadioGroup                                   | Adopted for Appearance mode, Liquid Glass style, accent color, and icon/widget style, preserving custom previews while adding exclusive-choice semantics and arrow-key navigation.      |
@@ -37,5 +36,7 @@ The catalog below is authoritative for the installed `@base-ui/react` **1.6.0** 
 | mergeClassNames, mergeProps, mergePropsN, useRender | Not applicable: no generic wrapper/control-plane is justified; direct supported composition keeps ownership local.                                                                      |
 
 ## Adoption guidance
+
+Glin's source-scaffolded native Select cannot replace the portaled Settings Select, and its RadioGroupItem owns its visual child so it cannot host tienOS preview choices without changing behavior. Glin has no ScrollArea or desktop Menubar. Keep Base UI for those contracts rather than claiming catalog coverage; use Glin where its source can preserve semantics and product behavior.
 
 Use Base UI when it owns behavior that native markup does not: popup positioning, roving keyboard focus, portal/focus lifecycle, composite fields, or custom control semantics. Style parts directly with Tailwind and Base UI state/data attributes. Keep native HTML when it is more semantic and simpler. Portals must use a z-index above draggable windows, avoid drag handles, and retain opaque reduced-transparency and forced-color fallbacks. Never adopt a primitive solely to increase catalog coverage.

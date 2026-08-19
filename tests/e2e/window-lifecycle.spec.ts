@@ -969,7 +969,7 @@ test("window lifecycle never installs a desktop-wide visual or pointer backdrop"
   const open = await desktopFrame();
   await testInfo.attach("desktop-window-open", { body: open, contentType: "image/png" });
   expect(open.equals(before)).toBe(true);
-  await expect(page.locator(".settings-window")).toHaveCSS("backdrop-filter", "blur(32px) saturate(1.4)");
+  await expect(page.locator(".settings-window")).toHaveCSS("backdrop-filter", "blur(40px) saturate(1.8)");
 
   await page.mouse.click(40, 110);
   await expect(window).not.toBeFocused();
