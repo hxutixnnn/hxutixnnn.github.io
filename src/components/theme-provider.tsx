@@ -1,230 +1,195 @@
+"use client"
+
 /* eslint-disable react-refresh/only-export-components */
-import * as React from "react"
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+  type ReactNode,
+} from "react"
 
-type Theme = "dark" | "light" | "system"
-type ResolvedTheme = "dark" | "light"
+export type ThemeMode = "light" | "dark" | "system"
+export type ResolvedMode = "light" | "dark"
+export type ThemeAccent = "yellow" | "emerald" | "blue" | "violet" | "rose"
 
-type ThemeProviderProps = {
-  children: React.ReactNode
-  defaultTheme?: Theme
-  storageKey?: string
-  disableTransitionOnChange?: boolean
+type Appearance = { mode: ThemeMode; accent: ThemeAccent }
+export interface ThemeProviderProps {
+  children: ReactNode
+}
+export interface ThemeContextValue extends Appearance {
+  resolvedMode: ResolvedMode
+  setMode: (mode: ThemeMode) => void
+  setAccent: (accent: ThemeAccent) => void
 }
 
-type ThemeProviderState = {
-  theme: Theme
-  setTheme: (theme: Theme) => void
+const STORAGE_KEY = "tien-home-appearance"
+const SYSTEM_QUERY = "(prefers-color-scheme: dark)"
+const DEFAULT_APPEARANCE: Appearance = { mode: "system", accent: "yellow" }
+const MODES: ThemeMode[] = ["light", "dark", "system"]
+const ACCENTS: ThemeAccent[] = ["yellow", "emerald", "blue", "violet", "rose"]
+const VARIABLES = [
+  "--primary",
+  "--primary-foreground",
+  "--ring",
+  "--site-accent-soft",
+  "--site-accent-ink",
+] as const
+// Each palette supplies primary, foreground, focus ring, tinted surface, and readable ink.
+const PALETTES: Record<
+  ThemeAccent,
+  Record<ResolvedMode, readonly [string, string, string, string, string]>
+> = {
+  yellow: {
+    light: [
+      "oklch(0.852 0.199 91.936)",
+      "oklch(0.421 0.095 57.708)",
+      "oklch(0.708 0 0)",
+      "#fef9c3",
+      "#713f12",
+    ],
+    dark: [
+      "oklch(0.795 0.184 86.047)",
+      "oklch(0.421 0.095 57.708)",
+      "oklch(0.556 0 0)",
+      "#352c12",
+      "#fde68a",
+    ],
+  },
+  emerald: {
+    light: ["#047857", "#ffffff", "#059669", "#d1fae5", "#065f46"],
+    dark: ["#6ee7b7", "#022c22", "#34d399", "#12372b", "#a7f3d0"],
+  },
+  blue: {
+    light: ["#1d4ed8", "#ffffff", "#2563eb", "#dbeafe", "#1e40af"],
+    dark: ["#93c5fd", "#172554", "#60a5fa", "#172c46", "#bfdbfe"],
+  },
+  violet: {
+    light: ["#6d28d9", "#ffffff", "#7c3aed", "#ede9fe", "#5b21b6"],
+    dark: ["#c4b5fd", "#2e1065", "#a78bfa", "#2d2147", "#ddd6fe"],
+  },
+  rose: {
+    light: ["#be123c", "#ffffff", "#e11d48", "#ffe4e6", "#9f1239"],
+    dark: ["#fda4af", "#4c0519", "#fb7185", "#421e2b", "#fecdd3"],
+  },
 }
 
-const COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)"
-const THEME_VALUES: Theme[] = ["dark", "light", "system"]
-
-const ThemeProviderContext = React.createContext<
-  ThemeProviderState | undefined
->(undefined)
-
-function isTheme(value: string | null): value is Theme {
-  if (value === null) {
-    return false
-  }
-
-  return THEME_VALUES.includes(value as Theme)
-}
-
-function getSystemTheme(): ResolvedTheme {
-  if (window.matchMedia(COLOR_SCHEME_QUERY).matches) {
-    return "dark"
-  }
-
-  return "light"
-}
-
-function disableTransitionsTemporarily() {
-  const style = document.createElement("style")
-  style.appendChild(
-    document.createTextNode(
-      "*,*::before,*::after{-webkit-transition:none!important;transition:none!important}"
-    )
-  )
-  document.head.appendChild(style)
-
-  return () => {
-    window.getComputedStyle(document.body)
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        style.remove()
-      })
-    })
+function parseAppearance(raw: string | null): Appearance {
+  if (!raw) return DEFAULT_APPEARANCE
+  try {
+    const value: unknown = JSON.parse(raw)
+    if (!value || typeof value !== "object") return DEFAULT_APPEARANCE
+    const candidate = value as Record<string, unknown>
+    return {
+      mode: MODES.includes(candidate.mode as ThemeMode)
+        ? (candidate.mode as ThemeMode)
+        : DEFAULT_APPEARANCE.mode,
+      accent: ACCENTS.includes(candidate.accent as ThemeAccent)
+        ? (candidate.accent as ThemeAccent)
+        : DEFAULT_APPEARANCE.accent,
+    }
+  } catch {
+    return DEFAULT_APPEARANCE
   }
 }
 
-function isEditableTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) {
-    return false
+function readAppearance(): Appearance {
+  try {
+    return parseAppearance(window.localStorage.getItem(STORAGE_KEY))
+  } catch {
+    return DEFAULT_APPEARANCE
   }
-
-  if (target.isContentEditable) {
-    return true
-  }
-
-  const editableParent = target.closest(
-    "input, textarea, select, [contenteditable='true']"
-  )
-  if (editableParent) {
-    return true
-  }
-
-  return false
 }
 
-export function ThemeProvider({
-  children,
-  defaultTheme = "system",
-  storageKey = "theme",
-  disableTransitionOnChange = true,
-  ...props
-}: ThemeProviderProps) {
-  const [theme, setThemeState] = React.useState<Theme>(() => {
-    const storedTheme = localStorage.getItem(storageKey)
-    if (isTheme(storedTheme)) {
-      return storedTheme
-    }
-
-    return defaultTheme
-  })
-
-  const setTheme = React.useCallback(
-    (nextTheme: Theme) => {
-      localStorage.setItem(storageKey, nextTheme)
-      setThemeState(nextTheme)
-    },
-    [storageKey]
-  )
-
-  const applyTheme = React.useCallback(
-    (nextTheme: Theme) => {
-      const root = document.documentElement
-      const resolvedTheme =
-        nextTheme === "system" ? getSystemTheme() : nextTheme
-      const restoreTransitions = disableTransitionOnChange
-        ? disableTransitionsTemporarily()
-        : null
-
-      root.classList.remove("light", "dark")
-      root.classList.add(resolvedTheme)
-
-      if (restoreTransitions) {
-        restoreTransitions()
-      }
-    },
-    [disableTransitionOnChange]
-  )
-
-  React.useEffect(() => {
-    applyTheme(theme)
-
-    if (theme !== "system") {
-      return undefined
-    }
-
-    const mediaQuery = window.matchMedia(COLOR_SCHEME_QUERY)
-    const handleChange = () => {
-      applyTheme("system")
-    }
-
-    mediaQuery.addEventListener("change", handleChange)
-
-    return () => {
-      mediaQuery.removeEventListener("change", handleChange)
-    }
-  }, [theme, applyTheme])
-
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.repeat) {
-        return
-      }
-
-      if (event.metaKey || event.ctrlKey || event.altKey) {
-        return
-      }
-
-      if (isEditableTarget(event.target)) {
-        return
-      }
-
-      if (event.key.toLowerCase() !== "d") {
-        return
-      }
-
-      setThemeState((currentTheme) => {
-        const nextTheme =
-          currentTheme === "dark"
-            ? "light"
-            : currentTheme === "light"
-              ? "dark"
-              : getSystemTheme() === "dark"
-                ? "light"
-                : "dark"
-
-        localStorage.setItem(storageKey, nextTheme)
-        return nextTheme
-      })
-    }
-
-    window.addEventListener("keydown", handleKeyDown)
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown)
-    }
-  }, [storageKey])
-
-  React.useEffect(() => {
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.storageArea !== localStorage) {
-        return
-      }
-
-      if (event.key !== storageKey) {
-        return
-      }
-
-      if (isTheme(event.newValue)) {
-        setThemeState(event.newValue)
-        return
-      }
-
-      setThemeState(defaultTheme)
-    }
-
-    window.addEventListener("storage", handleStorageChange)
-
-    return () => {
-      window.removeEventListener("storage", handleStorageChange)
-    }
-  }, [defaultTheme, storageKey])
-
-  const value = React.useMemo(
-    () => ({
-      theme,
-      setTheme,
-    }),
-    [theme, setTheme]
-  )
-
+function systemIsDark() {
   return (
-    <ThemeProviderContext.Provider {...props} value={value}>
-      {children}
-    </ThemeProviderContext.Provider>
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia(SYSTEM_QUERY).matches
   )
 }
+function subscribeToSystem(onChange: () => void) {
+  if (typeof window.matchMedia !== "function") return () => {}
+  const query = window.matchMedia(SYSTEM_QUERY)
+  query.addEventListener("change", onChange)
+  return () => query.removeEventListener("change", onChange)
+}
 
-export const useTheme = () => {
-  const context = React.useContext(ThemeProviderContext)
+const ThemeContext = createContext<ThemeContextValue | undefined>(undefined)
 
-  if (context === undefined) {
-    throw new Error("useTheme must be used within a ThemeProvider")
-  }
+export function ThemeProvider({ children }: ThemeProviderProps) {
+  const [appearance, setAppearance] = useState<Appearance>(readAppearance)
+  const isSystemDark = useSyncExternalStore(
+    subscribeToSystem,
+    systemIsDark,
+    () => false
+  )
+  const resolvedMode: ResolvedMode =
+    appearance.mode === "system"
+      ? isSystemDark
+        ? "dark"
+        : "light"
+      : appearance.mode
 
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    root.classList.remove("light", "dark")
+    root.classList.add(resolvedMode)
+    root.dataset.accent = appearance.accent
+    root.style.colorScheme = resolvedMode
+    PALETTES[appearance.accent][resolvedMode].forEach((value, index) =>
+      root.style.setProperty(VARIABLES[index], value)
+    )
+  }, [appearance.accent, resolvedMode])
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(appearance))
+    } catch {
+      /* Preferences still work for this visit when storage is blocked. */
+    }
+  }, [appearance])
+
+  useEffect(() => {
+    const syncAppearance = (event: StorageEvent) => {
+      if (event.key !== STORAGE_KEY && event.key !== null) return
+      try {
+        if (event.storageArea !== window.localStorage) return
+      } catch {
+        return
+      }
+      setAppearance(parseAppearance(event.newValue))
+    }
+    window.addEventListener("storage", syncAppearance)
+    return () => window.removeEventListener("storage", syncAppearance)
+  }, [])
+
+  const setMode = useCallback((mode: ThemeMode) => {
+    if (MODES.includes(mode))
+      setAppearance((current) =>
+        current.mode === mode ? current : { ...current, mode }
+      )
+  }, [])
+  const setAccent = useCallback((accent: ThemeAccent) => {
+    if (ACCENTS.includes(accent))
+      setAppearance((current) =>
+        current.accent === accent ? current : { ...current, accent }
+      )
+  }, [])
+  const value = useMemo(
+    () => ({ ...appearance, resolvedMode, setMode, setAccent }),
+    [appearance, resolvedMode, setMode, setAccent]
+  )
+
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+}
+
+export function useTheme(): ThemeContextValue {
+  const context = useContext(ThemeContext)
+  if (!context) throw new Error("useTheme must be used within ThemeProvider")
   return context
 }

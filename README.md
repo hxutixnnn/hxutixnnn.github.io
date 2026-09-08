@@ -1,21 +1,19 @@
-# React + TypeScript + Vite + shadcn/ui
+# Tien’s corner of the internet
 
-This is a template for a new Vite project with React, TypeScript, and shadcn/ui.
+A brief introduction, recent projects, and a direct way to connect.
 
-## Adding components
+Built with [Tien UI](https://github.com/hxutixnnn/ui), React, TypeScript, and Vite. Floating navigation becomes a bottom dock on mobile. The appearance picker supports system/light/dark mode and five accents, saved locally.
 
-To add components to your app, run the following command:
+## Development
 
-```bash
-npx shadcn@latest add button
+```sh
+npm ci
+npm run dev
+npm test
+npm run lint
+npm run build
 ```
 
-This will place the ui components in the `src/components` directory.
+Pushes to main deploy to https://hxutixnnn.github.io through GitHub Actions. Run `npm run deploy` with an authenticated Cloudflare CLI to publish to nguyenhuutien.com and www.nguyenhuutien.com.
 
-## Using components
-
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button"
-```
+Profile and projects are based on public information at https://github.com/hxutixnnn as of September 8, 2026. X links directly to https://x.com/hxutixnnn; no unverified post content is reproduced. Update `src/App.tsx` to change the copy and links.
