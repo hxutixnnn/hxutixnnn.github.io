@@ -87,23 +87,31 @@ afterEach(() => {
 })
 
 describe("appearance preferences", () => {
-  it("uses system mode with the exact yellow preset by default", () => {
+  it("keeps the yellow preset available for saved preferences", () => {
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({ mode: "light", accent: "yellow" })
+    )
+    renderAppearance()
+    expect(current().accent).toBe("yellow")
+    expect(document.documentElement.style.getPropertyValue("--primary")).toBe(
+      "oklch(0.852 0.199 91.936)"
+    )
+  })
+
+  it("uses system mode with the live site's blue accent by default", () => {
     renderAppearance()
     expect(current()).toEqual({
       mode: "system",
       resolvedMode: "light",
-      accent: "yellow",
+      accent: "blue",
     })
     const root = document.documentElement
     expect(root.classList.contains("light")).toBe(true)
-    expect(root.dataset.accent).toBe("yellow")
+    expect(root.dataset.accent).toBe("blue")
     expect(root.style.colorScheme).toBe("light")
-    expect(root.style.getPropertyValue("--primary")).toBe(
-      "oklch(0.852 0.199 91.936)"
-    )
-    expect(root.style.getPropertyValue("--primary-foreground")).toBe(
-      "oklch(0.421 0.095 57.708)"
-    )
+    expect(root.style.getPropertyValue("--primary")).toBe("#2a48d0")
+    expect(root.style.getPropertyValue("--primary-foreground")).toBe("#ffffff")
   })
 
   it("restores saved preferences and keeps changes across remounts", async () => {
@@ -148,7 +156,7 @@ describe("appearance preferences", () => {
     changeSystem(true)
     expect(current().resolvedMode).toBe("dark")
     expect(document.documentElement.style.getPropertyValue("--primary")).toBe(
-      "oklch(0.795 0.184 86.047)"
+      "#93c5fd"
     )
     expect(document.documentElement.classList.contains("light")).toBe(false)
     await user.click(screen.getByRole("button", { name: "Use light" }))
@@ -171,7 +179,7 @@ describe("appearance preferences", () => {
     expect(current()).toEqual({
       mode: "system",
       resolvedMode: "dark",
-      accent: "yellow",
+      accent: "blue",
     })
   })
 
@@ -184,7 +192,7 @@ describe("appearance preferences", () => {
     expect(current()).toEqual({
       mode: "dark",
       resolvedMode: "dark",
-      accent: "yellow",
+      accent: "blue",
     })
   })
 
@@ -248,7 +256,7 @@ describe("appearance preferences", () => {
     expect(current()).toEqual({
       mode: "system",
       resolvedMode: "light",
-      accent: "yellow",
+      accent: "blue",
     })
   })
 

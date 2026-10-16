@@ -29,7 +29,7 @@ export interface ThemeContextValue extends Appearance {
 
 const STORAGE_KEY = "tien-home-appearance"
 const SYSTEM_QUERY = "(prefers-color-scheme: dark)"
-const DEFAULT_APPEARANCE: Appearance = { mode: "system", accent: "yellow" }
+const DEFAULT_APPEARANCE: Appearance = { mode: "system", accent: "blue" }
 const MODES: ThemeMode[] = ["light", "dark", "system"]
 const ACCENTS: ThemeAccent[] = ["yellow", "emerald", "blue", "violet", "rose"]
 const VARIABLES = [
@@ -65,7 +65,7 @@ const PALETTES: Record<
     dark: ["#6ee7b7", "#022c22", "#34d399", "#12372b", "#a7f3d0"],
   },
   blue: {
-    light: ["#1d4ed8", "#ffffff", "#2563eb", "#dbeafe", "#1e40af"],
+    light: ["#2a48d0", "#ffffff", "#2a48d0", "#dbeafe", "#1e40af"],
     dark: ["#93c5fd", "#172554", "#60a5fa", "#172c46", "#bfdbfe"],
   },
   violet: {
